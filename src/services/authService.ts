@@ -64,7 +64,7 @@ export const authService = {
       {
         id: 'sess-active',
         loginTime: new Date().toLocaleString(),
-        ipAddress: '127.0.0.1 (Localhost Secured)',
+        ipAddress: 'Cloudflare Edge (vistara-krafts-admin.vercel.app)',
         userAgent: navigator.userAgent,
         status: 'active'
       },

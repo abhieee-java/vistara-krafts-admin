@@ -29,7 +29,7 @@ export const systemService = {
         service: 'webhooks',
         status: 'connected',
         latencyMs: 2,
-        details: 'Connected to BroadcastChannel "RAM_STUDIO_LIVE_DROP_CHANNEL" on localhost:3000'
+        details: 'Connected to BroadcastChannel "RAM_STUDIO_LIVE_DROP_CHANNEL" (Live at vistara-krafts.vercel.app)'
       }
     ];
   },

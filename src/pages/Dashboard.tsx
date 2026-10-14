@@ -74,7 +74,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             Add New Product
           </button>
           <a
-            href="http://localhost:3000/"
+            href="https://vistara-krafts.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#33302a] text-[#f9f8f5] text-xs font-semibold hover:bg-[#403c34] border border-[#4d483e] transition-colors"

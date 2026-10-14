@@ -30,22 +30,25 @@ A dedicated, standalone Owner/Admin portal architected specifically for **Vistā
 
 ---
 
-## Getting Started
+## Live Deployments
 
-### Local Development
+- **Customer Storefront:** [https://vistara-krafts.vercel.app](https://vistara-krafts.vercel.app)
+- **Owner Admin Portal:** [https://vistara-krafts-admin.vercel.app](https://vistara-krafts-admin.vercel.app)
+
+---
+
+## Local Development (Optional)
 
 ```bash
 # 1. Install dependencies
 npm install
 
-# 2. Start local development server (Port 3001)
+# 2. Start local development server
 npm run dev
 
 # 3. Build for production
 npm run build
 ```
-
-The portal runs on `http://localhost:3001/` alongside the customer storefront on `http://localhost:3000/`.
 
 ---
 

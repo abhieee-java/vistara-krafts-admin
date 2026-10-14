@@ -104,12 +104,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Live Storefront Link Button */}
         <div className="p-3 border-t border-[#2d2a24] bg-[#161513]">
           <a
-            href="http://localhost:3000/"
+            href="https://vistara-krafts.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs text-[#cda851] bg-[#23211d] hover:bg-[#2c2924] border border-[#3d3830] transition-colors"
           >
-            <span className="font-medium">View Storefront (Port 3000)</span>
+            <span className="font-medium">View Live Storefront</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
           <div className="mt-2 text-[10px] text-center text-[#7a756b]">
