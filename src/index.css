@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#f9f8f5] text-[#1c1b18] font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Premium micro-interactions & fluid animations */
+@layer components {
+  .luxury-card {
+    @apply bg-white border border-[#e6e2d8] rounded-2xl transition-all duration-300 ease-out;
+  }
+  
+  .luxury-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px -8px rgba(28, 27, 24, 0.07), 0 4px 12px -2px rgba(205, 168, 81, 0.08);
+    border-color: rgba(205, 168, 81, 0.45);
+  }
+
+  .interactive-btn {
+    @apply transition-all duration-200 ease-out active:scale-[0.97];
+  }
+
+  .interactive-row {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .interactive-row:hover {
+    background-color: rgba(250, 248, 245, 0.95);
+    box-shadow: inset 3px 0 0 0 #cda851;
+  }
+
+  .shimmer-badge {
+    background: linear-gradient(135deg, rgba(205, 168, 81, 0.15) 0%, rgba(205, 168, 81, 0.05) 100%);
+    border: 1px solid rgba(205, 168, 81, 0.3);
+  }
+}
+
+/* Custom luxury scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1ede4;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4cebe;
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cda851;
+}
