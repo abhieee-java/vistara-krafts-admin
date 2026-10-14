@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StoreProvider } from './context/StoreContext';
+import { RouterProvider, useRouter } from './context/RouterContext';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Products } from './pages/Products';
@@ -14,12 +15,13 @@ import { SystemHealth } from './pages/SystemHealth';
 import { Settings } from './pages/Settings';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { ToastContainer } from './components/common/Toast';
 import { Order } from './types';
 
 const AdminPortalApp: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
-  const [currentTab, setCurrentTab] = useState('dashboard');
+  const { currentTab, navigate } = useRouter();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isNewProductModalOpen, setIsNewProductModalOpen] = useState(false);
   const [activeOrderForDrawer, setActiveOrderForDrawer] = useState<Order | null>(null);
@@ -41,10 +43,10 @@ const AdminPortalApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f9f8f5] text-[#1c1b18] flex">
-      {/* Sidebar */}
+      {/* Sidebar (Desktop Permanent + Mobile Slide-out Drawer) */}
       <Sidebar
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={(tab) => navigate(tab)}
         isOpen={isMobileSidebarOpen}
         setIsOpen={setIsMobileSidebarOpen}
       />
@@ -56,16 +58,17 @@ const AdminPortalApp: React.FC = () => {
           onOpenMobileMenu={() => setIsMobileSidebarOpen(true)}
         />
 
-        <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
+        {/* Main Content with responsive padding for phone screens & safe bottom spacing for mobile nav dock */}
+        <main className="flex-1 px-3 py-4 sm:px-6 lg:p-8 pb-24 lg:pb-8 overflow-y-auto">
           {currentTab === 'dashboard' && (
             <Dashboard
-              onNavigateTab={(tab) => setCurrentTab(tab)}
+              onNavigateTab={(tab) => navigate(tab)}
               onOpenOrder={(ord) => {
                 setActiveOrderForDrawer(ord);
-                setCurrentTab('orders');
+                navigate('orders');
               }}
               onOpenNewProduct={() => {
-                setCurrentTab('products');
+                navigate('products');
                 setIsNewProductModalOpen(true);
               }}
             />
@@ -102,6 +105,9 @@ const AdminPortalApp: React.FC = () => {
         </main>
       </div>
 
+      {/* Mobile Bottom Navigation Dock for Phone Screens */}
+      <MobileBottomNav onOpenSidebar={() => setIsMobileSidebarOpen(true)} />
+
       {/* Global Toast Container */}
       <ToastContainer />
     </div>
@@ -112,7 +118,9 @@ export const App: React.FC = () => {
   return (
     <AuthProvider>
       <StoreProvider>
-        <AdminPortalApp />
+        <RouterProvider>
+          <AdminPortalApp />
+        </RouterProvider>
       </StoreProvider>
     </AuthProvider>
   );

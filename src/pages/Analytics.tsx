@@ -38,7 +38,7 @@ export const Analytics: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Controls */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="font-serif font-bold text-base text-[#1c1b18]">
             Performance &amp; Revenue Analytics
@@ -48,13 +48,13 @@ export const Analytics: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#e6e2d8]">
-          <Calendar className="w-3.5 h-3.5 text-gray-400 ml-2" />
+        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#e6e2d8] self-start sm:self-auto overflow-x-auto max-w-full">
+          <Calendar className="w-3.5 h-3.5 text-gray-400 ml-2 shrink-0" />
           {(['7d', '30d', '90d', 'all'] as const).map((r) => (
             <button
               key={r}
               onClick={() => setTimeRange(r)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase ${
+              className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase whitespace-nowrap ${
                 timeRange === r
                   ? 'bg-[#1c1b18] text-[#cda851] shadow-sm'
                   : 'text-gray-500 hover:text-gray-800'

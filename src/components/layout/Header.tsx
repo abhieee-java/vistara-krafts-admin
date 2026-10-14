@@ -37,22 +37,50 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
     }
   };
 
+  const getMobileTitle = (tab: string) => {
+    switch (tab) {
+      case 'dashboard':
+        return 'Overview';
+      case 'products':
+        return 'Products';
+      case 'inventory':
+        return 'Inventory';
+      case 'orders':
+        return 'Orders';
+      case 'customers':
+        return 'Patrons';
+      case 'promotions':
+        return 'Coupons';
+      case 'analytics':
+        return 'Analytics';
+      case 'security':
+        return 'Security';
+      case 'system':
+        return 'System';
+      case 'settings':
+        return 'Settings';
+      default:
+        return 'Owner Portal';
+    }
+  };
+
   return (
-    <header className="sticky top-0 z-30 bg-[#f9f8f5]/90 backdrop-blur-md border-b border-[#e6e2d8] px-4 lg:px-8 py-3.5 flex items-center justify-between">
+    <header className="sticky top-0 z-30 bg-[#f9f8f5]/90 backdrop-blur-md border-b border-[#e6e2d8] px-3 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
       {/* Left section: mobile button & tab heading */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           onClick={onOpenMobileMenu}
-          className="p-2 -ml-2 text-gray-700 hover:bg-gray-200/60 rounded-lg lg:hidden"
+          className="p-2 -ml-1 text-gray-700 hover:bg-gray-200/60 rounded-xl lg:hidden active:scale-95 transition-transform"
           aria-label="Open navigation menu"
         >
           <Menu className="w-5 h-5" />
         </button>
-        <div>
-          <h2 className="font-serif font-bold text-base lg:text-lg text-[#1c1b18] leading-tight">
-            {getTabTitle(currentTab)}
+        <div className="min-w-0">
+          <h2 className="font-serif font-bold text-base sm:text-lg text-[#1c1b18] leading-tight truncate">
+            <span className="sm:hidden">{getMobileTitle(currentTab)}</span>
+            <span className="hidden sm:inline">{getTabTitle(currentTab)}</span>
           </h2>
-          <p className="text-[11px] text-gray-500 hidden sm:block">
+          <p className="text-[10px] text-gray-500 hidden sm:block truncate">
             Vistāra Krafts Studio Administration
           </p>
         </div>

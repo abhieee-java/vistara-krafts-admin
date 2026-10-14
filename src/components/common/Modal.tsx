@@ -44,16 +44,16 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
       <div
-        className={`relative w-full ${widthClass} bg-white rounded-2xl shadow-2xl border border-[#e6e2d8] flex flex-col max-h-[90vh] overflow-hidden`}
+        className={`relative w-full ${widthClass} bg-white rounded-2xl shadow-2xl border border-[#e6e2d8] flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="px-6 py-4 border-b border-[#e6e2d8] flex items-center justify-between bg-[#faf8f5]">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#e6e2d8] flex items-center justify-between bg-[#faf8f5]">
           <div>
-            <h3 className="font-serif font-bold text-lg text-[#1c1b18]">{title}</h3>
-            {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+            <h3 className="font-serif font-bold text-base sm:text-lg text-[#1c1b18]">{title}</h3>
+            {subtitle && <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
@@ -63,7 +63,7 @@ export const Modal: React.FC<ModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto flex-1">{children}</div>
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );

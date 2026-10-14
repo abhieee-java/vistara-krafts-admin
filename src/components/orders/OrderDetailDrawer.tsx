@@ -55,10 +55,10 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-xl bg-white shadow-2xl flex flex-col border-l border-[#e6e2d8]">
+      <div className="absolute inset-y-0 right-0 w-full sm:max-w-xl flex pl-0 sm:pl-10">
+        <div className="w-full bg-white shadow-2xl flex flex-col border-l border-[#e6e2d8]">
           {/* Drawer Header */}
-          <div className="p-6 bg-[#faf8f5] border-b border-[#e6e2d8] flex items-center justify-between">
+          <div className="p-4 sm:p-6 bg-[#faf8f5] border-b border-[#e6e2d8] flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-serif font-bold text-lg text-[#1c1b18]">
@@ -88,10 +88,10 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
           </div>
 
           {/* Drawer Body */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
             {/* Quick Status Bar */}
-            <div className="p-4 rounded-xl bg-[#faf8f5] border border-[#e6e2d8] space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="p-3.5 sm:p-4 rounded-xl bg-[#faf8f5] border border-[#e6e2d8] space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-[#1c1b18]">Fulfillment Status:</span>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {(['pending', 'processing', 'packed', 'shipped', 'delivered'] as OrderStatus[]).map(

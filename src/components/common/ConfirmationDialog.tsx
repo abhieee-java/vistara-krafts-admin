@@ -35,7 +35,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+            className="flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors text-center"
           >
             Cancel
           </button>
@@ -46,7 +46,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               onClose();
             }}
             disabled={isLoading}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition-all ${
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition-all text-center ${
               confirmVariant === 'danger'
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-[#1c1b18] hover:bg-[#2e2c27]'

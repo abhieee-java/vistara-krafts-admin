@@ -54,7 +54,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
           </div>
 
           {/* Billing & Shipping Address */}
-          <div className="grid grid-cols-2 gap-6 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-xs">
             <div>
               <p className="font-bold text-gray-400 uppercase tracking-wider text-[10px]">
                 Billed / Shipped To:
@@ -67,7 +67,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
               </p>
               <p className="text-gray-600 mt-1">Contact: {order.customerPhone}</p>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <p className="font-bold text-gray-400 uppercase tracking-wider text-[10px]">
                 Dispatch Details:
               </p>
@@ -78,16 +78,17 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
           </div>
 
           {/* Items Table */}
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b-2 border-[#1c1b18] text-gray-700 uppercase font-bold text-[10px]">
-                <th className="py-2 text-left">Item Description</th>
-                <th className="py-2 text-center">Qty</th>
-                <th className="py-2 text-right">Unit Price</th>
-                <th className="py-2 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b-2 border-[#1c1b18] text-gray-700 uppercase font-bold text-[10px]">
+                  <th className="py-2 text-left">Item Description</th>
+                  <th className="py-2 text-center">Qty</th>
+                  <th className="py-2 text-right">Unit Price</th>
+                  <th className="py-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
               {order.items.map((it, i) => (
                 <tr key={i} className="py-3">
                   <td className="py-3 pr-2">
@@ -104,6 +105,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
               ))}
             </tbody>
           </table>
+          </div>
 
           {/* Totals */}
           <div className="border-t border-[#e6e2d8] pt-4 space-y-1.5 text-xs">

@@ -11,7 +11,8 @@ import {
   Activity,
   Settings,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -45,18 +46,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-[#1c1b18] text-[#f9f8f5] flex flex-col border-r border-[#2d2a24] transition-transform duration-300 lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#1c1b18] text-[#f9f8f5] flex flex-col border-r border-[#2d2a24] transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-[#2d2a24] flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-[#2d2a24] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#cda851] to-[#a38032] flex items-center justify-center text-[#1c1b18] font-serif font-black text-sm shadow-md">
               VK
@@ -71,6 +72,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
             </div>
           </div>
+          {/* Mobile close button */}
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#282622] lg:hidden"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation List */}

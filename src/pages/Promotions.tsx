@@ -116,8 +116,72 @@ export const Promotions: React.FC = () => {
         </button>
       </div>
 
-      {/* Coupons Table */}
-      <div className="bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+      {/* Mobile Coupon Cards (Phone Screens < 768px) */}
+      <div className="md:hidden space-y-3">
+        {coupons.map((c) => (
+          <div
+            key={c.id}
+            className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3 text-xs"
+          >
+            <div className="flex items-center justify-between">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#1c1b18] text-[#cda851] font-mono font-bold text-xs shadow-sm">
+                <Ticket className="w-3.5 h-3.5" />
+                <span>{c.code}</span>
+              </div>
+              <button
+                onClick={() => toggleCoupon(c.id)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all ${
+                  c.isActive
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {c.isActive ? (
+                  <>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span>Active</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3 h-3 text-gray-500" />
+                    <span>Paused</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-gray-400">Benefit:</span>
+                <div className="font-bold text-sm text-[#1c1b18]">
+                  {c.discountType === 'percentage'
+                    ? `${c.discountValue}% OFF`
+                    : `₹${c.discountValue} FLAT OFF`}
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase font-bold text-gray-400">Min Order:</span>
+                <div className="font-medium text-gray-700">₹{c.minOrderValue.toLocaleString()}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-[11px] text-gray-500">
+              <div>Expires: <strong className="text-gray-700">{c.expiryDate}</strong></div>
+              <div>Used: <strong className="text-gray-700">{c.usageCount} / {c.usageLimit}</strong></div>
+              <button
+                onClick={() => deleteCoupon(c.id)}
+                className="p-1 text-gray-400 hover:text-red-600"
+                title="Delete Coupon"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Coupons Table (Hidden on Mobile) */}
+      <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>

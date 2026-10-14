@@ -65,10 +65,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-2.5">
           <button
             onClick={onOpenNewProduct}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#cda851] text-[#1c1b18] text-xs font-bold hover:bg-[#dfc27d] transition-all shadow-md"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#cda851] text-[#1c1b18] text-xs font-bold hover:bg-[#dfc27d] transition-all shadow-md active:scale-95"
           >
             <Plus className="w-4 h-4" />
             Add New Product
@@ -77,7 +77,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             href="https://vistara-krafts.vercel.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#33302a] text-[#f9f8f5] text-xs font-semibold hover:bg-[#403c34] border border-[#4d483e] transition-colors"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#33302a] text-[#f9f8f5] text-xs font-semibold hover:bg-[#403c34] border border-[#4d483e] transition-colors active:scale-95"
           >
             <span>Live Storefront</span>
             <ExternalLink className="w-3.5 h-3.5 text-[#cda851]" />
@@ -87,7 +87,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Critical Alerts Banner (if out of stock) */}
       {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
-        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0" />
             <div className="text-xs text-amber-900">
@@ -97,7 +97,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <button
             onClick={() => onNavigateTab('inventory')}
-            className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors"
+            className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors shrink-0 self-start sm:self-auto"
           >
             Review Inventory
           </button>
@@ -105,9 +105,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Revenue */}
-        <div className="p-5 luxury-card space-y-3 cursor-default group">
+        <div className="p-4 sm:p-5 luxury-card space-y-3 cursor-default group">
           <div className="flex items-center justify-between text-gray-500">
             <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Total Revenue</span>
             <div className="p-2 rounded-xl bg-[#faf8f5] text-[#cda851] border border-[#e6e2d8] group-hover:border-[#cda851]/50 group-hover:scale-105 transition-all">
@@ -191,7 +191,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Recent Orders Cards (Phone Screens < 768px) */}
+          <div className="md:hidden space-y-2.5">
+            {recentOrders.map((ord) => (
+              <div
+                key={ord.id}
+                onClick={() => onOpenOrder(ord)}
+                className="p-3.5 rounded-xl border border-[#e6e2d8] hover:border-[#cda851] bg-[#faf8f5]/50 active:bg-[#faf8f5] transition-all space-y-2 text-xs"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-xs text-[#1c1b18]">{ord.orderNumber}</span>
+                  <StatusBadge status={ord.orderStatus} />
+                </div>
+                <div className="flex items-center justify-between text-gray-700">
+                  <div>
+                    <span className="font-semibold">{ord.customerName}</span>
+                    <span className="text-gray-400 text-[10px] ml-1">({ord.shippingAddress.city})</span>
+                  </div>
+                  <span className="font-serif font-bold text-sm text-[#1c1b18]">
+                    ₹{ord.totalAmount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100">
+                  <span className="truncate max-w-[200px]">
+                    {ord.items.map((i) => i.productName).join(', ')}
+                  </span>
+                  <span className="text-[#cda851] font-bold">Details →</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table (Hidden on Mobile) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">

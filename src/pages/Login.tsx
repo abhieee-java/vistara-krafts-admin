@@ -33,7 +33,7 @@ export const Login: React.FC = () => {
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-[#cda851]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#9e3322]/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative w-full max-w-md bg-[#24221d] border border-[#3b372e] rounded-3xl p-8 shadow-2xl backdrop-blur-xl">
+      <div className="relative w-full max-w-md bg-[#24221d] border border-[#3b372e] rounded-3xl p-5 sm:p-8 shadow-2xl backdrop-blur-xl">
         {/* Brand Header */}
         <div className="text-center space-y-2 mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#cda851] to-[#99792e] text-[#1c1b18] font-serif font-black text-2xl shadow-lg mb-2">

@@ -85,8 +85,100 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+      {/* Mobile Orders Card List (Visible on Phone Screens < 768px) */}
+      <div className="md:hidden space-y-3">
+        {filteredOrders.map((ord) => (
+          <div
+            key={ord.id}
+            className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3"
+          >
+            {/* Header: Order #, Date, Status */}
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-mono font-bold text-sm text-[#1c1b18]">
+                  {ord.orderNumber}
+                </span>
+                <div className="text-[10px] text-gray-500 mt-0.5">
+                  {new Date(ord.createdAt).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                </div>
+              </div>
+              <StatusBadge status={ord.orderStatus} />
+            </div>
+
+            {/* Customer & Location */}
+            <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+              <div>
+                <div className="font-semibold text-gray-900">{ord.customerName}</div>
+                <div className="text-[11px] text-gray-500">
+                  {ord.shippingAddress.city}, {ord.shippingAddress.state} ({ord.shippingAddress.pincode})
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="font-serif font-bold text-base text-[#1c1b18]">
+                  ₹{ord.totalAmount.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-emerald-700 font-medium">
+                  {ord.paymentMethod.toUpperCase()} • Paid
+                </div>
+              </div>
+            </div>
+
+            {/* Items summary */}
+            <div className="p-2.5 rounded-xl bg-[#faf8f5] text-xs space-y-1">
+              <div className="text-[10px] uppercase font-bold text-gray-400">Items:</div>
+              {ord.items.map((it, idx) => (
+                <div key={idx} className="flex items-center justify-between text-gray-700">
+                  <span className="truncate max-w-[200px]">
+                    {it.quantity}x {it.productName}
+                  </span>
+                  <span className="font-mono text-[11px]">₹{it.totalPrice.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Courier Tracking Info if present */}
+            {ord.trackingNumber ? (
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-blue-50/70 border border-blue-100 text-xs text-blue-900">
+                <Truck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <span className="font-medium text-[11px]">
+                  {ord.carrier || 'Delhivery'}:{' '}
+                  <span className="font-mono font-bold">{ord.trackingNumber}</span>
+                </span>
+              </div>
+            ) : (
+              <div className="text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1.5">
+                <span>Awaiting Courier AWB Assignment</span>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+              <button
+                onClick={() => setSelectedOrder(ord)}
+                className="flex-1 py-2 px-3 rounded-xl bg-[#1c1b18] text-[#cda851] text-xs font-bold hover:bg-[#2c2924] transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Details &amp; Dispatch</span>
+              </button>
+              <button
+                onClick={() => setInvoiceOrder(ord)}
+                className="py-2 px-3 rounded-xl border border-[#e6e2d8] text-gray-700 hover:bg-gray-50 text-xs font-semibold transition-colors flex items-center gap-1"
+                title="View Invoice"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Invoice</span>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Orders Table (Hidden on Mobile) */}
+      <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>

@@ -408,15 +408,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-[#e6e2d8] text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl border border-[#e6e2d8] text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl text-xs font-bold text-[#1c1b18] bg-[#cda851] hover:bg-[#dfc27d] shadow-sm transition-all"
+            className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl text-xs font-bold text-[#1c1b18] bg-[#cda851] hover:bg-[#dfc27d] shadow-sm transition-all text-center"
           >
-            {product ? 'Save Product Changes' : 'Create Product'}
+            {product ? 'Save Changes' : 'Create Product'}
           </button>
         </div>
       </form>
