@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Product, ProductCategory, ProductVariant } from '../../types';
+import { Product, ProductCategory, ProductVariant, ProductGender } from '../../types';
 import { Modal } from '../common/Modal';
 import { ImageUploader } from './ImageUploader';
 import { Plus, Trash2 } from 'lucide-react';
@@ -35,6 +35,14 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [gallery, setGallery] = useState<string[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
 
+  // Supplementary varieties (optional - blank means product has none)
+  const [colorsText, setColorsText] = useState('');
+  const [shapesText, setShapesText] = useState('');
+  const [sizesText, setSizesText] = useState('');
+
+  // Gender targeting (optional - defaults to 'all' / universal)
+  const [gender, setGender] = useState<ProductGender>('all');
+
   useEffect(() => {
     if (product) {
       setName(product.name);
@@ -54,6 +62,30 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setImage(product.image);
       setGallery(product.gallery || [product.image]);
       setVariants(product.variants || []);
+
+      const cList = Array.isArray(product.colors)
+        ? product.colors.map((c: any) => (typeof c === 'string' ? c : c.label || c.name || '')).filter(Boolean)
+        : [];
+      setColorsText(cList.join(', '));
+
+      const sList = Array.isArray(product.shapes)
+        ? product.shapes.map((s: any) => (typeof s === 'string' ? s : s.label || s.name || '')).filter(Boolean)
+        : [];
+      setShapesText(sList.join(', '));
+
+      const szList = Array.isArray(product.sizes)
+        ? product.sizes.map((sz: any) => (typeof sz === 'string' ? sz : sz.label || sz.name || '')).filter(Boolean)
+        : [];
+      setSizesText(szList.join(', '));
+
+      setGender(
+        product.gender ||
+          (product.genderAffinity === 'feminine'
+            ? 'women'
+            : product.genderAffinity === 'masculine'
+            ? 'men'
+            : 'all')
+      );
     } else {
       // Default blank form
       setName('');
@@ -73,6 +105,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setImage('https://lh3.googleusercontent.com/aida-public/AB6AXuBRDycw3YoY4kwqRgc2RIKed3egGLaRRPS-s_Rj31II52yPo9mDwes-hs9trRWTLBtNK3kTpXaTRhlSVuTdOCl9dbdO_WTG2X7GPf1I7HYJSKSGD-a3Fgl7B6c8ro6jp7dFha0mHMnnRi-QtFlnFZ4ndGGuGaiAFgz667F1dX9gmHFfhqzuZqqbfuY7BUnC2X8WuzXjYz_F6yqBPS7AOMwiLvJ_ZgwVyGjt1XfOSW2V6nLeNup72rQpSw');
       setGallery([]);
       setVariants([]);
+      setColorsText('');
+      setShapesText('');
+      setSizesText('');
+      setGender('all');
     }
   }, [product, isOpen]);
 
@@ -103,6 +139,46 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       return;
     }
 
+    // Parse supplementary varieties (empty if left blank)
+    const parsedColors = colorsText.trim()
+      ? colorsText
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((label, idx) => ({
+            id: `c-${idx + 1}`,
+            label,
+            hex: '#cda851',
+            accent: '#fef3c7'
+          }))
+      : [];
+
+    const parsedShapes = shapesText.trim()
+      ? shapesText
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((label, idx) => ({
+            id: `s-${idx + 1}`,
+            label
+          }))
+      : [];
+
+    const parsedSizes = sizesText.trim()
+      ? sizesText
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .map((label, idx) => ({
+            id: `sz-${idx + 1}`,
+            label,
+            priceDelta: 0
+          }))
+      : [];
+
+    const genderAffinity =
+      gender === 'women' ? 'feminine' : gender === 'men' ? 'masculine' : 'neutral';
+
     onSubmit({
       name,
       shortName: shortName || name,
@@ -121,6 +197,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       image: image || gallery[0] || '',
       gallery: gallery.length > 0 ? gallery : [image],
       variants,
+      colors: parsedColors,
+      shapes: parsedShapes,
+      sizes: parsedSizes,
+      gender,
+      genderAffinity,
       rating: product ? product.rating : 5.0,
       reviewsCount: product ? product.reviewsCount : 0
     });
@@ -322,6 +403,134 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               />
               <span>Allows Custom Engraving / Floral Note</span>
             </label>
+          </div>
+        </div>
+
+        {/* Gender / Target Audience */}
+        <div className="pt-2 border-t border-[#e6e2d8]">
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-[#1c1b18]">
+              Gender / Target Audience (Optional)
+            </label>
+            <span className="text-[11px] text-gray-500 font-normal">
+              Defaults to Universal for both Men &amp; Women
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <label
+              className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                gender === 'all'
+                  ? 'bg-[#23211d] text-[#cda851] border-[#23211d] shadow-xs'
+                  : 'bg-[#faf8f5] text-gray-700 border-[#e6e2d8] hover:border-[#cda851]'
+              }`}
+            >
+              <input
+                type="radio"
+                name="product-gender"
+                value="all"
+                checked={gender === 'all'}
+                onChange={() => setGender('all')}
+                className="sr-only"
+              />
+              <span>✨ Universal (Men &amp; Women)</span>
+            </label>
+
+            <label
+              className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                gender === 'women'
+                  ? 'bg-[#9e3322] text-white border-[#9e3322] shadow-xs'
+                  : 'bg-[#faf8f5] text-gray-700 border-[#e6e2d8] hover:border-[#9e3322]'
+              }`}
+            >
+              <input
+                type="radio"
+                name="product-gender"
+                value="women"
+                checked={gender === 'women'}
+                onChange={() => setGender('women')}
+                className="sr-only"
+              />
+              <span>🌸 Mainly for Female / Women</span>
+            </label>
+
+            <label
+              className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
+                gender === 'men'
+                  ? 'bg-[#1e293b] text-white border-[#1e293b] shadow-xs'
+                  : 'bg-[#faf8f5] text-gray-700 border-[#e6e2d8] hover:border-[#1e293b]'
+              }`}
+            >
+              <input
+                type="radio"
+                name="product-gender"
+                value="men"
+                checked={gender === 'men'}
+                onChange={() => setGender('men')}
+                className="sr-only"
+              />
+              <span>👔 Mainly for Male / Men</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Supplementary Product Varieties (Colors, Shapes, Sizes) */}
+        <div className="pt-2 border-t border-[#e6e2d8] space-y-2.5">
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-[#1c1b18]">
+                Supplementary Product Varieties (Colors, Shapes, Sizes)
+              </label>
+              <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                Supplementary / Optional
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              Leave blank if this product does not have color, shape, or size variations. When kept blank, product stays intact and no variety selector will show on the website.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                🎨 Colors (Optional)
+              </label>
+              <input
+                type="text"
+                value={colorsText}
+                onChange={(e) => setColorsText(e.target.value)}
+                placeholder="e.g. Royal Gold, Champagne Rose"
+                className="w-full h-9 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+              />
+              <span className="text-[10px] text-gray-400 mt-1 block">Blank = No colors</span>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                📐 Shapes (Optional)
+              </label>
+              <input
+                type="text"
+                value={shapesText}
+                onChange={(e) => setShapesText(e.target.value)}
+                placeholder="e.g. Mughal Arch, Hexagon"
+                className="w-full h-9 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+              />
+              <span className="text-[10px] text-gray-400 mt-1 block">Blank = No shapes</span>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                📏 Sizes (Optional)
+              </label>
+              <input
+                type="text"
+                value={sizesText}
+                onChange={(e) => setSizesText(e.target.value)}
+                placeholder="e.g. 6-inch Desk, 12-inch Royal"
+                className="w-full h-9 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+              />
+              <span className="text-[10px] text-gray-400 mt-1 block">Blank = No sizes</span>
+            </div>
           </div>
         </div>
 

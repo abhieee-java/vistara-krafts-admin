@@ -131,6 +131,21 @@ export const Products: React.FC<ProductsProps> = ({
                       {p.ratio}
                     </span>
                   )}
+                  {p.gender === 'women' && (
+                    <span className="px-1.5 py-0.5 rounded bg-[#9e3322]/10 text-[#9e3322] text-[9px] font-semibold">
+                      🌸 Women
+                    </span>
+                  )}
+                  {p.gender === 'men' && (
+                    <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 text-[9px] font-semibold">
+                      👔 Men
+                    </span>
+                  )}
+                  {((p.colors && p.colors.length > 0) || (p.shapes && p.shapes.length > 0) || (p.sizes && p.sizes.length > 0)) && (
+                    <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-[9px] font-semibold">
+                      🎨 Varieties
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -264,6 +279,23 @@ export const Products: React.FC<ProductsProps> = ({
                       {p.category.replace('_', ' ')}
                     </span>
                     <div className="text-[10px] text-gray-400 font-mono mt-0.5">{p.sku}</div>
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      {p.gender === 'women' && (
+                        <span className="px-1.5 py-0.5 rounded bg-[#9e3322]/10 text-[#9e3322] text-[9px] font-semibold">
+                          🌸 Women
+                        </span>
+                      )}
+                      {p.gender === 'men' && (
+                        <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 text-[9px] font-semibold">
+                          👔 Men
+                        </span>
+                      )}
+                      {((p.colors && p.colors.length > 0) || (p.shapes && p.shapes.length > 0) || (p.sizes && p.sizes.length > 0)) && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-[9px] font-semibold">
+                          🎨 Varieties
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   {/* Price */}

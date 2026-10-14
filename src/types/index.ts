@@ -10,6 +10,19 @@ export interface ProductVariant {
   sku: string;
 }
 
+export interface ProductVarietyOption {
+  id: string;
+  label: string;
+  hex?: string;
+  accent?: string;
+  icon?: string;
+  desc?: string;
+  priceDelta?: number;
+  popular?: boolean;
+}
+
+export type ProductGender = 'all' | 'men' | 'women';
+
 export interface Product {
   id: string;
   sku: string;
@@ -33,6 +46,11 @@ export interface Product {
   image: string;
   gallery: string[];
   variants: ProductVariant[];
+  colors?: (string | ProductVarietyOption)[];
+  shapes?: (string | ProductVarietyOption)[];
+  sizes?: (string | ProductVarietyOption)[];
+  gender?: ProductGender;
+  genderAffinity?: 'neutral' | 'masculine' | 'feminine';
   createdAt: string;
   updatedAt: string;
 }
