@@ -176,6 +176,7 @@ export function mapProductToRow(product: Product): any {
     sizes: product.sizes || [],
     gender: product.gender || 'all',
     gender_affinity: product.genderAffinity || 'neutral',
+    is_active: true,
     specs: {
       ratio: product.ratio || '',
       viscosity: product.viscosity || 'low',
