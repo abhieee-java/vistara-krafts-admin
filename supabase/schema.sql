@@ -397,7 +397,7 @@ CREATE POLICY "Users insert orders" ON public.orders
 
 DROP POLICY IF EXISTS "Admin update orders" ON public.orders;
 CREATE POLICY "Admin update orders" ON public.orders
-  FOR UPDATE USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
+  FOR ALL USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
 -- Inventory Logs Policies
 DROP POLICY IF EXISTS "Admin view inventory logs" ON public.inventory_logs;
