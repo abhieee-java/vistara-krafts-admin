@@ -60,42 +60,90 @@ export const productService = {
     try {
       const data = localStorage.getItem(PRODUCTS_STORAGE_KEY);
       if (data) {
-        return JSON.parse(data);
-      }
-      // Check if the storefront already saved products in localStorage
-      const storefrontData = localStorage.getItem(STOREFRONT_STORAGE_KEY);
-      if (storefrontData) {
-        const parsed = JSON.parse(storefrontData);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(parsed));
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          // Purge legacy mock products from earlier sessions
+          if (parsed.some((p: any) => p.id === 'ram-keep-001' && p.sku === 'RAM-VRM-BLK-12')) {
+            localStorage.removeItem(PRODUCTS_STORAGE_KEY);
+            localStorage.removeItem(STOREFRONT_STORAGE_KEY);
+            return [];
+          }
           return parsed;
         }
       }
     } catch (e) {
       console.error('Failed to load products from storage', e);
     }
-    // Default initial seed
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(INITIAL_PRODUCTS));
-    return INITIAL_PRODUCTS;
+    return [];
   },
 
-  saveProducts(products: Product[]): void {
+  async fetchFromSupabase(): Promise<Product[]> {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return this.getProducts();
+    try {
+      const endpoint = `${SUPABASE_URL}/rest/v1/products?select=*&is_active=eq.true&order=created_at.desc`;
+      const res = await fetch(endpoint, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        if (Array.isArray(rows)) {
+          const mapped: Product[] = rows.map((r: any) => ({
+            id: r.id,
+            sku: r.sku,
+            name: r.name,
+            shortName: r.short_name || r.name,
+            subtitle: r.subtitle || '',
+            category: r.category || 'keepsakes',
+            subCategory: r.subcategory || 'atelier',
+            badge: r.badge || '',
+            price: Number(r.price || 0),
+            regularPrice: Number(r.compare_at_price || Math.round(Number(r.price || 0) * 1.25)),
+            rating: Number(r.rating || 4.9),
+            reviewsCount: Number(r.reviews_count || 0),
+            inStock: Boolean(r.stock > 0),
+            stockQuantity: Number(r.stock ?? 10),
+            lowStockThreshold: Number(r.low_stock_threshold ?? 5),
+            isCustomizable: true,
+            image: (Array.isArray(r.images) && r.images[0]) || '',
+            gallery: Array.isArray(r.images) ? r.images : [],
+            variants: [],
+            colors: Array.isArray(r.colors) ? r.colors : [],
+            shapes: Array.isArray(r.shapes) ? r.shapes : [],
+            sizes: Array.isArray(r.sizes) ? r.sizes : [],
+            gender: r.gender || 'all',
+            genderAffinity: r.gender_affinity || 'neutral',
+            createdAt: r.created_at || new Date().toISOString(),
+            updatedAt: r.updated_at || new Date().toISOString()
+          }));
+
+          localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(mapped));
+          localStorage.setItem(STOREFRONT_STORAGE_KEY, JSON.stringify(mapped));
+          return mapped;
+        }
+      }
+    } catch (err) {
+      console.warn('[Admin Supabase Fetch Warning]', err);
+    }
+    return this.getProducts();
+  },
+
+  saveProducts(products: Product[], pushToSupabase: boolean = true): void {
     localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
-    // Also sync to storefront key so storefront automatically gets updated
     localStorage.setItem(STOREFRONT_STORAGE_KEY, JSON.stringify(products));
 
-    // Broadcast across tabs to live storefront
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.postMessage({ type: 'PRODUCTS_UPDATED', products });
       }
-    } catch (e) {
-      // ignore in environments without BroadcastChannel
-    }
+    } catch (e) {}
 
-    // Two-way sync to Supabase PostgreSQL Database
-    syncToSupabase(products, true);
+    if (pushToSupabase) {
+      syncToSupabase(products, true);
+    }
   },
 
   addProduct(newProduct: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Product {

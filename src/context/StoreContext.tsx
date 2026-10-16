@@ -119,12 +119,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, []);
 
-  // Initial load
+  // Initial load & Live Supabase Synchronization (Zero Mock Data)
   useEffect(() => {
-    setProducts(productService.getProducts());
+    productService.fetchFromSupabase().then((prods) => {
+      setProducts(prods);
+    });
     setOrders(orderService.getOrders());
     setCustomers(customerService.getCustomers());
     setMovements(inventoryService.getMovements());
+
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel.onmessage = (ev) => {
+          if (ev && ev.data && ev.data.type === 'PRODUCTS_UPDATED' && Array.isArray(ev.data.products)) {
+            setProducts(ev.data.products);
+          }
+        };
+      }
+    } catch (e) {}
+
+    const interval = setInterval(() => {
+      productService.fetchFromSupabase().then((prods) => {
+        setProducts(prods);
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   // Product Actions
