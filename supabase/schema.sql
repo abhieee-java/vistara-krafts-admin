@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Vistāra Krafts & POTRY Ceramics — Production Supabase PostgreSQL Schema
--- Pure Production DDL (Zero Mock Data)
+-- Pure Production DDL (Zero Mock Data Baked In)
 -- Execute in Supabase SQL Editor: https://supabase.com/dashboard/project/_/sql
 -- ============================================================================
 
@@ -71,7 +71,7 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================================================
--- 2. Categories Table (Optional Dynamic Taxonomies)
+-- 2. Categories Table (Dynamic Catalog Taxonomies)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS public.categories (
   id TEXT PRIMARY KEY,
@@ -88,7 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_categories_slug ON public.categories(slug);
 
 -- ============================================================================
 -- 3. Products Table (Enterprise Master Catalog & Varietal Architecture)
--- Engineered for direct import of real products (zero mock data baked in)
+-- Pure Production DDL (Zero Mock Data baked in; import real products anytime)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS public.products (
   id TEXT PRIMARY KEY DEFAULT ('prod_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12)),
@@ -163,7 +163,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS on_products_stock_sync ON public.products;
 CREATE TRIGGER on_products_stock_sync
-  BEFORE INSERT OR UPDATE OF stock ON public.products
+  BEFORE INSERT OR UPDATE ON public.products
   FOR EACH ROW
   EXECUTE FUNCTION public.sync_product_in_stock();
 
@@ -172,7 +172,7 @@ CREATE TRIGGER on_products_stock_sync
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS public.orders (
   id TEXT PRIMARY KEY,
-  order_number TEXT NOT NULL UNIQUE,
+  order_number TEXT NOT NULL UNIQUE DEFAULT ('VK-' || to_char(now(), 'YYYY') || '-' || substr(md5(random()::text), 1, 6)),
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   customer_name TEXT NOT NULL,
   customer_email TEXT NOT NULL,
@@ -206,6 +206,23 @@ CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON public.orders(customer_e
 CREATE INDEX IF NOT EXISTS idx_orders_order_number ON public.orders(order_number);
 CREATE INDEX IF NOT EXISTS idx_orders_order_status ON public.orders(order_status);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
+
+-- Trigger to ensure order_number is populated from id if omitted
+CREATE OR REPLACE FUNCTION public.handle_order_defaults()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.order_number IS NULL OR NEW.order_number = '' THEN
+    NEW.order_number = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS on_orders_defaults_sync ON public.orders;
+CREATE TRIGGER on_orders_defaults_sync
+  BEFORE INSERT ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_order_defaults();
 
 DROP TRIGGER IF EXISTS on_orders_updated ON public.orders;
 CREATE TRIGGER on_orders_updated
@@ -325,7 +342,7 @@ CREATE TABLE IF NOT EXISTS public.dpdp_consents (
 CREATE INDEX IF NOT EXISTS idx_dpdp_consents_user_id ON public.dpdp_consents(user_id);
 
 -- ============================================================================
--- 11. Row Level Security (RLS) Policies
+-- 11. Row Level Security (RLS) Policies (Idempotent with DROP IF EXISTS)
 -- ============================================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
@@ -339,98 +356,134 @@ ALTER TABLE public.custom_mockups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dpdp_consents ENABLE ROW LEVEL SECURITY;
 
 -- Products Policies: Public can read active products; Admins/Service-role full control
+DROP POLICY IF EXISTS "Public read active products" ON public.products;
 CREATE POLICY "Public read active products" ON public.products
   FOR SELECT USING (is_active = true OR auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Admin write products" ON public.products;
 CREATE POLICY "Admin write products" ON public.products
   FOR ALL USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
 -- Categories Policies
+DROP POLICY IF EXISTS "Public read categories" ON public.categories;
 CREATE POLICY "Public read categories" ON public.categories
   FOR SELECT USING (is_active = true);
 
+DROP POLICY IF EXISTS "Admin write categories" ON public.categories;
 CREATE POLICY "Admin write categories" ON public.categories
   FOR ALL USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
 -- Profiles Policies
+DROP POLICY IF EXISTS "Users read own profile" ON public.profiles;
 CREATE POLICY "Users read own profile" ON public.profiles
   FOR SELECT USING (auth.uid() = id OR auth.jwt()->>'role' = 'service_role');
 
+DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
 CREATE POLICY "Users update own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Public insert profiles on signup" ON public.profiles;
 CREATE POLICY "Public insert profiles on signup" ON public.profiles
   FOR INSERT WITH CHECK (true);
 
 -- Orders Policies
+DROP POLICY IF EXISTS "Users read own orders" ON public.orders;
 CREATE POLICY "Users read own orders" ON public.orders
   FOR SELECT USING (auth.uid() = user_id OR auth.role() = 'authenticated' OR auth.jwt()->>'role' = 'service_role');
 
+DROP POLICY IF EXISTS "Users insert orders" ON public.orders;
 CREATE POLICY "Users insert orders" ON public.orders
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Admin update orders" ON public.orders;
 CREATE POLICY "Admin update orders" ON public.orders
   FOR UPDATE USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
 -- Inventory Logs Policies
+DROP POLICY IF EXISTS "Admin view inventory logs" ON public.inventory_logs;
 CREATE POLICY "Admin view inventory logs" ON public.inventory_logs
   FOR SELECT USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Admin write inventory logs" ON public.inventory_logs;
 CREATE POLICY "Admin write inventory logs" ON public.inventory_logs
   FOR INSERT WITH CHECK (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
 -- Payments Policies
+DROP POLICY IF EXISTS "Admin view payments" ON public.payments;
 CREATE POLICY "Admin view payments" ON public.payments
   FOR SELECT USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "System insert payments" ON public.payments;
 CREATE POLICY "System insert payments" ON public.payments
   FOR INSERT WITH CHECK (true);
 
 -- Settings & Coupons Policies
+DROP POLICY IF EXISTS "Public view settings" ON public.settings;
 CREATE POLICY "Public view settings" ON public.settings
   FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admin manage settings" ON public.settings;
 CREATE POLICY "Admin manage settings" ON public.settings
   FOR ALL USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Public view coupons" ON public.coupons;
 CREATE POLICY "Public view coupons" ON public.coupons
   FOR SELECT USING (is_active = true);
 
+DROP POLICY IF EXISTS "Admin manage coupons" ON public.coupons;
 CREATE POLICY "Admin manage coupons" ON public.coupons
   FOR ALL USING (auth.jwt()->>'role' = 'service_role' OR auth.role() = 'authenticated');
 
 -- DPDP & Custom Mockups Policies
+DROP POLICY IF EXISTS "Users manage mockups" ON public.custom_mockups;
 CREATE POLICY "Users manage mockups" ON public.custom_mockups
   FOR ALL USING (auth.uid() = user_id OR auth.role() = 'authenticated' OR auth.jwt()->>'role' = 'service_role');
 
+DROP POLICY IF EXISTS "Public record consent" ON public.dpdp_consents;
 CREATE POLICY "Public record consent" ON public.dpdp_consents
   FOR INSERT WITH CHECK (true);
 
 -- ============================================================================
--- 12. Supabase Realtime CDC Publication
+-- 12. Supabase Realtime CDC Publication (Idempotent)
 -- ============================================================================
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
     CREATE PUBLICATION supabase_realtime;
   END IF;
-END $$;
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.products;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory_logs;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'products'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.products;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'orders'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'inventory_logs'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory_logs;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- 13. High-Speed Bulk Catalog Ingestion Function (For Real Product Data)
 -- Allows importing or updating products directly via JSON batch
--- Usage: SELECT public.import_catalog_batch('[{"sku": "...", "name": "...", ...}]'::jsonb);
+-- Usage: SELECT public.import_catalog_batch('[{"sku": "...", "name": "...", "price": 2499, ...}]'::jsonb);
 -- ============================================================================
 CREATE OR REPLACE FUNCTION public.import_catalog_batch(p_products JSONB)
 RETURNS JSONB AS $$
 DECLARE
   v_item JSONB;
   v_inserted_count INT := 0;
-  v_updated_count INT := 0;
 BEGIN
   IF jsonb_typeof(p_products) <> 'array' THEN
     RAISE EXCEPTION 'Input must be a JSON array of product objects';
@@ -445,19 +498,19 @@ BEGIN
       colors, shapes, sizes, gender, gender_affinity, gifting_tags, description, is_active
     ) VALUES (
       COALESCE(v_item->>'id', 'prod_' || substr(md5(random()::text || clock_timestamp()::text), 1, 12)),
-      v_item->>'sku',
-      v_item->>'name',
+      COALESCE(v_item->>'sku', 'SKU-' || substr(md5(random()::text), 1, 8)),
+      COALESCE(v_item->>'name', 'Untitled Product'),
       COALESCE(v_item->>'short_name', v_item->>'shortName', ''),
       COALESCE(v_item->>'subtitle', ''),
       COALESCE(v_item->>'brand', 'Vistāra Krafts'),
-      v_item->>'category',
+      COALESCE(v_item->>'category', 'general'),
       COALESCE(v_item->>'subcategory', v_item->>'subCategory', ''),
       COALESCE(v_item->>'badge', ''),
-      (v_item->>'price')::numeric,
+      COALESCE((v_item->>'price')::numeric, 0),
       COALESCE((v_item->>'compare_at_price')::numeric, (v_item->>'compareAtPrice')::numeric, (v_item->>'regularPrice')::numeric, 0),
       COALESCE((v_item->>'cost_price')::numeric, 0),
       COALESCE((v_item->>'discount')::int, 0),
-      COALESCE((v_item->>'stock')::int, (v_item->>'stockQuantity')::int, 10),
+      COALESCE((v_item->>'stock')::int, (v_item->>'stockQuantity')::int, 0),
       COALESCE((v_item->>'low_stock_threshold')::int, (v_item->>'lowStockThreshold')::int, 5),
       COALESCE(v_item->>'status', 'active'),
       COALESCE((v_item->>'featured')::boolean, false),
@@ -516,3 +569,20 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================================================
+-- 14. Essential Initial Settings & Active Coupons
+-- ============================================================================
+INSERT INTO public.coupons (code, discount_type, discount_value, min_order_value, is_active)
+VALUES
+  ('STUDIO10', 'percentage', 10, 1500, true),
+  ('VISTARA500', 'fixed', 500, 3000, true),
+  ('WELCOME250', 'fixed', 250, 1000, true)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO public.settings (key, value, description)
+VALUES
+  ('announcement_bar', '{"text": "✨ Festive Atelier Drop: Free Pan-India Express Delivery on Orders Over ₹1,999", "enabled": true}'::jsonb, 'Storefront top notification ribbon'),
+  ('store_info', '{"name": "Vistāra Krafts Studio", "email": "studio@vistarakrafts.com", "phone": "+91 98765 43210", "gst_number": "29AAAAA0000A1Z5"}'::jsonb, 'Official studio legal & contact metadata'),
+  ('shipping', '{"free_shipping_threshold": 1999, "standard_shipping_fee": 149, "express_shipping_fee": 299}'::jsonb, 'Pan-India shipping rates & thresholds')
+ON CONFLICT (key) DO NOTHING;
