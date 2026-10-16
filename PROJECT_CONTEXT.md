@@ -3,7 +3,7 @@
 > **Brand Identity:** Vistāra Krafts Studio & Chemical Atelier (`@resin.art.memories`)  
 > **Sister Brand:** POTRY Contemporary Ceramic Studio  
 > **Headquarters & Studio:** 42 Craft Enclave, Indiranagar 100 Feet Road, Bengaluru, Karnataka, India (560001)  
-> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Custom Domain: `https://vistarakrafts.in`)  
+> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Custom Domain: `https://vistarakrafts.com`)  
 > **Owner Admin Portal:** `https://vistara-krafts-admin.vercel.app`  
 > **Primary Domains:** Bridal Keepsake Preservation, Optical Epoxy Chemical Formulation, Contemporary Ceramic Homeware, Enterprise E-Commerce Operations  
 

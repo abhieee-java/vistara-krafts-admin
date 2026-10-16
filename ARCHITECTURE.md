@@ -1,7 +1,7 @@
 # ARCHITECTURE.md — SYSTEM TOPOLOGY & ENGINEERING BLUEPRINT
 
 > **Ecosystem:** Vistāra Krafts & POTRY Ceramics E-Commerce Platform  
-> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Custom domain: `https://vistarakrafts.in`)  
+> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Custom domain: `https://vistarakrafts.com`)  
 > **Owner Admin Portal:** `https://vistara-krafts-admin.vercel.app`  
 > **Cloudflare Edge Gateway:** Pages Functions (`functions/api/[[route]].js`)  
 > **Primary Author:** Antigravity Principal Systems Architect & Super-Designer  
@@ -279,7 +279,7 @@ sequenceDiagram
    - Strict CORS configuration whitelisting the production domains:
      - `https://vistara-krafts.vercel.app`
      - `https://vistara-krafts-admin.vercel.app`
-     - `https://vistarakrafts.in`
+     - `https://vistarakrafts.com`
    - `Cross-Origin-Opener-Policy: same-origin-allow-popups` enabled to support 1-Click Google and Apple OAuth popups.
 4. **Data Privacy Compliance:**
    - Complete compliance with the **Digital Personal Data Protection (DPDP) Act 2023** (explicit customer consent, clear privacy policies, data erasure capability).

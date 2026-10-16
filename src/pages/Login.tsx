@@ -4,7 +4,7 @@ import { Shield, Lock, Mail, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-r
 
 export const Login: React.FC = () => {
   const { login, loginWithGoogle, isLoading } = useAuth();
-  const [email, setEmail] = useState('owner@vistarakrafts.in');
+  const [email, setEmail] = useState('owner@vistarakrafts.com');
   const [password, setPassword] = useState('vistara2026');
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +77,7 @@ export const Login: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="owner@vistarakrafts.in"
+                placeholder="owner@vistarakrafts.com"
                 className="w-full h-11 pl-10 pr-3 rounded-xl bg-[#1c1b18] border border-[#3b372e] text-xs text-[#f9f8f5] focus:border-[#cda851] focus:ring-1 focus:ring-[#cda851] outline-none transition-colors"
               />
             </div>

@@ -1,7 +1,7 @@
 # TASKS.md — WORK BREAKDOWN STRUCTURE & ROADMAP
 
 > **Project Ecosystem:** Vistāra Krafts & POTRY Ceramics E-Commerce Platform  
-> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Custom domain: `https://vistarakrafts.in`)  
+> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Custom domain: `https://vistarakrafts.com`)  
 > **Owner Admin Portal:** `https://vistara-krafts-admin.vercel.app`  
 > **Last Updated:** October 2026  
 
@@ -87,7 +87,7 @@
 ### Phase 2: Cloudflare R2 Media Storage
 - [ ] Task 7.5: Execute `npx wrangler r2 bucket create vistara-media`.
 - [ ] Task 7.6: Apply CORS policy `r2-cors.json` to allow uploads from Vercel storefront and admin portal.
-- [ ] Task 7.7: Bind custom domain `media.vistarakrafts.in` to R2 bucket.
+- [ ] Task 7.7: Bind custom domain `media.vistarakrafts.com` to R2 bucket.
 
 ### Phase 3: Cloudflare Turnstile & KV Sessions
 - [ ] Task 7.8: Generate Turnstile Site Key & Secret Key in Cloudflare dashboard.

@@ -1,7 +1,7 @@
 # HANDOFF.md — OPERATIONAL PLAYBOOK & SYSTEM HANDOVER
 
 > **Project Ecosystem:** Vistāra Krafts & POTRY Ceramics E-Commerce Platform  
-> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Target domain: `https://vistarakrafts.in`)  
+> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Target domain: `https://vistarakrafts.com`)  
 > **Owner Admin Portal:** `https://vistara-krafts-admin.vercel.app`  
 > **Primary Author:** Antigravity Principal Systems Architect & Super-Designer  
 > **Handover Date:** October 2026  
@@ -22,7 +22,7 @@ This document provides a turnkey operational handover of the entire Vistāra Kra
 | **Owner Admin Portal** | [`abhieee-java/vistara-krafts-admin`](https://github.com/abhieee-java/vistara-krafts-admin) | [`vistara-krafts-admin.vercel.app`](https://vistara-krafts-admin.vercel.app) | React 19 · TypeScript · Vite · Tailwind v4 |
 | **Edge API Gateway** | Inside Storefront (`/functions/api/`) | `https://vistara-krafts.vercel.app/api` | Cloudflare Pages Functions (`[[route]].js`) |
 | **Serverless Database** | Schema in `cloudflare/schema.sql` | Cloudflare D1 (`vistara_krafts_db`) | Serverless SQLite at the Edge |
-| **Media & Assets Bucket** | Cloudflare R2 | `https://media.vistarakrafts.in` | S3-Compatible Cloudflare R2 Bucket |
+| **Media & Assets Bucket** | Cloudflare R2 | `https://media.vistarakrafts.com` | S3-Compatible Cloudflare R2 Bucket |
 
 ---
 
@@ -35,7 +35,7 @@ This document provides a turnkey operational handover of the entire Vistāra Kra
 | `TURNSTILE_SECRET_KEY` | Yes | Secret | Cloudflare Turnstile server verification secret. |
 | `VITE_RAZORPAY_KEY_ID` | Yes | Public | Razorpay Key ID (`rzp_live_...` or `rzp_test_...`). |
 | `RAZORPAY_KEY_SECRET` | Yes | Secret | Razorpay Key Secret for HMAC verification. |
-| `SITE_URL` | Yes | Public | Canonical production URL (`https://vistarakrafts.in`). |
+| `SITE_URL` | Yes | Public | Canonical production URL (`https://vistarakrafts.com`). |
 | `ENVIRONMENT` | Yes | Public | Set to `production`. |
 
 ### 2. Admin Portal Vercel Configuration (`vistara-krafts-admin`)
@@ -44,7 +44,7 @@ This document provides a turnkey operational handover of the entire Vistāra Kra
 | `VITE_USE_MOCK_SERVICES` | Yes | Public | Set to `false` when connecting to live Cloudflare backend. |
 | `VITE_API_URL` | Yes | Public | Base API URL: `https://vistara-krafts.vercel.app/api`. |
 | `VITE_RAZORPAY_KEY_ID` | Yes | Public | Razorpay Key ID for payments dashboard reconciliation. |
-| `VITE_R2_PUBLIC_DOMAIN` | Yes | Public | Base CDN URL: `https://media.vistarakrafts.in`. |
+| `VITE_R2_PUBLIC_DOMAIN` | Yes | Public | Base CDN URL: `https://media.vistarakrafts.com`. |
 
 ---
 
@@ -128,5 +128,5 @@ npx wrangler d1 execute vistara_krafts_db --remote --file=./cloudflare/schema.sq
 
 - **Principal Architect & Systems Lead:** Antigravity Super-Designer Team
 - **Studio Founder & Operating Owner:** Vistāra Krafts & Resin Art Memories Atelier
-- **Support Email:** `concierge@vistarakrafts.in` / `support@vistarakrafts.in`
+- **Support Email:** `concierge@vistarakrafts.com` / `support@vistarakrafts.com`
 - **Studio Address:** 42 Craft Enclave, Indiranagar 100 Feet Road, Bengaluru, Karnataka 560001, India

@@ -22,7 +22,7 @@ export const Security: React.FC = () => {
               Single-Owner Protected Console
             </h3>
             <p className="text-xs text-gray-500">
-              Authenticated Owner: <strong>{user?.email || 'owner@vistarakrafts.in'}</strong> • Mode: Zero Staff Hierarchies
+              Authenticated Owner: <strong>{user?.email || 'owner@vistarakrafts.com'}</strong> • Mode: Zero Staff Hierarchies
             </p>
           </div>
         </div>

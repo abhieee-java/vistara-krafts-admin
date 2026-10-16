@@ -46,7 +46,7 @@ export const authService = {
   async loginWithGoogle(): Promise<OwnerAuthUser> {
     await new Promise((res) => setTimeout(res, 600));
     const user: OwnerAuthUser = {
-      email: 'owner@vistarakrafts.in',
+      email: 'owner@vistarakrafts.com',
       name: 'Vistāra Krafts Owner (Google)',
       role: 'Owner',
       lastLogin: new Date().toISOString()

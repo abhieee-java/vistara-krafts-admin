@@ -3,7 +3,7 @@
 > **Project Ecosystem:** Vistāra Krafts & POTRY Ceramics E-Commerce Platform  
 > **Customer Storefront:** `https://vistara-krafts.vercel.app` (Repo: `https://github.com/abhieee-java/vistara-krafts`)  
 > **Owner Admin Portal:** `https://vistara-krafts-admin.vercel.app` (Repo: `https://github.com/abhieee-java/vistara-krafts-admin`)  
-> **Production Domain Target:** `https://vistarakrafts.in`  
+> **Production Domain Target:** `https://vistarakrafts.com`  
 > **Author & Architect:** Antigravity Super-Designer & Principal Systems Architect  
 > **Last Updated:** October 2026  
 

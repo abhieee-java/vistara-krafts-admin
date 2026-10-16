@@ -2,9 +2,9 @@
 
 > **Objective:** Step-by-step technical blueprint for activating real Cloudflare D1, R2, KV, Turnstile, and Razorpay production credentials without code redesign.  
 > **Target Production Domains:**  
-> - Customer Storefront: `https://vistara-krafts.vercel.app` → `https://vistarakrafts.in`  
-> - Owner Admin Portal: `https://vistara-krafts-admin.vercel.app` → `https://admin.vistarakrafts.in`  
-> - Edge Storage CDN: `https://media.vistarakrafts.in`  
+> - Customer Storefront: `https://vistara-krafts.vercel.app` → `https://vistarakrafts.com`  
+> - Owner Admin Portal: `https://vistara-krafts-admin.vercel.app` → `https://admin.vistarakrafts.com`  
+> - Edge Storage CDN: `https://media.vistarakrafts.com`  
 > **Last Updated:** October 2026  
 
 ---
@@ -86,8 +86,8 @@ Create a file `r2-cors.json`:
     "AllowedOrigins": [
       "https://vistara-krafts.vercel.app",
       "https://vistara-krafts-admin.vercel.app",
-      "https://vistarakrafts.in",
-      "https://admin.vistarakrafts.in",
+      "https://vistarakrafts.com",
+      "https://admin.vistarakrafts.com",
       "http://localhost:5173"
     ],
     "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
@@ -103,7 +103,7 @@ npx wrangler r2 bucket cors set vistara-media --file=./r2-cors.json
 
 ### Step 2.3: Connect Public Custom Domain
 1. In Cloudflare Dashboard → R2 → `vistara-media` → Settings → Public Access.
-2. Click **Connect Domain** and bind `media.vistarakrafts.in`.
+2. Click **Connect Domain** and bind `media.vistarakrafts.com`.
 3. Cloudflare will automatically provision edge SSL certificates.
 
 ---
@@ -112,7 +112,7 @@ npx wrangler r2 bucket cors set vistara-media --file=./r2-cors.json
 
 ### Step 3.1: Turnstile Bot Verification Setup
 1. In Cloudflare Dashboard → Turnstile → **Add Site**.
-2. Domain: `vistarakrafts.in` and `vistara-krafts.vercel.app`.
+2. Domain: `vistarakrafts.com` and `vistara-krafts.vercel.app`.
 3. Mode: Managed (non-interactive checkbox).
 4. Save the **Site Key** and **Secret Key**.
 
@@ -150,7 +150,7 @@ id = "YOUR_KV_NAMESPACE_ID"
 
 ---
 
-## 6. Phase 5: Domain & DNS Configuration (`vistarakrafts.in`)
+## 6. Phase 5: Domain & DNS Configuration (`vistarakrafts.com`)
 
 ### Step 5.1: Point DNS to Cloudflare
 Set registrar nameservers to Cloudflare:
@@ -178,7 +178,7 @@ TURNSTILE_SITE_KEY=0x4AAAAAA...
 TURNSTILE_SECRET_KEY=0x4AAAAAA...
 VITE_RAZORPAY_KEY_ID=rzp_live_...
 RAZORPAY_KEY_SECRET=...
-SITE_URL=https://vistarakrafts.in
+SITE_URL=https://vistarakrafts.com
 ENVIRONMENT=production
 ```
 
@@ -187,17 +187,17 @@ ENVIRONMENT=production
 VITE_USE_MOCK_SERVICES=false
 VITE_API_URL=https://vistara-krafts.vercel.app/api
 VITE_RAZORPAY_KEY_ID=rzp_live_...
-VITE_R2_PUBLIC_DOMAIN=https://media.vistarakrafts.in
+VITE_R2_PUBLIC_DOMAIN=https://media.vistarakrafts.com
 ```
 
 ### Step 6.2: End-to-End Verification Checklist
 ```markdown
-- [ ] 1. Load https://vistarakrafts.in (Storefront renders in < 1.2s, 0 console errors)
+- [ ] 1. Load https://vistarakrafts.com (Storefront renders in < 1.2s, 0 console errors)
 - [ ] 2. Register a new patron account with Turnstile challenge verification
 - [ ] 3. Verify user row created in Cloudflare D1: SELECT * FROM users
 - [ ] 4. Add "UltraClear 3:1 Resin" to Studio Bag and proceed to Razorpay test checkout
 - [ ] 5. Complete payment and verify order row created in D1: SELECT * FROM orders
-- [ ] 6. Log into Admin Portal (https://admin.vistarakrafts.in)
+- [ ] 6. Log into Admin Portal (https://admin.vistarakrafts.com)
 - [ ] 7. Confirm real-time order appears in Orders table
 - [ ] 8. Advance order stage to "In Transit" and verify customer view updates
 - [ ] 9. Upload high-res product photo via Admin Product Modal and verify asset in R2

@@ -555,7 +555,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   storeName: 'Vistāra Krafts',
   brandTagline: 'Resin Art Memories × Optical Epoxy Atelier',
   instagramHandle: '@resin.art.memories',
-  contactEmail: 'atelier@vistarakrafts.in',
+  contactEmail: 'atelier@vistarakrafts.com',
   contactPhone: '+91 98450 12345',
   currency: 'INR (₹)',
   freeShippingThreshold: 1499,

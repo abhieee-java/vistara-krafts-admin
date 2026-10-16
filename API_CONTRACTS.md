@@ -2,7 +2,7 @@
 
 > **API Gateway:** Cloudflare Pages Functions (`functions/api/[[route]].js`)  
 > **Base URL (Production):** `https://vistara-krafts.vercel.app/api`  
-> **Custom Domain Target:** `https://api.vistarakrafts.in` / `https://vistarakrafts.in/api`  
+> **Custom Domain Target:** `https://api.vistarakrafts.com` / `https://vistarakrafts.com/api`  
 > **Protocol:** HTTPS / HTTP/2 & HTTP/3  
 > **Payload Format:** JSON (`application/json; charset=utf-8`)  
 > **Last Updated:** October 2026  
@@ -348,7 +348,7 @@ Creates or updates a product in the catalog.
   "colors": [],
   "shapes": [],
   "sizes": [],
-  "image": "https://media.vistarakrafts.in/products/paperweight.jpg",
+  "image": "https://media.vistarakrafts.com/products/paperweight.jpg",
   "description": "Optical acrylic-epoxy paperweight encasing heirloom dried botanicals."
 }
 ```
@@ -367,7 +367,7 @@ Executes a stock adjustment with full audit attribution.
   "adjustment": 20,
   "reason": "RESTOCK",
   "notes": "Received 20 factory units of 3:1 resin kit batch #B892.",
-  "adjustedBy": "admin@vistarakrafts.in"
+  "adjustedBy": "admin@vistarakrafts.com"
 }
 ```
 
@@ -403,7 +403,7 @@ Generates a presigned S3/R2 direct upload URL for product photography.
 {
   "ok": true,
   "uploadUrl": "https://vistara-media.<account>.r2.cloudflarestorage.com/products/varmala-hero.jpg?X-Amz-Signature=...",
-  "publicUrl": "https://media.vistarakrafts.in/products/varmala-hero.jpg",
+  "publicUrl": "https://media.vistarakrafts.com/products/varmala-hero.jpg",
   "key": "products/varmala-hero.jpg"
 }
 ```
@@ -438,7 +438,7 @@ Outputs AEO (Answer Engine Optimization) and JSON-LD discovery payloads for AI s
 {
   "ok": true,
   "siteUrl": "https://vistara-krafts.vercel.app",
-  "futureCustomDomain": "https://vistarakrafts.in",
+  "futureCustomDomain": "https://vistarakrafts.com",
   "brand": "Vistāra Krafts × Resin Art Memories (@resin.art.memories)",
   "geo": {
     "country": "IN",
