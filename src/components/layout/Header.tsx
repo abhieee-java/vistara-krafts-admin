@@ -89,9 +89,9 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
       {/* Right section: System state & Owner Profile */}
       <div className="flex items-center gap-3">
         {/* Service Readiness Pill */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-semibold">
-          <Wifi className="w-3 h-3 text-amber-600 animate-pulse" />
-          <span>Local Mock Layer Active</span>
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-semibold">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>Live Supabase Connected</span>
         </div>
 
         {/* Owner Info & Logout */}
