@@ -12,7 +12,8 @@ import {
   Filter,
   CheckCircle2,
   XCircle,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 
 interface ProductsProps {
@@ -26,8 +27,16 @@ export const Products: React.FC<ProductsProps> = ({
   isCreateModalOpen,
   setIsCreateModalOpen
 }) => {
-  const { products, addProduct, updateProduct, deleteProduct, duplicateProduct, toggleStock } =
-    useStore();
+  const {
+    products,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    duplicateProduct,
+    toggleStock,
+    refreshFromDb,
+    isLoadingDb
+  } = useStore();
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -89,6 +98,40 @@ export const Products: React.FC<ProductsProps> = ({
           Add Product
         </button>
       </div>
+
+      {/* Zero Mock Data Empty Catalog State */}
+      {products.length === 0 && !search && selectedCategory === 'all' && (
+        <div className="bg-white border border-[#e6e2d8] rounded-2xl p-10 text-center max-w-xl mx-auto shadow-sm space-y-4 my-6">
+          <div className="w-14 h-14 rounded-2xl bg-[#faf8f5] border border-[#e6e2d8] flex items-center justify-center text-[#cda851] mx-auto shadow-sm">
+            <Sparkles className="w-7 h-7" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-serif font-bold text-base text-[#1c1b18]">
+              Your Atelier Catalog is Ready
+            </h4>
+            <p className="text-xs text-gray-500 leading-relaxed max-w-md mx-auto">
+              Zero mock data active. Only real products created in this portal or imported into your Supabase database will appear here and on the storefront.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={onOpenNewProduct}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#cda851] text-[#1c1b18] text-xs font-bold hover:bg-[#dfc27d] transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              Add First Product
+            </button>
+            <button
+              onClick={refreshFromDb}
+              disabled={isLoadingDb}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#e6e2d8] text-xs font-semibold text-gray-700 hover:bg-[#faf8f5] transition-colors"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#cda851] ${isLoadingDb ? 'animate-spin' : ''}`} />
+              <span>{isLoadingDb ? 'Checking DB...' : 'Sync from Supabase'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Card List (Visible on Phone Screens < 768px) */}
       <div className="md:hidden space-y-3">

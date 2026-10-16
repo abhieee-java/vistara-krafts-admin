@@ -1,5 +1,4 @@
 import { InventoryMovement } from '../types';
-import { INITIAL_MOVEMENTS } from '../mock/initialData';
 import { productService } from './productService';
 
 const MOVEMENTS_STORAGE_KEY = 'vk_admin_movements_v1';
@@ -8,12 +7,15 @@ export const inventoryService = {
   getMovements(): InventoryMovement[] {
     try {
       const data = localStorage.getItem(MOVEMENTS_STORAGE_KEY);
-      if (data) return JSON.parse(data);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch (e) {
       console.error('Failed to load movements', e);
     }
-    localStorage.setItem(MOVEMENTS_STORAGE_KEY, JSON.stringify(INITIAL_MOVEMENTS));
-    return INITIAL_MOVEMENTS;
+    // Strictly zero mock data: return empty list if no movements recorded yet
+    return [];
   },
 
   adjustStock(

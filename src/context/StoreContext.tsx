@@ -32,6 +32,8 @@ interface StoreContextType {
   toasts: ToastMessage[];
   addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
+  isLoadingDb: boolean;
+  refreshFromDb: () => Promise<void>;
   // Products
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
@@ -68,18 +70,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [coupons, setCoupons] = useState<Coupon[]>(() => {
     try {
       const saved = localStorage.getItem('vk_admin_coupons_v1');
-      return saved ? JSON.parse(saved) : INITIAL_COUPONS;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return INITIAL_COUPONS;
+      return [];
     }
   });
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
     try {
       const saved = localStorage.getItem('vk_admin_audit_logs_v1');
-      return saved ? JSON.parse(saved) : INITIAL_AUDIT_LOGS;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return INITIAL_AUDIT_LOGS;
+      return [];
     }
   });
   const [settings, setSettings] = useState<StoreSettings>(() => {
@@ -91,6 +93,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
 
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
@@ -119,15 +122,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, []);
 
-  // Initial load & Live Supabase Synchronization (Zero Mock Data)
+  const refreshFromDb = useCallback(async () => {
+    setIsLoadingDb(true);
+    try {
+      const [liveProds, liveOrders, liveCust] = await Promise.all([
+        productService.fetchFromSupabase(),
+        orderService.fetchFromSupabase(),
+        customerService.fetchFromSupabase()
+      ]);
+      setProducts(liveProds);
+      setOrders(liveOrders);
+      setCustomers(liveCust);
+      setMovements(inventoryService.getMovements());
+    } finally {
+      setIsLoadingDb(false);
+    }
+  }, []);
+
+  // Initial load & real-time sync
   useEffect(() => {
-    productService.fetchFromSupabase().then((prods) => {
-      setProducts(prods);
-    });
+    // 1. Initial instant load from cache
+    setProducts(productService.getProducts());
     setOrders(orderService.getOrders());
     setCustomers(customerService.getCustomers());
     setMovements(inventoryService.getMovements());
 
+    // 2. Refresh immediately from live Supabase
+    refreshFromDb();
+
+    // 3. Listen to cross-tab BroadcastChannel
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
@@ -136,17 +159,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setProducts(ev.data.products);
           }
         };
+        return () => channel.close();
       }
     } catch (e) {}
-
-    const interval = setInterval(() => {
-      productService.fetchFromSupabase().then((prods) => {
-        setProducts(prods);
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
+  }, [refreshFromDb]);
 
   // Product Actions
   const addProduct = (p: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -315,7 +331,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         addCoupon,
         toggleCoupon,
         deleteCoupon,
-        updateSettings
+        updateSettings,
+        isLoadingDb,
+        refreshFromDb
       }}
     >
       {children}
