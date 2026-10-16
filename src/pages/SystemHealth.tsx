@@ -24,9 +24,9 @@ export const SystemHealth: React.FC = () => {
 
   const getServiceIcon = (service: string) => {
     switch (service) {
-      case 'cloudflare-d1':
+      case 'supabase-db':
         return Database;
-      case 'cloudflare-r2':
+      case 'cloudinary':
         return HardDrive;
       case 'razorpay':
         return CreditCard;
@@ -43,7 +43,7 @@ export const SystemHealth: React.FC = () => {
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-[#cda851]" />
             <h3 className="font-serif font-bold text-lg text-[#1c1b18]">
-              Cloudflare &amp; Payment Service Health
+              Cloud Services &amp; Payment Health
             </h3>
           </div>
           <p className="text-xs text-gray-500 mt-1">
@@ -121,20 +121,20 @@ export const SystemHealth: React.FC = () => {
       {/* Production Migration Roadmap */}
       <div className="p-6 rounded-2xl bg-[#faf8f5] border border-[#e6e2d8] space-y-3">
         <h4 className="font-serif font-bold text-sm text-[#1c1b18]">
-          One-Click Cloudflare / Razorpay Credentials Switch Guide
+          One-Click Supabase, Cloudinary &amp; Razorpay Credentials Switch Guide
         </h4>
         <p className="text-xs text-gray-600 leading-relaxed">
           When you are ready to ship this to production with client or personal credentials:
         </p>
         <ol className="list-decimal list-inside text-xs text-gray-600 space-y-1.5 pl-2">
           <li>
-            <strong>Authentication:</strong> Point <code>authService.ts</code> to your Cloudflare Access or Supabase Auth project URL.
+            <strong>Authentication:</strong> Point <code>authService.ts</code> to your Supabase Auth project URL.
           </li>
           <li>
-            <strong>Database (D1):</strong> Replace <code>productService.ts</code> storage calls with <code>fetch('/api/products')</code> routed to Cloudflare Workers Pages Functions connected to D1.
+            <strong>Database (PostgreSQL):</strong> Connect to your Supabase PostgreSQL database using your Supabase project URL and Anon key.
           </li>
           <li>
-            <strong>Storage (R2):</strong> Configure S3-compatible R2 endpoint and credentials in <code>storageService.ts</code>.
+            <strong>Storage (Cloudinary):</strong> Configure your Cloudinary cloud name and unsigned upload preset in <code>storageService.ts</code>.
           </li>
           <li>
             <strong>Payments:</strong> Add your <code>RAZORPAY_KEY_ID</code> to trigger checkout popups.

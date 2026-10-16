@@ -162,7 +162,7 @@ export interface AuditLog {
 
 export interface SystemServiceStatus {
   name: string;
-  service: 'cloudflare-d1' | 'cloudflare-r2' | 'razorpay' | 'webhooks';
+  service: 'supabase-db' | 'cloudinary' | 'razorpay' | 'webhooks';
   status: 'mock' | 'connected' | 'disconnected' | 'error';
   latencyMs: number;
   details: string;

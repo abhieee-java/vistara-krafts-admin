@@ -3,15 +3,18 @@
 > **Brand Identity:** Vistāra Krafts Studio & Chemical Atelier (`@resin.art.memories`)  
 > **Sister Brand:** POTRY Contemporary Ceramic Studio  
 > **Headquarters & Studio:** 42 Craft Enclave, Indiranagar 100 Feet Road, Bengaluru, Karnataka, India (560001)  
-> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Custom Domain: `https://vistarakrafts.com`)  
-> **Owner Admin Portal:** `https://vistara-krafts-admin.vercel.app`  
+> **Customer Storefront:** `https://vistara-krafts.vercel.app` (Target Domain: `https://vistarakrafts.com`)  
+> **Owner Admin Portal:** `https://vistara-krafts-admin.vercel.app` (Target Domain: To be configured by owner)  
+> **Backend & Database:** Supabase PostgreSQL 15+ (`supabase/schema.sql`) with Supabase Auth  
+> **Media CDN & Storage:** Cloudinary (`cloudinary-config.js` / `storageService.ts`)  
+> **Payment Gateway:** Razorpay (Indian Rupee transactions with automated webhooks)  
 > **Primary Domains:** Bridal Keepsake Preservation, Optical Epoxy Chemical Formulation, Contemporary Ceramic Homeware, Enterprise E-Commerce Operations  
 
 ---
 
 ## 1. Brand Heritage & Vision
 
-**Vistāra Krafts** is India’s foremost bridal varmala memory preservation studio and an ISO 9001:2015 certified manufacturer of high-purity optical epoxy casting systems. Operating primarily through its Instagram atelier (`@resin.art.memories`), the studio transforms perishable wedding garlands (*varmalas* / *jaimalas*), anniversary bouquets, and sacred celebration florals into forever-lasting, diamond-clear acrylic-epoxy crystal blocks.
+**Vistāra Krafts** is India’s premier bridal varmala memory preservation studio and an ISO 9001:2015 certified manufacturer of high-purity optical epoxy casting systems. Operating primarily through its Instagram atelier (`@resin.art.memories`), the studio transforms perishable wedding garlands (*varmalas* / *jaimalas*), anniversary bouquets, and sacred celebration florals into forever-lasting, diamond-clear acrylic-epoxy crystal blocks.
 
 Recognizing that customers frequently seek complementary tactile home décor, the brand integrates **POTRY**, an artisanal ceramic studio crafting stoneware pitchers, wabi-sabi planters, and textured tableware.
 
@@ -29,7 +32,7 @@ The Vistāra Krafts platform is engineered as two completely decoupled, compleme
 
 ```mermaid
 flowchart LR
-    subgraph Storefront ["1. Customer Storefront (Vercel / Cloudflare Pages)"]
+    subgraph Storefront ["1. Customer Storefront (Vercel CDN)"]
         A["Awwwards-Level UI & 120fps Kinetic Physics"]
         B["Interactive Epoxy Pour Calculator (3:1, 2:1, 1:1)"]
         C["Two-Part Auth & Gender Curation Flow"]
@@ -37,110 +40,81 @@ flowchart LR
         E["DPDP Act 2023 Consent & Indian PIN Verification"]
     end
 
-    subgraph AdminPortal ["2. Owner Admin Portal (Vercel)"]
+    subgraph AdminPortal ["2. Owner Admin Portal (Vercel SPA)"]
         F["Real-Time Executive Revenue Dashboard"]
-        G["Product Catalog CRUD + R2 Media Storage"]
+        G["Product Catalog CRUD + Cloudinary Media Engine"]
         H["Supplementary Varieties (Colors, Shapes, Sizes)"]
         I["Inventory Movement Ledger & Stock Adjustments"]
         J["Order Fulfillment Pipeline & GST Invoices"]
         K["Customer CRM & Razorpay Ledger"]
     end
 
-    Storefront <-->|"Real-Time Drops (BroadcastChannel) & Edge API (/api/*)"| AdminPortal
+    Storefront <-->|"Real-Time Drops (BroadcastChannel) & Supabase Realtime"| AdminPortal
 ```
 
----
-
-## 3. Customer Personas & Feed Personalization Model
-
-To streamline purchasing and maximize gifting conversion, Vistāra Krafts implements an intelligent **Two-Part Curation Architecture**:
-
-```mermaid
-flowchart TD
-    A["Customer Visits Storefront"] --> B["Browse Catalogue / Studio Bag / Pour Calculator"]
-    B --> C["Sign In / Create Account (Part 1: Credentials Only)"]
-    C --> D{"Part 2: Personalize Feed Modal"}
-    D -->|"👔 Male"| E["Masculine Feed Priority<br/>Executive Keepsakes, River Wood & Watches"]
-    D -->|"🌸 Female"| F["Feminine Feed Priority<br/>Bridal Varmala, Rose Quartz & Floral Trays"]
-    D -->|"Dismiss / Skip / Close ✕"| G["Default Universal Feed<br/>(Zero 'Universal' button ever exposed)"]
-```
-
-### Personas Defined
-
-#### 1. Curated for Him (`masculine`)
-- **Target Products:** Deep Pour river tables (`vk-epx-201`), geometric watch keepsakes, executive resin coasters, dark obsidian finishes, and POTRY charcoal planters (`potry-ceramic-002`).
-- **Gifting Occasions:** Groom's boutonniere preservation, corporate anniversary gifts, housewarming décor.
-
-#### 2. Curated for Her (`feminine`)
-- **Target Products:** Eternal 50mm Varmala Blocks (`ram-varmala-001`), Rose Quartz Preservation Trays (`ram-varmala-002`), Amethyst Geode Wall Art (`vk-geode-001`), and blush ceramic tableware.
-- **Gifting Occasions:** Wedding garland preservation, bridal shower keepsakes, festive home styling.
-
-#### 3. Universal Stage (`all` — Silent Default)
-- **Constraint:** The user must **never** see a button or tab labeled "Universal". If the customer chooses neither `👔 Male` nor `🌸 Female` (e.g., closes modal or clicks *"Skip for Now & Continue"*), they remain in this balanced, un-skewed state.
+### Architectural Division of Labor
+| Capability | Customer Storefront | Owner Admin Portal |
+| :--- | :--- | :--- |
+| **Primary Audience** | Retail patrons, brides, corporate gifters | Studio founders, operations manager, fulfillment team |
+| **Technology Stack** | Vanilla HTML5, ES2022 JavaScript, CSS Variables | React 19, TypeScript (strict), Vite, Tailwind CSS v4, Lucide Icons |
+| **Hosting** | Vercel Static CDN (`https://vistara-krafts.vercel.app`) | Vercel SPA (`https://vistara-krafts-admin.vercel.app`) |
+| **Custom Domain** | `https://vistarakrafts.com` | Configurable on custom subdomain |
+| **Database Authority** | Supabase PostgREST (Read catalog, submit orders) | Supabase PostgREST (Full CRUD with service role/admin auth) |
+| **Media Pipeline** | Cloudinary (Patron keepsake uploads) | Cloudinary (Direct unsigned product photo/video uploads) |
+| **Auth System** | Supabase Auth (Email/Password, Google/Apple OAuth) | Supabase Auth (Owner credentials, secure session refresh) |
+| **Realtime Sync** | `BroadcastChannel` listener + Supabase Realtime | `BroadcastChannel` broadcaster + Supabase Realtime |
 
 ---
 
-## 4. Master Product Catalogue (12 Flagship SKUs)
+## 3. Product Catalog & Brand Categories
 
-The catalog consists of 12 master products spanning three distinct product lines:
+The store catalog spans four tightly curated artisanal categories:
 
-| SKU | Product Title | Brand | Category | Affinity | Base Price (INR) | Key Feature |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `ram-varmala-001` | Eternal Varmala 50mm Floral Keepsake Block | Resin Art Memories | Keepsake | Feminine | ₹4,499 | 50mm diamond crystal, 3-layer UV seal |
-| `ram-varmala-002` | Bridal Rose Quartz Floral Preservation Tray | Resin Art Memories | Keepsake | Feminine | ₹5,999 | Genuine rose quartz chips, gold leaf handles |
-| `vk-epx-301` | UltraClear 3:1 Optical Casting Resin Kit (1.2kg) | Vistāra Krafts | Chemical | Unisex | ₹1,299 | ISO-9001, HALS UV stabilizer, bubble-release |
-| `vk-epx-201` | Deep Pour 2:1 River Table Epoxy System (3kg) | Vistāra Krafts | Chemical | Masculine | ₹2,899 | Pours up to 50mm per layer without exotherm |
-| `vk-epx-101` | High-Gloss 1:1 Doming & Topcoat Resin (1kg) | Vistāra Krafts | Chemical | Unisex | ₹1,099 | Scratch-resistant 90 Shore D surface |
-| `vk-epx-uv01` | Instant Solar Fast-Cure UV Resin (250g) | Vistāra Krafts | Chemical | Unisex | ₹649 | Cures in 90s under 365nm UV LED |
-| `vk-geode-001` | Amethyst & Crushed Quartz Resin Geode Wall Art | Vistāra Krafts | Art Décor | Feminine | ₹8,499 | Hand-crushed crystals, metallic mica veins |
-| `vk-ocean-001` | Pacific Teakwood Ocean Wave Resin Serving Board | Vistāra Krafts | Homeware | Unisex | ₹2,499 | Food-safe FDA compliant resin, aged teak |
-| `potry-ceramic-001`| Sienna Ridged Artisan Ceramic Pitcher | POTRY | Ceramic | Feminine | ₹1,899 | Hand-thrown stoneware, terracotta wash |
-| `potry-ceramic-002`| Wabi-Sabi Matte Charcoal Ceramic Planter | POTRY | Ceramic | Masculine | ₹1,499 | Textured coarse clay, drainage tray included |
-| `potry-ceramic-003`| Terracotta Sunburst Ceramic Incense Plate | POTRY | Ceramic | Unisex | ₹799 | Matte unglazed terracotta, brass holder |
-| `potry-varmala-cube`| Heritage Brass & Ceramic Flower Specimen Cube | POTRY x VK | Hybrid | Masculine | ₹3,299 | Ceramic pedestal with encased botanical resin |
-
----
-
-## 5. Supplementary Product Varieties & Gender Rules
-
-### 1. Varieties are Supplementary & Optional
-- Not every product requires variants. In fact, most artisanal keepsakes are one-of-a-kind.
-- **Admin Configuration:** The Admin Portal provides 3 optional fields:
-  - 🎨 **Colors:** e.g., `Royal Gold, Champagne Rose`
-  - 📐 **Shapes:** e.g., `Mughal Arch, Hexagon, Circle`
-  - 📏 **Sizes:** e.g., `6-inch Desk, 12-inch Royal`
-- **Zero Fallback Rule:** If left blank, the product has no varieties. The storefront does **not** inject dummy options like `"Classic Clear"` or `"Standard Atelier"`. The variety drawer button is completely omitted.
-
-### 2. Gender Targeting
-- Every product can be designated as:
-  - `✨ Universal (Men & Women)` (Default)
-  - `🌸 Mainly for Female / Women`
-  - `👔 Mainly for Male / Men`
-- Products tagged for specific genders receive subtle visual tags and priority positioning in the curated feed view.
+1. **Bridal Keepsake Blocks (`keepsake`):**
+   - Varmala Preservation Hexagon Diamond Block (3500g)
+   - Arch Floral Keepsake with Gold Foil Inlay
+   - Keepsake Ring Dish with Preserved Petals
+2. **Optical Epoxy Resins (`chemical`):**
+   - UltraClear 3:1 Epoxy Casting Resin (1.2kg kit)
+   - DeepPour 2:1 River Table Epoxy (3kg kit)
+   - GlassGloss 1:1 Art & Doming Topcoat (1kg kit)
+   - SunCure Single-Part UV Resin (250g)
+3. **Resin Art Décor (`art_decor`):**
+   - Coastal Ocean Resin Wooden Serving Platter
+   - Amethyst Geode Resin Wall Clock with Quartz Crystals
+   - Terrazzo Gold Flake Resin Coaster Set (Set of 4)
+4. **Artisanal Ceramics (`ceramic` - POTRY):**
+   - Sienna Ridged Terracotta Pitcher (1200ml)
+   - Raw Oatmeal Matte Stoneware Coffee Mug (350ml)
 
 ---
 
-## 6. Commercial Pricing, Tax & Discount Rules
+## 4. Key Platform Innovations
 
-1. **Currency:** All monetary values are strictly in Indian Rupees (`INR` / `₹`).
-2. **Goods and Services Tax (GST):**
-   - Standard 18% GST calculation supported.
-   - Prices in catalog are GST-inclusive; invoices split taxable amount and CGST (9%) + SGST (9%) / IGST (18%).
-3. **Volume Tier Discounts:**
-   - Buying 3+ units of a chemical system: **5% off**.
-   - Buying 5+ units: **10% off**.
-   - Buying 10+ units: **15% off**.
-4. **Free Shipping Threshold:** Orders of ₹1,499 and above qualify for Free Express BlueDart Air Shipping; below ₹1,499, a flat delivery fee of ₹149 is applied.
-5. **Luxury Gift Wrapping:** Available as an optional ₹99 add-on, featuring handmade cotton rag paper, wax seal stamp, and handwritten calligraphy note.
+### 1. Interactive Epoxy Pour Calculator
+- Storefront feature enabling resin artists to calculate exact Resin (Part A) and Hardener (Part B) weights in grams based on cavity dimensions (Rectangle, Circle, Cylinder) and mix ratios (`3:1`, `2:1`, `1:1`).
+- Dynamically integrated into the UltraClear 3:1 Product Detail Page and Custom Studio tab.
+
+### 2. Two-Part Authentication & Gentle Feed Curation
+- Designed to maximize sign-up conversion without questionnaire friction.
+- **Part 1:** Simple login or registration (Email/Password or 1-Click Google OAuth).
+- **Part 2:** Post-login studio curation asking *"Curate Your Studio Feed"* with options strictly `👔 Male` and `🌸 Female`.
+- **Universal Default Rule:** If the customer closes the dialog or clicks *"Skip for Now"*, the system silently sets `persona = 'all'`. There is **zero visible "Universal" button**, keeping the interface clean and elegant.
+
+### 3. Supplementary Varieties & Gender Targeting
+- In the Admin Portal, product variety fields (Colors, Shapes, Sizes) are supplementary:
+  - If left blank, the product is treated as **intact** (no color/shape/size variants exist, and no empty drawers or tags appear on the storefront).
+  - If values are entered, they render as interactive variant selectors on the storefront.
+- Products can be targeted to `Universal (Men & Women)`, `Mainly for Female / Women`, or `Mainly for Male / Men`, allowing gender-specific curation while keeping universal items visible to all.
+
+### 4. Zero Cloudflare Infrastructure Dependency
+- Completely eliminated previous Cloudflare D1/R2/KV bindings in favor of a clean, industry-standard **Supabase** (PostgreSQL 15+ + Supabase Auth) and **Cloudinary** (Asset Storage & Image Optimization) architecture.
 
 ---
 
-## 7. Legal, Compliance & Privacy Directives
+## 5. Deployment & Domain Topology
 
-- **Digital Personal Data Protection (DPDP) Act 2023:**
-  - Mandatory consent banner presented on initial storefront entry.
-  - Transparent opt-ins for marketing communications and strictly purposeful data storage.
-  - Right to erasure and data portability endpoints prepared.
-- **Indian Postal PIN Code Validation:**
-  - All checkout forms enforce 6-digit Indian postal code format (`^[1-9][0-9]{5}$`).
-  - Pre-validates regional courier deliverability (BlueDart / Delhivery priority lanes).
+- **Storefront Live Preview:** `https://vistara-krafts.vercel.app`
+- **Storefront Custom Domain:** `https://vistarakrafts.com` (configured on Vercel)
+- **Admin Portal Live Preview:** `https://vistara-krafts-admin.vercel.app`
+- **Admin Portal Domain:** Configured on Vercel with custom domain added when announced by owner.

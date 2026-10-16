@@ -4,18 +4,18 @@ export const systemService = {
   getServices(): SystemServiceStatus[] {
     return [
       {
-        name: 'Cloudflare D1 Database',
-        service: 'cloudflare-d1',
+        name: 'Supabase PostgreSQL Database',
+        service: 'supabase-db',
         status: 'mock',
         latencyMs: 14,
-        details: 'Active in Local SQLite/Storage Mock. Ready for D1 binding binding: DB in wrangler.toml'
+        details: 'Active in Local PostgreSQL/Storage Mock. Ready for Supabase URL & Anon Key in .env'
       },
       {
-        name: 'Cloudflare R2 Media Storage',
-        service: 'cloudflare-r2',
+        name: 'Cloudinary Media Storage & CDN',
+        service: 'cloudinary',
         status: 'mock',
         latencyMs: 22,
-        details: 'Active in Client Blob Mock. Ready for S3 API / R2 bucket "vistara-assets"'
+        details: 'Active in Client Blob Mock. Ready for Cloudinary cloud name & "vistara_products" preset'
       },
       {
         name: 'Razorpay Payment Gateway',

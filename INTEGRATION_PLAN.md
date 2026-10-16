@@ -1,37 +1,39 @@
 # INTEGRATION PLAN — PRODUCTION INFRASTRUCTURE CUTOVER
 
-> **Objective:** Step-by-step technical blueprint for activating real Cloudflare D1, R2, KV, Turnstile, and Razorpay production credentials without code redesign.  
+> **Objective:** Step-by-step technical blueprint for activating real Supabase, Cloudinary, and Razorpay production credentials without code redesign.  
 > **Target Production Domains:**  
 > - Customer Storefront: `https://vistara-krafts.vercel.app` → `https://vistarakrafts.com`  
-> - Owner Admin Portal: `https://vistara-krafts-admin.vercel.app` → `https://admin.vistarakrafts.com`  
-> - Edge Storage CDN: `https://media.vistarakrafts.com`  
+> - Owner Admin Portal: `https://vistara-krafts-admin.vercel.app` (Custom domain to be announced by owner)  
+> **Backend & Database:** Supabase PostgreSQL 15+ (`supabase/schema.sql`) with Supabase Auth  
+> **Media CDN & Storage:** Cloudinary (`storageService.ts` / `cloudinary-config.js`)  
+> **Payment Gateway:** Razorpay  
 > **Last Updated:** October 2026  
 
 ---
 
 ## 1. Production Integration Overview
 
-The platform is designed with a **Ready-to-Connect Service Architecture**. The entire UI, logic, form validation, and state machines are 100% complete. Transitioning to production requires zero frontend rewriting—only provisioning Cloudflare and Razorpay credentials and flipping configuration flags.
+The platform is designed with a **Ready-to-Connect Modular Architecture**. The entire UI, logic, form validation, state management, and error handling are 100% complete and verified. Transitioning to production requires zero frontend rewriting—only provisioning credentials in the Supabase, Cloudinary, and Razorpay dashboards and setting environment variables in Vercel.
 
 ```mermaid
 flowchart LR
-    subgraph Phase1 ["1. Cloudflare D1"]
-        P1["Create D1 DB<br/>& Execute schema.sql"]
+    subgraph Phase1 ["1. Supabase Setup"]
+        P1["Create Supabase Project<br/>& Run supabase/schema.sql"]
     end
-    subgraph Phase2 ["2. Cloudflare R2"]
-        P2["Create R2 Bucket<br/>& Bind Custom Domain"]
+    subgraph Phase2 ["2. Supabase Auth"]
+        P2["Configure Auth &<br/>Enable Google OAuth"]
     end
-    subgraph Phase3 ["3. Turnstile & KV"]
-        P3["Bind Turnstile Keys<br/>& KV Session Namespace"]
+    subgraph Phase3 ["3. Cloudinary CDN"]
+        P3["Create Unsigned Preset<br/>'vistara_products'"]
     end
     subgraph Phase4 ["4. Razorpay Gateway"]
-        P4["Provision Live Keys<br/>& Webhook Verification"]
+        P4["Provision Live Keys<br/>& Webhook Secret"]
     end
     subgraph Phase5 ["5. Domain & DNS"]
-        P5["Cloudflare DNS Setup<br/>& Vercel Aliases"]
+        P5["Vercel Custom Domain<br/>vistarakrafts.com"]
     end
     subgraph Phase6 ["6. Service Cutover"]
-        P6["Switch VITE_USE_MOCK_SERVICES=false<br/>& End-to-End Smoke Test"]
+        P6["Deploy Env Vars &<br/>Run verify-storefront.mjs"]
     end
 
     Phase1 --> Phase2 --> Phase3 --> Phase4 --> Phase5 --> Phase6
@@ -39,167 +41,148 @@ flowchart LR
 
 ---
 
-## 2. Phase 1: Cloudflare D1 Serverless SQL Provisioning
+## 2. Phase 1: Supabase Project & PostgreSQL Schema Setup
 
-### Step 1.1: Create Remote Database
-Execute using Wrangler CLI inside the project directory:
-```bash
-npx wrangler d1 create vistara_krafts_db
-```
-*Note the output `database_id` (e.g. `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`).*
+### Step 1.1: Create Remote Supabase Project
+1. Log into the [Supabase Dashboard](https://supabase.com/dashboard).
+2. Click **New Project**, select organization, and set:
+   - **Project Name:** `vistara-krafts-production`
+   - **Database Password:** Store securely in password vault.
+   - **Region:** `ap-south-1` (Mumbai, India) for lowest latency to Indian patrons.
 
-### Step 1.2: Update `wrangler.toml` Bindings
-Ensure `stitch_potry_e_commerce_storefront/wrangler.toml` contains the exact database ID:
-```toml
-[[d1_databases]]
-binding = "VISTARA_DB"
-database_name = "vistara_krafts_db"
-database_id = "YOUR_ACTUAL_CLOUDFLARE_D1_DATABASE_ID"
-```
+### Step 1.2: Execute Database DDL
+1. Open the Supabase **SQL Editor**.
+2. Paste the contents of [`supabase/schema.sql`](file:///C:/Users/Dell/.gemini/antigravity/scratch/vistara_krafts_admin_portal/supabase/schema.sql).
+3. Click **Run**.
+4. Verify that the 8 production tables are created:
+   - `public.profiles`
+   - `public.products`
+   - `public.orders`
+   - `public.inventory_logs`
+   - `public.payments`
+   - `public.settings`
+   - `public.coupons`
+   - `public.dpdp_consents`
 
-### Step 1.3: Apply Database Schema DDL
-Execute the canonical schema remotely:
-```bash
-npx wrangler d1 execute vistara_krafts_db --remote --file=./cloudflare/schema.sql
-```
-
-### Step 1.4: Verify Table Creation
-```bash
-npx wrangler d1 execute vistara_krafts_db --remote --command="SELECT name FROM sqlite_master WHERE type='table';"
-```
-*Expected tables:* `users`, `sessions`, `orders`, `products`, `inventory_logs`, `payments`, `settings`.
-
----
-
-## 3. Phase 2: Cloudflare R2 Object Storage Setup
-
-### Step 2.1: Provision R2 Bucket
-```bash
-npx wrangler r2 bucket create vistara-media
-```
-
-### Step 2.2: Configure CORS Policy
-Create a file `r2-cors.json`:
-```json
-[
-  {
-    "AllowedOrigins": [
-      "https://vistara-krafts.vercel.app",
-      "https://vistara-krafts-admin.vercel.app",
-      "https://vistarakrafts.com",
-      "https://admin.vistarakrafts.com",
-      "http://localhost:5173"
-    ],
-    "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
-    "AllowedHeaders": ["*"],
-    "MaxAgeSeconds": 3600
-  }
-]
-```
-Apply CORS to the bucket:
-```bash
-npx wrangler r2 bucket cors set vistara-media --file=./r2-cors.json
-```
-
-### Step 2.3: Connect Public Custom Domain
-1. In Cloudflare Dashboard → R2 → `vistara-media` → Settings → Public Access.
-2. Click **Connect Domain** and bind `media.vistarakrafts.com`.
-3. Cloudflare will automatically provision edge SSL certificates.
+### Step 1.3: Enable Realtime Replication
+In Supabase Dashboard under **Database** → **Replication**, confirm that the `supabase_realtime` publication includes:
+- `public.products`
+- `public.orders`
+- `public.inventory_logs`
 
 ---
 
-## 4. Phase 3: Cloudflare Turnstile & KV Session Store
+## 3. Phase 2: Supabase Auth Configuration
 
-### Step 3.1: Turnstile Bot Verification Setup
-1. In Cloudflare Dashboard → Turnstile → **Add Site**.
-2. Domain: `vistarakrafts.com` and `vistara-krafts.vercel.app`.
-3. Mode: Managed (non-interactive checkbox).
-4. Save the **Site Key** and **Secret Key**.
+### Step 2.1: Email & Password Auth
+1. Go to **Authentication** → **Providers** → **Email**.
+2. Ensure **Enable Email provider** is turned ON.
+3. Configure **Confirm email** according to business requirements (enabled for verified patrons).
 
-### Step 3.2: Create Session KV Namespace
-```bash
-npx wrangler kv:namespace create VISTARA_SESSIONS
-```
-Add the output namespace ID to `wrangler.toml`:
-```toml
-[[kv_namespaces]]
-binding = "VISTARA_SESSIONS"
-id = "YOUR_KV_NAMESPACE_ID"
-```
+### Step 2.2: Google OAuth Configuration
+1. In [Google Cloud Console](https://console.cloud.google.com), create an OAuth 2.0 Client ID.
+2. Under **Authorized redirect URIs**, add:
+   - `https://<YOUR_PROJECT_REF>.supabase.co/auth/v1/callback`
+3. In Supabase Dashboard, enable **Google** provider and enter:
+   - **Client ID**
+   - **Client Secret**
+
+### Step 2.3: Redirect URLs
+Under **Authentication** → **URL Configuration**, set:
+- **Site URL:** `https://vistarakrafts.com`
+- **Additional Redirect URLs:**
+  - `https://vistara-krafts.vercel.app`
+  - `https://vistara-krafts.vercel.app/**`
+  - `https://vistarakrafts.com/**`
+  - `https://vistara-krafts-admin.vercel.app`
+  - `https://vistara-krafts-admin.vercel.app/**`
 
 ---
 
-## 5. Phase 4: Razorpay Payment Gateway Integration
+## 4. Phase 3: Cloudinary Media Storage Setup
 
-### Step 4.1: Retrieve API Credentials
-1. Log into [Razorpay Dashboard](https://dashboard.razorpay.com).
-2. Navigate to **Settings** → **API Keys**.
-3. Generate Live API Keys:
-   - `Key Id`: `rzp_live_xxxxxxxxxxxx`
-   - `Key Secret`: `xxxxxxxxxxxxxxxxxxxxxxxx`
+### Step 3.1: Cloudinary Account & Cloud Name
+1. Sign in to the [Cloudinary Console](https://cloudinary.com/console).
+2. Copy your **Cloud Name** (e.g. `vistara-krafts`).
 
-### Step 4.2: Configure Webhook
-1. In Razorpay Dashboard → **Settings** → **Webhooks** → **Add New Webhook**.
-2. Webhook URL: `https://vistara-krafts.vercel.app/api/webhooks/razorpay`.
-3. Secret: Create a secure random string (e.g., `rzp_sec_v1stara_2026`).
-4. Active Events:
-   - `order.paid`
+### Step 3.2: Create Unsigned Upload Preset
+1. Go to **Settings** → **Upload** → **Upload presets**.
+2. Click **Add upload preset**:
+   - **Preset name:** `vistara_products` (and `vistara_keepsakes` for user floral uploads).
+   - **Signing Mode:** `Unsigned`.
+   - **Folder:** `vistara-products`.
+   - **Allowed formats:** `jpg, png, webp, gif`.
+   - **Max file size:** `10 MB`.
+3. Save the preset.
+
+---
+
+## 5. Phase 4: Razorpay Payment Gateway Provisioning
+
+### Step 4.1: Retrieve API Keys
+1. Log into the [Razorpay Dashboard](https://dashboard.razorpay.com).
+2. Go to **Settings** → **API Keys** → **Generate Live Key**.
+3. Copy:
+   - **Key ID:** `rzp_live_xxxxxxxxxxxxxx`
+   - **Key Secret:** Securely store for server-side webhook verification.
+
+### Step 4.2: Webhook Configuration
+1. In Razorpay Dashboard, navigate to **Settings** → **Webhooks**.
+2. Add Webhook endpoint: `https://<PROJECT_REF>.supabase.co/functions/v1/razorpay-webhook`.
+3. Subscribe to events:
    - `payment.captured`
    - `payment.failed`
-   - `refund.processed`
+   - `order.paid`
+4. Enter a strong secret string and record it as `RAZORPAY_WEBHOOK_SECRET`.
 
 ---
 
-## 6. Phase 5: Domain & DNS Configuration (`vistarakrafts.com`)
+## 6. Phase 5: Domain & DNS Configuration
 
-### Step 5.1: Point DNS to Cloudflare
-Set registrar nameservers to Cloudflare:
-- `ns1.cloudflare.com`
-- `ns2.cloudflare.com`
+### Customer Storefront (`vistarakrafts.com`)
+1. In the Vercel dashboard for `vistara-krafts`, open **Settings** → **Domains**.
+2. Add `vistarakrafts.com` and `www.vistarakrafts.com`.
+3. In your domain registrar (GoDaddy, Namecheap, Cloudflare Registrar), configure DNS:
+   | Type | Name | Value | TTL |
+   | :--- | :--- | :--- | :--- |
+   | `A` | `@` | `76.76.21.21` | Auto / 300 |
+   | `CNAME` | `www` | `cname.vercel-dns.com` | Auto / 300 |
+4. Vercel automatically issues an SSL certificate via Let's Encrypt.
 
-### Step 5.2: Configure DNS Records
-| Type | Name | Target | Proxy Status |
-| :--- | :--- | :--- | :--- |
-| `CNAME` | `@` | `cname.vercel-dns.com` | DNS Only (Gray Cloud) |
-| `CNAME` | `www` | `cname.vercel-dns.com` | DNS Only (Gray Cloud) |
-| `CNAME` | `admin` | `cname.vercel-dns.com` | DNS Only (Gray Cloud) |
-| `CNAME` | `media` | `vistara-media.r2.cloudflarestorage.com` | Proxied (Orange Cloud) |
+### Owner Admin Portal
+Configured on Vercel (`vistara-krafts-admin.vercel.app`), with custom domain configured when owner provides domain choice.
 
 ---
 
-## 7. Phase 6: Admin Portal & Storefront Cutover
+## 7. Phase 6: Environment Variables & Verification Checklist
 
-### Step 6.1: Update Vercel Environment Variables
-Set these variables in the respective Vercel project dashboards:
+### Vercel Environment Variables Matrix
 
-#### Storefront Project (`vistara-krafts`)
-```env
-TURNSTILE_SITE_KEY=0x4AAAAAA...
-TURNSTILE_SECRET_KEY=0x4AAAAAA...
-VITE_RAZORPAY_KEY_ID=rzp_live_...
-RAZORPAY_KEY_SECRET=...
-SITE_URL=https://vistarakrafts.com
-ENVIRONMENT=production
-```
+#### Customer Storefront (`stitch_potry_e_commerce_storefront`)
+| Variable | Value Description | Public/Private |
+| :--- | :--- | :--- |
+| `VITE_SUPABASE_URL` | `https://<PROJECT_REF>.supabase.co` | Public |
+| `VITE_SUPABASE_ANON_KEY` | Public anonymous JWT key | Public |
+| `VITE_CLOUDINARY_CLOUD_NAME` | Cloudinary cloud identifier | Public |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | `vistara_keepsakes` | Public |
+| `VITE_RAZORPAY_KEY_ID` | `rzp_live_xxxxxxxxxxxxxx` | Public |
 
-#### Admin Portal Project (`vistara-krafts-admin`)
-```env
-VITE_USE_MOCK_SERVICES=false
-VITE_API_URL=https://vistara-krafts.vercel.app/api
-VITE_RAZORPAY_KEY_ID=rzp_live_...
-VITE_R2_PUBLIC_DOMAIN=https://media.vistarakrafts.com
-```
+#### Owner Admin Portal (`vistara_krafts_admin_portal`)
+| Variable | Value Description | Public/Private |
+| :--- | :--- | :--- |
+| `VITE_USE_MOCK_SERVICES` | `false` (Set to activate live Supabase) | Public |
+| `VITE_SUPABASE_URL` | `https://<PROJECT_REF>.supabase.co` | Public |
+| `VITE_SUPABASE_ANON_KEY` | Public anonymous JWT key | Public |
+| `VITE_CLOUDINARY_CLOUD_NAME` | Cloud Name | Public |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | `vistara_products` | Public |
+| `VITE_RAZORPAY_KEY_ID` | `rzp_live_xxxxxxxxxxxxxx` | Public |
 
-### Step 6.2: End-to-End Verification Checklist
-```markdown
-- [ ] 1. Load https://vistarakrafts.com (Storefront renders in < 1.2s, 0 console errors)
-- [ ] 2. Register a new patron account with Turnstile challenge verification
-- [ ] 3. Verify user row created in Cloudflare D1: SELECT * FROM users
-- [ ] 4. Add "UltraClear 3:1 Resin" to Studio Bag and proceed to Razorpay test checkout
-- [ ] 5. Complete payment and verify order row created in D1: SELECT * FROM orders
-- [ ] 6. Log into Admin Portal (https://admin.vistarakrafts.com)
-- [ ] 7. Confirm real-time order appears in Orders table
-- [ ] 8. Advance order stage to "In Transit" and verify customer view updates
-- [ ] 9. Upload high-res product photo via Admin Product Modal and verify asset in R2
-- [ ] 10. Adjust stock by +10 units and verify inventory_logs audit record
-```
+---
+
+## 8. Final Go-Live Verification Smoke Test
+
+1. **Catalog Integrity:** Load `https://vistarakrafts.com/#/catalog` — verify all 12 items display with INR pricing and high-res imagery.
+2. **Product Varieties:** Edit a product in Admin Portal to add custom colors/sizes; verify changes immediately reflect on the live storefront.
+3. **Epoxy Pour Calculator:** Compute a 3:1 pour calculation on `#/custom-studio`; verify correct Part A and Part B weights in grams.
+4. **Order Flow:** Place a test order using Razorpay Test Mode; verify order appears instantly in the Admin Portal orders board.
+5. **CI/CD Test Runner:** Run `node verify-storefront.mjs` — ensure all 25 test suites pass with 0 failures.

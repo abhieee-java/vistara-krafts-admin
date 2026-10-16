@@ -3,7 +3,10 @@
 > **Project Ecosystem:** Vistāra Krafts & POTRY Ceramics E-Commerce Platform  
 > **Customer Storefront:** `https://vistara-krafts.vercel.app` (Repo: `https://github.com/abhieee-java/vistara-krafts`)  
 > **Owner Admin Portal:** `https://vistara-krafts-admin.vercel.app` (Repo: `https://github.com/abhieee-java/vistara-krafts-admin`)  
-> **Production Domain Target:** `https://vistarakrafts.com`  
+> **Production Domain Target:** `https://vistarakrafts.com` (Storefront; Admin portal domain to be assigned by owner)  
+> **Backend & Database:** Supabase PostgreSQL 15+ (`supabase/schema.sql`) with Supabase Auth  
+> **Media CDN & Storage:** Cloudinary (`cloudinary-config.js` / `storageService.ts`)  
+> **Payments:** Razorpay (INR transactions with webhook signature verification)  
 > **Author & Architect:** Antigravity Super-Designer & Principal Systems Architect  
 > **Last Updated:** October 2026  
 
@@ -16,20 +19,18 @@ When reading, modifying, auditing, or extending either codebase in this ecosyste
 ### 1. Strict Decoupling: Storefront vs. Admin Portal
 - **The Storefront (`stitch_potry_e_commerce_storefront`) is strictly customer-facing.**
   - There must **never** be an admin panel, owner dashboard, vendor login, inventory modifier, or CMS editor embedded in the storefront codebase.
-  - The storefront is an ultra-fast, zero-framework vanilla JS SPA designed for maximum conversion and Awwwards-level craft.
+  - The storefront is an ultra-fast, zero-framework vanilla JS SPA designed for maximum conversion, zero layout shift, and Awwwards-level craft.
 - **The Admin Portal (`vistara_krafts_admin_portal`) is an isolated administrative suite.**
   - Built with React 19, TypeScript, Vite, and Tailwind CSS v4.
   - Communicates with the backend via a clean, modular service layer (`authService`, `productService`, `inventoryService`, `orderService`, `customerService`, `storageService`, `systemService`).
   - Broadcasts catalog changes in real time via the browser `BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL')` to sync live customer tabs.
 
-### 2. Backend Authority: Cloudflare Ecosystem Exclusively
-- The backend architecture is built strictly on **Cloudflare**:
-  - **Cloudflare Pages & Pages Functions (`functions/api/[[route]].js`)**: Edge serverless compute.
-  - **Cloudflare D1 (`cloudflare/schema.sql`)**: Edge serverless SQLite SQL database.
-  - **Cloudflare R2**: High-performance S3-compatible media and asset storage.
-  - **Cloudflare KV**: Ephemeral high-speed session tokens and cache.
-  - **Cloudflare Turnstile**: Zero-friction privacy-preserving bot detection.
-- **Do NOT introduce Supabase, Firebase, AWS, or external database ORMs.** All data models must align with Cloudflare D1 SQL.
+### 2. Backend Authority: Supabase (Database & Auth) & Cloudinary (Storage)
+- The backend architecture is built strictly on **Supabase** and **Cloudinary**:
+  - **Supabase Database (`supabase/schema.sql`)**: PostgreSQL 15+ with Row-Level Security (RLS), triggers, and Realtime CDC.
+  - **Supabase Auth**: GoTrue engine supporting Email/Password, 1-Click Google OAuth, and secure JWT session handling.
+  - **Cloudinary Storage**: High-performance image and media storage with direct unsigned uploads and on-the-fly transformations (`f_auto,q_auto`).
+  - **Zero Cloudflare Dependencies**: Cloudflare D1, Cloudflare R2, Cloudflare KV, and Cloudflare Pages Functions have been completely replaced. Do NOT reintroduce Cloudflare backend services.
 
 ### 3. Payment Gateway: Razorpay Exclusively
 - All transactions use **Razorpay** in Indian Rupees (`INR` / `₹`).
@@ -74,21 +75,24 @@ When reading, modifying, auditing, or extending either codebase in this ecosyste
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer ["Client Applications"]
+    subgraph ClientLayer ["Client Applications (Vercel CDN)"]
         SF["Customer Storefront<br/>(Vanilla JS SPA · 120fps)"]
         AP["Owner Admin Portal<br/>(React 19 + TypeScript + Vite)"]
     end
 
     subgraph SyncLayer ["Real-Time Sync"]
         BC["BroadcastChannel<br/>'RAM_STUDIO_LIVE_DROP_CHANNEL'"]
+        SB_RT["Supabase Realtime<br/>PostgreSQL CDC"]
     end
 
-    subgraph EdgeLayer ["Cloudflare Edge (Pages Functions)"]
-        API["Edge Router<br/>/api/* (functions/api/[[route]].js)"]
-        AUTH["Auth & Turnstile<br/>PBKDF2 + Sessions"]
-        D1[("Cloudflare D1<br/>Serverless SQLite DB")]
-        KV[("Cloudflare KV<br/>Session Cache")]
-        R2[("Cloudflare R2<br/>Media & Assets Bucket")]
+    subgraph BackendLayer ["Supabase Backend Infrastructure"]
+        SB_AUTH["Supabase Auth Engine<br/>GoTrue (JWT, OAuth)"]
+        PG[("Supabase PostgreSQL DB<br/>profiles, products, orders, inventory")]
+        RLS["Row-Level Security (RLS)<br/>Public vs Authenticated Policies"]
+    end
+
+    subgraph MediaLayer ["Cloudinary Media CDN"]
+        CLD[("Cloudinary Asset Bucket<br/>Direct Unsigned Uploads & Transformations")]
     end
 
     subgraph ThirdParty ["External Integrations"]
@@ -97,68 +101,86 @@ flowchart TD
 
     SF <-->|Catalog Sync & Drops| BC
     AP <-->|Publish Product Drops| BC
-    SF -->|REST /api/*| API
-    AP -->|Service Layer /api/*| API
-    API --> AUTH
-    API --> D1
-    API --> KV
-    API --> R2
-    SF -->|Online Payments| RZP
-    AP -->|Refunds & Reconciliation| RZP
+    SF <-->|PostgreSQL CDC| SB_RT
+    AP <-->|PostgreSQL CDC| SB_RT
+
+    SF -->|Auth / Session| SB_AUTH
+    SF -->|Query Catalog & Place Orders| PG
+    AP -->|Admin Operations & CRUD| PG
+    PG --- RLS
+
+    SF -->|Upload Keepsake Photos| CLD
+    AP -->|Upload Product Imagery| CLD
+
+    SF -->|Pay in INR| RZP
+    RZP -->|Webhook Reconcile| PG
 ```
 
 ---
 
-## 3. Directory Layout & File Responsibilities
+## 3. Directory Structure & File Manifests
 
-### Repository A: Storefront (`stitch_potry_e_commerce_storefront`)
-| File / Directory | Purpose & Invariant |
+### Customer Storefront (`stitch_potry_e_commerce_storefront`)
+| File | Role & Description |
 | :--- | :--- |
-| `index.html` | Core SPA entry point with responsive meta, SEO JSON-LD graph, and modal shells. |
-| `app.js` | Main SPA router, DOM rendering, UI controllers, product cards, and liquid resin physics. |
-| `store-bridge.js` | Reactive state management, cart engine, volume tier pricing, auth state, and BroadcastChannel listener. |
-| `styles.css` / `tokens.css` | 60/30/10 warm gallery tokens, typography clamp rules, keyframe animations, and 44px touch targets. |
-| `functions/api/[[route]].js` | Cloudflare Pages Function edge API handling auth, orders, health, SEO, and session verification. |
-| `cloudflare/schema.sql` | Canonical D1 SQLite database DDL (`users`, `sessions`, `orders`). |
-| `verify-storefront.mjs` | Automated 25-suite verification runner testing schema, routes, pricing, and responsive layouts. |
+| `index.html` | Semantic single-page application shell, structured JSON-LD microdata, WCAG dialogs |
+| `app.js` | SPA routing, view rendering, pour calculator, modals, feed curation |
+| `store-bridge.js` | Core reactive state engine, cart calculations, GST, offline resilience |
+| `supabase-client.js` | Supabase API adapter (Auth, PostgREST queries, Realtime subscriptions) |
+| `cloudinary-config.js` | Cloudinary unsigned media upload engine and auto-optimization helpers |
+| `styles.css` / `tokens.css` | High-craft design tokens, GPU animations, glassmorphism, responsive grid |
+| `supabase/schema.sql` | Production PostgreSQL 15+ schema with RLS and triggers |
+| `verify-storefront.mjs` | Automated CI/CD test runner covering 25 comprehensive verification suites |
 
-### Repository B: Admin Portal (`vistara_krafts_admin_portal`)
-| File / Directory | Purpose & Invariant |
+### Owner Admin Portal (`vistara_krafts_admin_portal`)
+| File | Role & Description |
 | :--- | :--- |
-| `src/App.tsx` | Main application router, authenticated route guards, layout scaffolding. |
-| `src/context/` | React context providers for `AuthContext`, `RouterContext`, `StoreContext`. |
-| `src/services/` | Decoupled service layer (`authService`, `productService`, `inventoryService`, `orderService`, `customerService`, `storageService`, `systemService`). |
-| `src/pages/` | Production admin screens: `Dashboard`, `Products`, `Inventory`, `Orders`, `Customers`, `Analytics`, `Promotions`, `Security`, `Settings`, `SystemHealth`, `Login`. |
-| `src/components/products/` | `ProductFormModal.tsx` (Gender selector & supplementary varieties), `ImageUploader.tsx` (Cloudflare R2 image manager). |
-| `src/components/orders/` | `OrderDetailDrawer.tsx` (Status workflow & timeline), `InvoiceModal.tsx` (GST-compliant invoice printer). |
+| `src/App.tsx` | Main application shell, route definitions, layout wrapper, live alerts |
+| `src/pages/Dashboard.tsx` | Executive analytics, metric cards, revenue & order charts, quick stats |
+| `src/pages/Products.tsx` | Complete catalog manager, filtering, sorting, bulk operations, drop publisher |
+| `src/pages/Inventory.tsx` | Stock control, audit history, stock adjustments, low-stock alerts |
+| `src/pages/Orders.tsx` | Order fulfillment board, status workflows, tracking updates, GST invoices |
+| `src/pages/Customers.tsx` | Customer CRM, order histories, lifetime value metrics, segment filtering |
+| `src/pages/SystemHealth.tsx` | Real-time status monitors for Supabase, Cloudinary, Razorpay, Webhooks |
+| `src/services/*` | Modular service abstractions (auth, product, inventory, order, storage, system) |
+| `supabase/schema.sql` | Mirrored PostgreSQL schema matching storefront production contracts |
 
 ---
 
-## 4. Agent Execution Flowchart
+## 4. Agent Decision-Making Tree
+
+When assigned a task, follow this workflow to determine where and how to implement changes:
 
 ```mermaid
 flowchart TD
-    Req["Incoming Developer / User Task"] --> Classify{"Classify Task Type"}
+    Start["Receive Task / Bug / Feature Request"] --> Classify{"Which Application?"}
     
-    Classify -->|"Storefront UI / CSS"| S1["Check tokens.css, styles.css & index.html"]
-    Classify -->|"Storefront Logic / Cart"| S2["Check store-bridge.js & app.js"]
-    Classify -->|"Admin Portal UI / Pages"| A1["Check src/pages/ & src/components/"]
-    Classify -->|"Admin Service / Logic"| A2["Check src/services/ & src/context/"]
-    Classify -->|"Database / Edge API"| B1["Check cloudflare/schema.sql & functions/api/"]
+    Classify -->|"Customer Experience / Checkout / Curation"| SF["Work in stitch_potry_e_commerce_storefront"]
+    Classify -->|"Store Management / Inventory / Revenue / Admin"| AP["Work in vistara_krafts_admin_portal"]
+    Classify -->|"Database / Storage / Payments Integration"| Dual["Update Both Codebases & Shared Contracts"]
+    
+    SF --> SF_Check{"Does it touch backend data?"}
+    SF_Check -->|"Yes"| SF_SB["Use supabase-client.js or cloudinary-config.js"]
+    SF_Check -->|"No"| SF_UI["Modify app.js, store-bridge.js, or styles.css"]
+    SF_SB --> SF_Test["Run node verify-storefront.mjs (25/25 suites)"]
+    SF_UI --> SF_Test
 
-    S1 & S2 --> V1["Run: node verify-storefront.mjs<br/>(Must pass 25/25 suites)"]
-    A1 & A2 --> V2["Run: npm run build<br/>(Must pass tsc && vite build)"]
-    B1 --> V3["Validate D1 SQL syntax & API contracts"]
+    AP --> AP_Check{"Does it modify service layer?"}
+    AP_Check -->|"Yes"| AP_Service["Update src/services/* with Supabase/Cloudinary types"]
+    AP_Check -->|"No"| AP_UI["Update src/components/* or src/pages/*"]
+    AP_Service --> AP_Test["Run npm run build (tsc && vite build)"]
+    AP_UI --> AP_Test
 
-    V1 & V2 & V3 --> Ready["Ready for Commit & Push"]
+    Dual --> Docs["Synchronize 8 Master Documentation Files"]
+    SF_Test --> Commit["Stage, Commit with Semantic Message & Push"]
+    AP_Test --> Commit
+    Docs --> Commit
 ```
 
 ---
 
-## 5. Security & Secret Management Directives
-- **Zero Secrets in Client Code:** Never expose `CLOUDFLARE_API_TOKEN`, `TURNSTILE_SECRET_KEY`, or `RAZORPAY_KEY_SECRET` in frontend files.
-- **Environment Variables:**
-  - Client-safe keys: `VITE_RAZORPAY_KEY_ID`, `VITE_USE_MOCK_SERVICES`, `TURNSTILE_SITE_KEY`.
-  - Server-side only: `RAZORPAY_KEY_SECRET`, `TURNSTILE_SECRET_KEY`, `D1_DATABASE_ID`.
-- **PBKDF2 Password Hashing:** Client passwords must be hashed server-side using PBKDF2 with 50,000 SHA-256 iterations and a unique cryptographic salt.
-- **Session Tokens:** Generated via `crypto.randomUUID()`, hashed with SHA-256, and stored in HTTP-Only, SameSite=Lax cookies or Bearer headers.
+## 5. Security & Operational Rules for Agents
+
+- **Zero Secrets in Git:** Never commit live API secret keys, service role keys, or database master passwords. Always use environment variables (`VITE_SUPABASE_ANON_KEY`, `VITE_CLOUDINARY_CLOUD_NAME`, `VITE_RAZORPAY_KEY_ID`).
+- **Idempotent Migrations:** All SQL scripts in `supabase/schema.sql` must use `CREATE TABLE IF NOT EXISTS`, `DO $$ BEGIN ... END $$`, and safe index creation.
+- **Fail-Safe Mock Fallback:** When live API credentials are not yet configured in `.env`, services must gracefully fall back to in-memory reactive state with realistic sample data so development and evaluation never halt.

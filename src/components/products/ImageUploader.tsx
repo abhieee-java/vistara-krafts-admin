@@ -52,7 +52,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   return (
     <div className="space-y-3">
       <label className="block text-xs font-semibold text-[#1c1b18]">
-        Product Photography (Cloudflare R2 Ready)
+        Product Photography (Cloudinary Ready)
       </label>
 
       {/* Upload Box */}
@@ -80,7 +80,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       {isUploading && (
         <div className="space-y-1">
           <div className="flex justify-between text-[10px] font-semibold text-gray-600">
-            <span>Uploading to Cloudflare R2 bucket...</span>
+            <span>Uploading to Cloudinary CDN...</span>
             <span>{uploadProgress}%</span>
           </div>
           <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">

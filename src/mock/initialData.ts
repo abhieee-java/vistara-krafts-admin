@@ -514,7 +514,7 @@ export const INITIAL_SESSIONS: OwnerSession[] = [
   {
     id: 'sess-01',
     loginTime: '2026-10-14 17:30:00',
-    ipAddress: 'Cloudflare Edge (vistara-krafts-admin.vercel.app)',
+    ipAddress: 'Supabase Auth (vistara-krafts-admin.vercel.app)',
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0',
     status: 'active'
   },

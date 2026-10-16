@@ -1,9 +1,9 @@
-# API CONTRACTS — CLOUDFLARE EDGE API SPECIFICATION
+# API CONTRACTS — SUPABASE, CLOUDINARY & RAZORPAY SPECIFICATION
 
-> **API Gateway:** Cloudflare Pages Functions (`functions/api/[[route]].js`)  
-> **Base URL (Production):** `https://vistara-krafts.vercel.app/api`  
-> **Custom Domain Target:** `https://api.vistarakrafts.com` / `https://vistarakrafts.com/api`  
-> **Protocol:** HTTPS / HTTP/2 & HTTP/3  
+> **Database & Auth:** Supabase PostgREST & GoTrue API (`https://<PROJECT_REF>.supabase.co`)  
+> **Media CDN & Storage:** Cloudinary REST Upload API (`https://api.cloudinary.com/v1_1/<CLOUD_NAME>`)  
+> **Payment Gateway:** Razorpay API (`https://api.razorpay.com/v1`)  
+> **Protocol:** HTTPS / TLS 1.3  
 > **Payload Format:** JSON (`application/json; charset=utf-8`)  
 > **Last Updated:** October 2026  
 
@@ -11,441 +11,318 @@
 
 ## 1. Global Standards & Authentication Protocol
 
-### 1. Common Request Headers
+### 1. Common Supabase Request Headers
 | Header | Type | Description |
 | :--- | :--- | :--- |
-| `Content-Type` | String | Must be `application/json; charset=utf-8` on `POST` and `PUT` requests. |
-| `Authorization` | String | `Bearer <token>` (Issued upon login/registration). |
-| `X-CF-Turnstile-Token` | String | Cloudflare Turnstile token for abuse-sensitive routes. |
+| `apikey` | String | Supabase Public Anon Key (`VITE_SUPABASE_ANON_KEY`) or Service Role Key |
+| `Authorization` | String | `Bearer <JWT_TOKEN>` (User session token or service role key) |
+| `Content-Type` | String | `application/json` |
+| `Prefer` | String | E.g. `return=representation`, `resolution=merge-duplicates` |
 
-### 2. Common Response Headers
-```http
-Content-Type: application/json; charset=utf-8
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
-Access-Control-Allow-Headers: Content-Type, Authorization, X-CF-Turnstile-Token
-Cross-Origin-Opener-Policy: same-origin-allow-popups
-```
-
-### 3. Standard Error Envelope
-All error responses adhere strictly to this schema:
+### 2. Common Supabase Error Envelope
 ```json
 {
-  "ok": false,
-  "error": "Human-readable failure explanation.",
-  "code": "INVALID_CREDENTIALS",
-  "details": {}
+  "code": "PGRST116",
+  "details": null,
+  "hint": null,
+  "message": "JSON object requested, multiple (or no) rows returned"
 }
 ```
 
 ---
 
-## 2. Authentication & Patron Identity Endpoints
+## 2. Supabase Auth API (GoTrue)
 
-### `POST /api/auth/register`
-Creates a verified customer patron record in Cloudflare D1.
+Base URL: `https://<PROJECT_REF>.supabase.co/auth/v1`
+
+### 1. Register Patron / User
+**Endpoint:** `POST /auth/v1/signup`
 
 #### Request Body
 ```json
 {
   "email": "priya.sharma@example.com",
   "password": "UltraSecurePassword123!",
-  "name": "Priya Sharma",
+  "data": {
+    "full_name": "Priya Sharma",
+    "phone": "+91 98765 43210",
+    "address": "402 Lavender Towers, Indiranagar",
+    "pincode": "560038"
+  }
+}
+```
+
+#### Success Response (`200 OK`)
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "refresh_token": "u4W7rQ...",
+  "user": {
+    "id": "e4b3734c-2849-43c2-8438-e6d328cf0b41",
+    "aud": "authenticated",
+    "role": "authenticated",
+    "email": "priya.sharma@example.com",
+    "email_confirmed_at": "2026-10-16T10:00:00.000Z",
+    "user_metadata": {
+      "full_name": "Priya Sharma",
+      "phone": "+91 98765 43210"
+    }
+  }
+}
+```
+
+### 2. Login with Password
+**Endpoint:** `POST /auth/v1/token?grant_type=password`
+
+#### Request Body
+```json
+{
+  "email": "priya.sharma@example.com",
+  "password": "UltraSecurePassword123!"
+}
+```
+
+#### Success Response (`200 OK`)
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "refresh_token": "u4W7rQ...",
+  "user": {
+    "id": "e4b3734c-2849-43c2-8438-e6d328cf0b41",
+    "email": "priya.sharma@example.com"
+  }
+}
+```
+
+### 3. Sign Out
+**Endpoint:** `POST /auth/v1/logout`  
+**Header:** `Authorization: Bearer <access_token>`
+
+#### Success Response (`204 No Content`)
+
+### 4. Password Recovery
+**Endpoint:** `POST /auth/v1/recover`
+
+#### Request Body
+```json
+{
+  "email": "owner@vistarakrafts.com"
+}
+```
+
+#### Success Response (`200 OK`)
+```json
+{}
+```
+
+---
+
+## 3. Products API (Supabase PostgREST)
+
+Base URL: `https://<PROJECT_REF>.supabase.co/rest/v1/products`
+
+### 1. List Products (Storefront Catalog Query)
+**Endpoint:** `GET /rest/v1/products?select=*&is_active=eq.true&order=created_at.desc`  
+**Headers:** `apikey: <ANON_KEY>`
+
+#### Success Response (`200 OK`)
+```json
+[
+  {
+    "id": "ram-varmala-001",
+    "sku": "RAM-VK-HEX-3500",
+    "name": "Varmala Preservation Hexagon Diamond Block",
+    "brand": "Resin Art Memories",
+    "category": "keepsake",
+    "price": 8499.00,
+    "regular_price": 9999.00,
+    "stock": 14,
+    "in_stock": true,
+    "gender": "women",
+    "variants": [
+      {
+        "id": "ram-varmala-001-lg",
+        "name": "Grand 10-inch Hexagon (3.5kg)",
+        "sku": "RAM-VK-HEX-3500",
+        "price": 8499.00,
+        "stock": 8
+      }
+    ],
+    "specs": {
+      "resin": "UltraClear 3:1 UV-Resistant",
+      "cureTime": "72 Hours Pressure Cured",
+      "finish": "Hand Diamond-Polished 10,000 Grit"
+    },
+    "colors": ["Diamond Clear", "Champagne Gold Flecks"],
+    "shapes": ["Hexagon", "Octagon", "Arch"],
+    "sizes": ["8-inch (2.2kg)", "10-inch (3.5kg)"],
+    "is_active": true,
+    "created_at": "2026-10-10T12:00:00.000Z",
+    "updated_at": "2026-10-16T12:00:00.000Z"
+  }
+]
+```
+
+### 2. Create Product (Admin Portal Drop)
+**Endpoint:** `POST /rest/v1/products`  
+**Headers:** `Authorization: Bearer <ADMIN_OR_SERVICE_ROLE_KEY>`, `Prefer: return=representation`
+
+#### Request Body
+```json
+{
+  "id": "potry-pitcher-001",
+  "sku": "POTRY-PTCH-1200",
+  "name": "Sienna Ridged Terracotta Pitcher (1200ml)",
+  "brand": "POTRY",
+  "category": "ceramic",
+  "price": 2850.00,
+  "regular_price": 3200.00,
+  "stock": 22,
+  "in_stock": true,
+  "gender": "all",
+  "colors": ["Sienna Rust", "Wabi White"],
+  "shapes": ["Fluted", "Round Belly"],
+  "sizes": ["1200ml"],
+  "is_active": true
+}
+```
+
+#### Success Response (`201 Created`)
+Returns the newly created product row.
+
+### 3. Update Product
+**Endpoint:** `PATCH /rest/v1/products?id=eq.potry-pitcher-001`  
+**Headers:** `Authorization: Bearer <ADMIN_KEY>`, `Prefer: return=representation`
+
+#### Request Body
+```json
+{
+  "stock": 30,
+  "price": 2750.00
+}
+```
+
+---
+
+## 4. Orders API (Supabase PostgREST)
+
+Base URL: `https://<PROJECT_REF>.supabase.co/rest/v1/orders`
+
+### 1. Create Order
+**Endpoint:** `POST /rest/v1/orders`  
+**Headers:** `Authorization: Bearer <USER_JWT>`, `Prefer: return=representation`
+
+#### Request Body
+```json
+{
+  "id": "VK-2026-9021",
+  "customer_name": "Priya Sharma",
+  "customer_email": "priya.sharma@example.com",
   "phone": "+91 98765 43210",
   "address": "402 Lavender Towers, Indiranagar",
   "pincode": "560038",
-  "turnstileToken": "0.XXXXX.YYYYY",
-  "wishlist": ["ram-varmala-001", "vk-epx-301"]
-}
-```
-
-#### Success Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "token": "vk_cf_a8f93bc410294e8db09a2c3d_m7x9q",
-  "user": {
-    "id": "usr_94b8e21a0fbc",
-    "email": "priya.sharma@example.com",
-    "name": "Priya Sharma",
-    "phone": "+91 98765 43210",
-    "address": "402 Lavender Towers, Indiranagar",
-    "pincode": "560038",
-    "provider": "email",
-    "member_tier": "Verified Vistāra Patron",
-    "loyalty_points": 250,
-    "wishlist": ["ram-varmala-001", "vk-epx-301"]
-  }
-}
-```
-
----
-
-### `POST /api/auth/login`
-Authenticates existing credentials against PBKDF2 salt and hash stored in D1.
-
-#### Request Body
-```json
-{
-  "email": "priya.sharma@example.com",
-  "password": "UltraSecurePassword123!",
-  "turnstileToken": "0.XXXXX.YYYYY"
-}
-```
-
-#### Success Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "token": "vk_cf_a8f93bc410294e8db09a2c3d_m7x9q",
-  "user": {
-    "id": "usr_94b8e21a0fbc",
-    "email": "priya.sharma@example.com",
-    "name": "Priya Sharma",
-    "phone": "+91 98765 43210",
-    "address": "402 Lavender Towers, Indiranagar",
-    "pincode": "560038",
-    "provider": "email",
-    "member_tier": "Verified Vistāra Patron",
-    "loyalty_points": 250,
-    "wishlist": ["ram-varmala-001"]
-  }
-}
-```
-
----
-
-### `POST /api/auth/oauth`
-Exchanges Google One-Tap / Apple ID OAuth identity tokens and synchronizes profile details in D1.
-
-#### Request Body
-```json
-{
-  "provider": "google",
-  "credential": "eyJhbGciOiJSUzI1NiIs...",
-  "address": "Flat 12B, Palm Meadows",
-  "phone": "+91 91234 56789",
-  "pincode": "560066",
-  "wishlist": ["potry-ceramic-001"]
-}
-```
-
-#### Success Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "token": "vk_cf_e7c91240fba143d...",
-  "user": {
-    "id": "usr_goog_10823910293",
-    "email": "aditya.verma@gmail.com",
-    "name": "Aditya Verma",
-    "phone": "+91 91234 56789",
-    "address": "Flat 12B, Palm Meadows",
-    "pincode": "560066",
-    "provider": "google",
-    "member_tier": "Verified Vistāra Patron",
-    "loyalty_points": 250,
-    "wishlist": ["potry-ceramic-001"]
-  }
-}
-```
-
----
-
-### `GET /api/auth/me`
-Validates session token (via `Authorization: Bearer <token>` or `Cookie: vk_cf_session=...`).
-
-#### Success Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "user": {
-    "id": "usr_94b8e21a0fbc",
-    "email": "priya.sharma@example.com",
-    "name": "Priya Sharma",
-    "phone": "+91 98765 43210",
-    "address": "402 Lavender Towers, Indiranagar",
-    "pincode": "560038",
-    "provider": "email",
-    "member_tier": "Verified Vistāra Patron",
-    "loyalty_points": 250,
-    "wishlist": ["ram-varmala-001"]
-  }
-}
-```
-
----
-
-### `POST /api/auth/logout`
-Revokes active session in Cloudflare D1 and KV, clearing the session cookie.
-
-#### Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "message": "Session successfully terminated."
-}
-```
-
----
-
-## 3. Order Management Endpoints
-
-### `GET /api/orders`
-Retrieves orders placed by the currently authenticated user.
-
-#### Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "count": 1,
-  "orders": [
-    {
-      "order_id": "VK-2026-9021",
-      "user_id": "usr_94b8e21a0fbc",
-      "customer_name": "Priya Sharma",
-      "customer_email": "priya.sharma@example.com",
-      "phone": "+91 98765 43210",
-      "address": "402 Lavender Towers, Indiranagar, Bengaluru",
-      "pincode": "560038",
-      "subtotal": 4499,
-      "discount": 0,
-      "gst_amount": 809.82,
-      "total": 4499,
-      "payment_method": "Razorpay Online (UPI / Card)",
-      "gift_wrap": 1,
-      "mockup_approved": 1,
-      "status": "Order Confirmed • Studio Batch Allocated",
-      "stage_index": 1,
-      "items": [
-        {
-          "sku": "ram-varmala-001",
-          "title": "Eternal Varmala 50mm Floral Keepsake Block",
-          "price": 4499,
-          "quantity": 1,
-          "color": "Royal Gold",
-          "shape": "Mughal Arch",
-          "size": "12-inch Royal"
-        }
-      ],
-      "courier": "BlueDart Priority Air • AWB Pending",
-      "created_at": "2026-10-15 14:32:10"
-    }
-  ]
-}
-```
-
----
-
-### `POST /api/orders`
-Places an authenticated order into D1. Unauthenticated requests are rejected.
-
-#### Request Body
-```json
-{
-  "orderId": "VK-2026-9021",
-  "customerName": "Priya Sharma",
-  "customerEmail": "priya.sharma@example.com",
-  "phone": "+91 98765 43210",
-  "address": "402 Lavender Towers, Indiranagar, Bengaluru",
-  "pincode": "560038",
-  "subtotal": 4499,
-  "discount": 0,
-  "gstAmount": 809.82,
-  "total": 4499,
-  "paymentMethod": "Razorpay Online (UPI / Card)",
-  "giftWrap": true,
-  "mockupApproved": true,
+  "subtotal": 8499.00,
+  "discount": 500.00,
+  "gst_amount": 1439.82,
+  "total": 9438.82,
+  "payment_method": "razorpay",
+  "gift_wrap": true,
+  "mockup_approved": true,
+  "status": "processing",
+  "stage_index": 1,
   "items": [
     {
-      "sku": "ram-varmala-001",
-      "title": "Eternal Varmala 50mm Floral Keepsake Block",
-      "price": 4499,
+      "productId": "ram-varmala-001",
+      "title": "Varmala Preservation Hexagon Diamond Block",
+      "price": 8499.00,
       "quantity": 1,
-      "color": "Royal Gold",
-      "shape": "Mughal Arch",
-      "size": "12-inch Royal"
-    }
-  ],
-  "courier": "BlueDart Priority Air"
-}
-```
-
----
-
-### `PATCH /api/orders/:id/status` (Admin Portal)
-Updates order fulfillment status, courier tracking, and stage index.
-
-#### Request Body
-```json
-{
-  "status": "In Transit • Dispatched via BlueDart Air",
-  "stageIndex": 5,
-  "courier": "BlueDart Air • AWB #8491029312",
-  "notes": "Floral block polished and packaged with wax seal."
-}
-```
-
----
-
-## 4. Product Catalog Management Endpoints
-
-### `GET /api/products`
-Retrieves catalog products with optional query filtering.
-- Query Parameters:
-  - `category`: `keepsake` | `chemical` | `art_decor` | `homeware` | `ceramic`
-  - `gender`: `all` | `women` | `men`
-  - `search`: Case-insensitive text query
-
-#### Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "count": 12,
-  "products": [
-    {
-      "id": "ram-varmala-001",
-      "sku": "ram-varmala-001",
-      "name": "Eternal Varmala 50mm Floral Keepsake Block",
-      "brand": "Resin Art Memories",
-      "category": "keepsake",
-      "price": 4499,
-      "compareAtPrice": 5499,
-      "stock": 18,
-      "status": "active",
-      "featured": true,
-      "gender": "women",
-      "genderAffinity": "feminine",
-      "colors": ["Royal Gold", "Champagne Rose"],
-      "shapes": ["Mughal Arch", "Hexagon", "Circle"],
-      "sizes": ["6-inch Desk", "12-inch Royal"],
-      "image": "/assets/varmala-crystal.jpg",
-      "gallery": []
+      "selectedColor": "Diamond Clear",
+      "selectedShape": "Hexagon",
+      "selectedSize": "10-inch (3.5kg)"
     }
   ]
 }
 ```
 
----
-
-### `POST /api/products` & `PUT /api/products/:id` (Admin Portal)
-Creates or updates a product in the catalog.
-- If `colors`, `shapes`, or `sizes` are empty or omitted, they are stored as `[]`.
-
-#### Request Body
-```json
-{
-  "sku": "vk-custom-001",
-  "name": "Botanical Heritage Keepsake Paperweight",
-  "brand": "Vistāra Krafts",
-  "category": "keepsake",
-  "price": 1899,
-  "compareAtPrice": 2299,
-  "stock": 25,
-  "status": "active",
-  "featured": false,
-  "gender": "all",
-  "colors": [],
-  "shapes": [],
-  "sizes": [],
-  "image": "https://media.vistarakrafts.com/products/paperweight.jpg",
-  "description": "Optical acrylic-epoxy paperweight encasing heirloom dried botanicals."
-}
-```
+#### Success Response (`201 Created`)
+Returns the persisted order row.
 
 ---
 
-## 5. Inventory Movement & Adjustment Endpoints
+## 5. Media Upload API (Cloudinary Direct Unsigned)
 
-### `POST /api/inventory/adjust` (Admin Portal)
-Executes a stock adjustment with full audit attribution.
+Base URL: `https://api.cloudinary.com/v1_1/<CLOUDINARY_CLOUD_NAME>/image/upload`
 
-#### Request Body
+### Upload Media Asset
+**Method:** `POST`  
+**Content-Type:** `multipart/form-data`
+
+#### Form Parameters
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `file` | Binary File / Blob | JPG, PNG, WEBP, or GIF (max 10MB) |
+| `upload_preset` | String | Cloudinary unsigned preset (e.g. `vistara_products` or `vistara_keepsakes`) |
+| `folder` | String | Target Cloudinary directory (e.g. `vistara-products`) |
+
+#### Success Response (`200 OK`)
 ```json
 {
-  "sku": "vk-epx-301",
-  "adjustment": 20,
-  "reason": "RESTOCK",
-  "notes": "Received 20 factory units of 3:1 resin kit batch #B892.",
-  "adjustedBy": "admin@vistarakrafts.com"
+  "asset_id": "7d9a10...",
+  "public_id": "vistara-products/ram-varmala-001-hero",
+  "version": 1729080000,
+  "format": "webp",
+  "width": 1600,
+  "height": 1600,
+  "bytes": 245120,
+  "secure_url": "https://res.cloudinary.com/vistara-krafts/image/upload/v1729080000/vistara-products/ram-varmala-001-hero.webp"
 }
 ```
 
-#### Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "sku": "vk-epx-301",
-  "previousStock": 42,
-  "newStock": 62,
-  "logId": "inv_log_98f12a0c"
-}
+#### URL Auto-Transformation Formula
 ```
+https://res.cloudinary.com/{cloud_name}/image/upload/f_auto,q_auto,w_{width}/{public_id}.{format}
+```
+- `f_auto`: Automatically serves next-gen formats (AVIF, WEBP) based on browser support.
+- `q_auto`: Dynamic visual quality compression balancing crispness and byte weight.
+- `w_{width}`: Responsive scaling for device viewports (e.g. `w_800` for mobile, `w_1600` for Retina).
 
 ---
 
-## 6. Cloudflare R2 Media Storage Endpoints
+## 6. Razorpay Payment Gateway Contract
 
-### `POST /api/storage/upload-url` (Admin Portal)
-Generates a presigned S3/R2 direct upload URL for product photography.
-
-#### Request Body
-```json
-{
-  "filename": "varmala-hero.jpg",
-  "contentType": "image/jpeg",
-  "fileSize": 1849102
-}
-```
-
-#### Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "uploadUrl": "https://vistara-media.<account>.r2.cloudflarestorage.com/products/varmala-hero.jpg?X-Amz-Signature=...",
-  "publicUrl": "https://media.vistarakrafts.com/products/varmala-hero.jpg",
-  "key": "products/varmala-hero.jpg"
-}
-```
-
----
-
-## 7. System Health & SEO Telemetry Endpoints
-
-### `GET /api/health`
-Edge infrastructure diagnostic and binding telemetry.
-
-#### Response (`200 OK`)
-```json
-{
-  "ok": true,
-  "service": "Vistāra Krafts E-Commerce API",
-  "environment": "production",
-  "bindings": {
-    "d1": true,
-    "kv": true,
-    "r2": true
+### 1. Client-Side Options Initialization
+```javascript
+const rzpOptions = {
+  key: window.ENV?.RAZORPAY_KEY_ID || "rzp_live_PLACEHOLDER",
+  amount: Math.round(order.total * 100), // In Paise
+  currency: "INR",
+  name: "Vistāra Krafts Studio",
+  description: "Artisanal Keepsakes & Specialty Resin Chemicals",
+  image: "https://vistara-krafts.vercel.app/vistara-krafts-logo.jpg",
+  order_id: razorpayOrderId,
+  handler: function (response) {
+    // response: { razorpay_payment_id, razorpay_order_id, razorpay_signature }
+    verifyPaymentSignature(response);
   },
-  "timestamp": "2026-10-16T05:10:00.000Z"
-}
+  prefill: {
+    name: order.customer_name,
+    email: order.customer_email,
+    contact: order.phone
+  },
+  theme: {
+    color: "#031a38"
+  }
+};
+const rzp = new window.Razorpay(rzpOptions);
+rzp.open();
 ```
 
----
-
-### `GET /api/seo`
-Outputs AEO (Answer Engine Optimization) and JSON-LD discovery payloads for AI scrapers (Perplexity, ChatGPT, Gemini, Claude).
-```json
-{
-  "ok": true,
-  "siteUrl": "https://vistara-krafts.vercel.app",
-  "futureCustomDomain": "https://vistarakrafts.com",
-  "brand": "Vistāra Krafts × Resin Art Memories (@resin.art.memories)",
-  "geo": {
-    "country": "IN",
-    "placename": "Bengaluru, Karnataka, India",
-    "latitude": 12.9716,
-    "longitude": 77.5946
-  },
-  "aeoSchemas": ["Organization", "OnlineStore", "LocalBusiness", "Product", "FAQPage"]
-}
+### 2. Signature Verification Contract
+The payment signature is valid if and only if:
+```
+HMAC-SHA256(razorpay_order_id + "|" + razorpay_payment_id, RAZORPAY_KEY_SECRET) === razorpay_signature
 ```

@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
       case 'security':
         return 'Security, Sessions & Audit Logs';
       case 'system':
-        return 'System Health & Cloudflare Services';
+        return 'System Health & Cloud Services';
       case 'settings':
         return 'Store & Brand Settings';
       default:
