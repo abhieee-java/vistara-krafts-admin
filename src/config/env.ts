@@ -37,4 +37,14 @@ export const CLOUDINARY_UPLOAD_PRESET: string =
   env.CLOUDINARY_PRESET ||
   'sxr8cHma94PzeXQGH85s_1yT8FY';
 
+export const CLOUDINARY_API_KEY: string =
+  env.VITE_CLOUDINARY_API_KEY ||
+  env.CLOUDINARY_API_KEY ||
+  '157337468163933';
+
+export const CLOUDINARY_API_SECRET: string =
+  env.VITE_CLOUDINARY_API_SECRET ||
+  env.CLOUDINARY_API_SECRET ||
+  'sxr8cHma94PzeXQGH85s_1yT8FY';
+
 export const IS_PRODUCTION: boolean = env.PROD ?? false;
