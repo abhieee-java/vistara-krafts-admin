@@ -55,27 +55,45 @@ export const orderService = {
 
       if (Array.isArray(data)) {
         const orders: Order[] = data.map((row: any) => ({
-          id: row.id,
-          orderNumber: row.order_number,
-          customerName: row.customer_name,
-          customerEmail: row.customer_email,
-          customerPhone: row.customer_phone,
+          id: String(row.id),
+          orderNumber: row.order_number || row.orderId || row.id,
+          customerName: row.customer_name || 'Valued Patron',
+          customerEmail: row.customer_email || '',
+          customerPhone: row.phone || row.customer_phone || '',
           items: Array.isArray(row.items) ? row.items : [],
           subtotal: Number(row.subtotal || 0),
-          discountAmount: Number(row.discount_amount || 0),
+          discountAmount: Number(row.discount ?? row.discount_amount ?? 0),
           couponCode: row.coupon_code || '',
           shippingFee: Number(row.shipping_fee || 0),
-          totalAmount: Number(row.total_amount || 0),
-          orderStatus: row.order_status || 'new',
+          totalAmount: Number(row.total ?? row.total_amount ?? 0),
+          orderStatus: (row.order_status || 'new') as OrderStatus,
           paymentStatus: row.payment_status || 'pending',
           paymentMethod: row.payment_method || 'razorpay',
-          shippingAddress: row.shipping_address || {},
-          carrier: row.carrier,
-          trackingNumber: row.tracking_number,
-          notes: row.notes,
-          timeline: Array.isArray(row.timeline) ? row.timeline : [],
-          createdAt: row.created_at,
-          updatedAt: row.updated_at
+          shippingAddress: {
+            fullName: row.customer_name || 'Valued Patron',
+            phone: row.phone || row.customer_phone || '',
+            street: row.address || '',
+            city: row.city || '',
+            state: row.state || '',
+            pincode: row.pincode || ''
+          },
+          carrier: (row.courier || row.carrier || 'Delhivery') as any,
+          trackingNumber: row.tracking_number || '',
+          notes: row.notes || '',
+          timeline: [
+            {
+              status: (row.order_status || 'new') as OrderStatus,
+              timestamp: row.created_at || new Date().toISOString(),
+              note: 'Order placed by patron'
+            },
+            ...(row.tracking_number ? [{
+              status: 'shipped' as OrderStatus,
+              timestamp: row.updated_at || row.created_at || new Date().toISOString(),
+              note: `Dispatched via ${row.courier || row.carrier || 'courier'} (AWB: ${row.tracking_number})`
+            }] : [])
+          ],
+          createdAt: row.created_at || new Date().toISOString(),
+          updatedAt: row.updated_at || new Date().toISOString()
         }));
 
         this.saveOrders(orders);
@@ -90,6 +108,12 @@ export const orderService = {
 
   saveOrders(orders: Order[]): void {
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel.postMessage({ type: 'ORDERS_UPDATED', orders });
+      }
+    } catch (e) {}
   },
 
   updateStatus(orderId: string, status: OrderStatus, note?: string): Order {
@@ -115,13 +139,24 @@ export const orderService = {
     this.saveOrders(orders);
 
     if (isSupabaseConfigured) {
+      const stageMap: Record<string, number> = {
+        new: 1,
+        pending: 1,
+        processing: 2,
+        packed: 4,
+        shipped: 5,
+        delivered: 6,
+        cancelled: 1,
+        refunded: 1
+      };
       safeDbExec(
         () =>
           supabase
             .from('orders')
             .update({
               order_status: status,
-              timeline: updated.timeline,
+              stage_index: stageMap[status] || 2,
+              notes: note || order.notes || '',
               updated_at: new Date().toISOString()
             })
             .eq('id', orderId),
@@ -162,10 +197,10 @@ export const orderService = {
           supabase
             .from('orders')
             .update({
-              carrier,
+              courier: carrier,
               tracking_number: trackingNumber,
               order_status: 'shipped',
-              timeline: updated.timeline,
+              stage_index: 5,
               updated_at: new Date().toISOString()
             })
             .eq('id', orderId),
@@ -211,7 +246,6 @@ export const orderService = {
             .update({
               order_status: 'refunded',
               payment_status: 'refunded',
-              timeline: updated.timeline,
               updated_at: new Date().toISOString()
             })
             .eq('id', orderId),

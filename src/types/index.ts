@@ -98,6 +98,7 @@ export interface Order {
   shippingAddress: ShippingAddress;
   carrier?: 'Delhivery' | 'BlueDart' | 'DTDC';
   trackingNumber?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
   timeline: {
