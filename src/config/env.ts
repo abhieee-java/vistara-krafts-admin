@@ -35,7 +35,7 @@ export const CLOUDINARY_UPLOAD_PRESET: string =
   env.VITE_CLOUDINARY_UPLOAD_PRESET ||
   env.CLOUDINARY_UPLOAD_PRESET ||
   env.CLOUDINARY_PRESET ||
-  'sxr8cHma94PzeXQGH85s_1yT8FY';
+  '';
 
 export const CLOUDINARY_API_KEY: string =
   env.VITE_CLOUDINARY_API_KEY ||

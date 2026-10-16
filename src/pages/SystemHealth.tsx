@@ -158,7 +158,7 @@ export const SystemHealth: React.FC = () => {
               <div className="flex items-center justify-between pt-1">
                 <span className="text-[10px] text-gray-400 font-mono">
                   {svc.id === 'supabase-db' && `PostgreSQL REST & Realtime • ${SUPABASE_URL}`}
-                  {svc.id === 'cloudinary' && `Cloud: ${CLOUDINARY_CLOUD_NAME} • Preset: ${CLOUDINARY_UPLOAD_PRESET}`}
+                  {svc.id === 'cloudinary' && `Cloud: ${CLOUDINARY_CLOUD_NAME} • Authenticated API (Signed Mode Active)`}
                   {svc.id === 'storefront-bridge' && 'BroadcastChannel & Polling'}
                   {svc.id === 'supabase-auth' && 'GoTrue JWT Single-Owner Guard'}
                   {svc.id === 'razorpay' && 'Standard Checkout Modal'}
@@ -192,7 +192,7 @@ export const SystemHealth: React.FC = () => {
           </div>
           <div className="p-3 bg-white rounded-xl border border-[#e6e2d8]">
             <span className="font-bold text-[#1c1b18] block mb-1">Media CDN &amp; Storage:</span>
-            <span>Cloudinary cloud <code>{CLOUDINARY_CLOUD_NAME}</code> with preset <code>{CLOUDINARY_UPLOAD_PRESET}</code>.</span>
+            <span>Cloudinary cloud <code>{CLOUDINARY_CLOUD_NAME}</code> (Direct SHA-1 Signed API • No preset required).</span>
           </div>
           <div className="p-3 bg-white rounded-xl border border-[#e6e2d8]">
             <span className="font-bold text-[#1c1b18] block mb-1">Storefront Synchronization:</span>

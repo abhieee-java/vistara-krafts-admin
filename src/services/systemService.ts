@@ -38,7 +38,7 @@ export const systemService = {
         status: cloudStatus.configured ? 'connected' : 'mock',
         latencyMs: 24,
         details: cloudStatus.configured
-          ? `Active Global CDN for cloud "${cloudStatus.cloudName}". Upload preset: "${cloudStatus.uploadPreset}".`
+          ? `Active Global CDN for cloud "${cloudStatus.cloudName}". Authenticated Signed Mode (No upload preset required).`
           : 'Ready for Cloudinary cloud name in environment'
       },
       {
