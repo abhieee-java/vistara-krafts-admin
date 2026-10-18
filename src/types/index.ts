@@ -51,6 +51,11 @@ export interface Product {
   sizes?: (string | ProductVarietyOption)[];
   gender?: ProductGender;
   genderAffinity?: 'neutral' | 'masculine' | 'feminine';
+  description?: string;
+  brand?: string;
+  specs?: Record<string, any>;
+  isActive?: boolean;
+  status?: string;
   createdAt: string;
   updatedAt: string;
 }

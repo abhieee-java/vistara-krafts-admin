@@ -56,7 +56,6 @@ export const productService = {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('is_active', true)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -101,13 +100,9 @@ export const productService = {
     const updated = [product, ...products];
     this.saveProducts(updated);
 
-    // Asynchronously insert into Supabase via RPC (bypasses RLS) and direct fallback
+    // Asynchronously insert into Supabase directly
     if (isSupabaseConfigured) {
       const row = mapProductToRow(product);
-      safeDbExec(
-        () => supabase.rpc('import_catalog_batch', { p_products: [row] }),
-        'insert product via RPC'
-      );
       safeDbExec(
         () => supabase.from('products').insert([row]),
         'insert product direct'
@@ -130,13 +125,9 @@ export const productService = {
     products[idx] = updatedProduct;
     this.saveProducts(products);
 
-    // Asynchronously update in Supabase via RPC (bypasses RLS) and direct fallback
+    // Asynchronously update in Supabase directly
     if (isSupabaseConfigured) {
       const row = mapProductToRow(updatedProduct);
-      safeDbExec(
-        () => supabase.rpc('import_catalog_batch', { p_products: [row] }),
-        'update product via RPC'
-      );
       safeDbExec(
         () => supabase.from('products').update(row).eq('id', id),
         'update product direct'
@@ -152,26 +143,15 @@ export const productService = {
     const filtered = products.filter((p) => p.id !== id);
     this.saveProducts(filtered);
 
-    // Asynchronously mark inactive / delete in Supabase
-    if (isSupabaseConfigured) {
-      if (itemToDelete) {
-        // Soft delete via RPC: marks is_active: false so it drops out of storefront instantly
-        safeDbExec(
-          () => supabase.rpc('import_catalog_batch', {
-            p_products: [{
-              id: itemToDelete.id,
-              sku: itemToDelete.sku,
-              is_active: false,
-              status: 'archived'
-            }]
-          }),
-          'soft delete product via RPC'
-        );
-      }
-      // Also attempt hard delete directly on table if permitted
+    // Safely mark inactive / archive in Supabase without deleting records or corrupting fields
+    if (isSupabaseConfigured && itemToDelete) {
       safeDbExec(
-        () => supabase.from('products').delete().eq('id', id),
-        'delete product direct'
+        () => supabase.from('products').update({
+          is_active: false,
+          status: 'archived',
+          updated_at: new Date().toISOString()
+        }).eq('id', id),
+        'archive product direct'
       );
     }
   },

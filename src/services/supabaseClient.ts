@@ -142,6 +142,11 @@ export function mapRowToProduct(row: any): Product {
     sizes: Array.isArray(sizes) ? sizes : [],
     gender: (row.gender || 'all') as ProductGender,
     genderAffinity: (row.gender_affinity || 'neutral') as any,
+    description: String(row.description || row.subtitle || ''),
+    brand: String(row.brand || 'Vistāra Krafts'),
+    specs: specs || {},
+    isActive: row.is_active !== false,
+    status: row.status || (row.is_active !== false ? 'active' : 'archived'),
     createdAt: row.created_at || new Date().toISOString(),
     updatedAt: row.updated_at || new Date().toISOString()
   };
@@ -157,6 +162,7 @@ export function mapProductToRow(product: Product): any {
     name: product.name,
     short_name: product.shortName || product.name,
     subtitle: product.subtitle || '',
+    brand: product.brand || 'Vistāra Krafts',
     category: product.category,
     subcategory: product.subCategory || '',
     badge: product.badge || '',
@@ -176,11 +182,14 @@ export function mapProductToRow(product: Product): any {
     sizes: product.sizes || [],
     gender: product.gender || 'all',
     gender_affinity: product.genderAffinity || 'neutral',
-    is_active: true,
+    description: product.description || product.subtitle || '',
+    is_active: product.isActive !== undefined ? product.isActive : true,
+    status: product.status || (product.isActive === false ? 'archived' : 'active'),
     specs: {
-      ratio: product.ratio || '',
-      viscosity: product.viscosity || 'low',
-      cureTime: product.cureTime || ''
+      ...(product.specs || {}),
+      ratio: product.ratio || (product.specs && product.specs.ratio) || '',
+      viscosity: product.viscosity || (product.specs && product.specs.viscosity) || 'low',
+      cureTime: product.cureTime || (product.specs && product.specs.cureTime) || ''
     },
     updated_at: new Date().toISOString()
   };

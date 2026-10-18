@@ -20,6 +20,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [name, setName] = useState('');
   const [shortName, setShortName] = useState('');
   const [subtitle, setSubtitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [brand, setBrand] = useState('Vistāra Krafts');
+  const [badge, setBadge] = useState('');
+  const [subCategory, setSubCategory] = useState('');
   const [category, setCategory] = useState<ProductCategory>('casting');
   const [sku, setSku] = useState('');
   const [price, setPrice] = useState<number>(1299);
@@ -27,6 +31,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   const [ratio, setRatio] = useState('3:1');
   const [viscosity, setViscosity] = useState<'low' | 'medium' | 'high'>('low');
   const [cureTime, setCureTime] = useState('24h');
+  const [extraSpecsText, setExtraSpecsText] = useState('');
   const [stockQuantity, setStockQuantity] = useState<number>(20);
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(5);
   const [inStock, setInStock] = useState(true);
@@ -48,6 +53,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setName(product.name);
       setShortName(product.shortName);
       setSubtitle(product.subtitle || '');
+      setDescription(product.description || product.subtitle || '');
+      setBrand(product.brand || 'Vistāra Krafts');
+      setBadge(product.badge || '');
+      setSubCategory(product.subCategory || '');
       setCategory(product.category);
       setSku(product.sku);
       setPrice(product.price);
@@ -55,6 +64,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setRatio(product.ratio || '');
       setViscosity(product.viscosity || 'low');
       setCureTime(product.cureTime || '');
+
+      const nonStandardSpecs: Record<string, any> = {};
+      if (product.specs && typeof product.specs === 'object') {
+        for (const [k, v] of Object.entries(product.specs)) {
+          if (!['ratio', 'viscosity', 'cureTime'].includes(k)) {
+            nonStandardSpecs[k] = v;
+          }
+        }
+      }
+      setExtraSpecsText(Object.keys(nonStandardSpecs).length > 0 ? JSON.stringify(nonStandardSpecs, null, 2) : '');
+
       setStockQuantity(product.stockQuantity);
       setLowStockThreshold(product.lowStockThreshold || 5);
       setInStock(product.inStock);
@@ -91,6 +111,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setName('');
       setShortName('');
       setSubtitle('');
+      setDescription('');
+      setBrand('Vistāra Krafts');
+      setBadge('');
+      setSubCategory('');
       setCategory('casting');
       setSku('VK-EPX-' + Math.floor(100 + Math.random() * 900));
       setPrice(1299);
@@ -98,6 +122,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setRatio('3:1');
       setViscosity('low');
       setCureTime('24h');
+      setExtraSpecsText('');
       setStockQuantity(25);
       setLowStockThreshold(5);
       setInStock(true);
@@ -179,10 +204,38 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     const genderAffinity =
       gender === 'women' ? 'feminine' : gender === 'men' ? 'masculine' : 'neutral';
 
+    let extraSpecs: Record<string, any> = {};
+    if (extraSpecsText.trim()) {
+      try {
+        extraSpecs = JSON.parse(extraSpecsText);
+      } catch {
+        const lines = extraSpecsText.split('\n');
+        for (const line of lines) {
+          const parts = line.split(':');
+          if (parts.length >= 2) {
+            extraSpecs[parts[0].trim()] = parts.slice(1).join(':').trim();
+          }
+        }
+      }
+    }
+
+    const finalSpecs: Record<string, any> = {
+      ...(product?.specs || {}),
+      ...extraSpecs,
+      ...(ratio ? { ratio } : {}),
+      ...(viscosity ? { viscosity } : {}),
+      ...(cureTime ? { cureTime } : {})
+    };
+
     onSubmit({
       name,
       shortName: shortName || name,
       subtitle,
+      description,
+      brand,
+      badge,
+      subCategory,
+      specs: finalSpecs,
       category,
       sku,
       price: Number(price),
@@ -260,6 +313,45 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
             />
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
+              Brand
+            </label>
+            <input
+              type="text"
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
+              placeholder="e.g. Vistāra Krafts"
+              className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
+              Badge / Ribbon
+            </label>
+            <input
+              type="text"
+              value={badge}
+              onChange={(e) => setBadge(e.target.value)}
+              placeholder="e.g. Studio Classic, Bestseller"
+              className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
+              Subcategory / Collection Tag
+            </label>
+            <input
+              type="text"
+              value={subCategory}
+              onChange={(e) => setSubCategory(e.target.value)}
+              placeholder="e.g. Coating & Casting Resin, Floral Inclusions"
+              className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+            />
+          </div>
+
           <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
               Product Subtitle / Editorial Note
@@ -270,6 +362,19 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               onChange={(e) => setSubtitle(e.target.value)}
               placeholder="e.g. Museum-Grade 50mm Deep Optical Cast with 24K Gold Leaf"
               className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
+              Full Product Description / Specifications
+            </label>
+            <textarea
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Detailed description, resin ratios, application instructions, and craft specifications..."
+              className="w-full p-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
             />
           </div>
         </div>
@@ -320,38 +425,53 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
         </div>
 
-        {/* Technical Specs for Resin */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-[#e6e2d8]">
-          <div>
-            <label className="block text-xs font-semibold text-[#1c1b18] mb-1">Mix Ratio</label>
-            <input
-              type="text"
-              value={ratio}
-              onChange={(e) => setRatio(e.target.value)}
-              placeholder="e.g. 3:1 or 2:1"
-              className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
-            />
+        {/* Technical Specs for Resin & Crafts */}
+        <div className="space-y-3 pt-2 border-t border-[#e6e2d8]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#1c1b18] mb-1">Mix Ratio</label>
+              <input
+                type="text"
+                value={ratio}
+                onChange={(e) => setRatio(e.target.value)}
+                placeholder="e.g. 3:1 or 2:1"
+                className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1c1b18] mb-1">Viscosity</label>
+              <select
+                value={viscosity}
+                onChange={(e) => setViscosity(e.target.value as any)}
+                className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+              >
+                <option value="low">Low (Thin / Self-Degassing)</option>
+                <option value="medium">Medium (Standard Doming)</option>
+                <option value="high">High (Thick / Paste)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1c1b18] mb-1">Cure Time</label>
+              <input
+                type="text"
+                value={cureTime}
+                onChange={(e) => setCureTime(e.target.value)}
+                placeholder="e.g. 24h or 72h"
+                className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+              />
+            </div>
           </div>
+
           <div>
-            <label className="block text-xs font-semibold text-[#1c1b18] mb-1">Viscosity</label>
-            <select
-              value={viscosity}
-              onChange={(e) => setViscosity(e.target.value as any)}
-              className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
-            >
-              <option value="low">Low (Thin / Self-Degassing)</option>
-              <option value="medium">Medium (Standard Doming)</option>
-              <option value="high">High (Thick / Paste)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-[#1c1b18] mb-1">Cure Time</label>
-            <input
-              type="text"
-              value={cureTime}
-              onChange={(e) => setCureTime(e.target.value)}
-              placeholder="e.g. 24h or 72h"
-              className="w-full h-10 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+            <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+              Additional Technical Specifications (JSON or key: value per line)
+            </label>
+            <textarea
+              rows={2}
+              value={extraSpecsText}
+              onChange={(e) => setExtraSpecsText(e.target.value)}
+              placeholder={'{\n  "potLife": "45 mins",\n  "finish": "High Gloss Diamond Mirror",\n  "coverage": "12 sq.ft"\n}'}
+              className="w-full p-2.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs font-mono focus:ring-2 focus:ring-[#cda851] outline-none"
             />
           </div>
         </div>
@@ -567,14 +687,21 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               {variants.map((v) => (
                 <div
                   key={v.id}
-                  className="p-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] grid grid-cols-1 sm:grid-cols-4 gap-2 items-center"
+                  className="p-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] grid grid-cols-1 sm:grid-cols-6 gap-2 items-center"
                 >
                   <input
                     type="text"
                     value={v.label}
                     onChange={(e) => handleUpdateVariant(v.id, { label: e.target.value })}
                     placeholder="Variant Label (e.g. 1.2kg Kit)"
-                    className="h-8 px-2.5 rounded-lg border border-[#e6e2d8] text-xs bg-white"
+                    className="sm:col-span-2 h-8 px-2.5 rounded-lg border border-[#e6e2d8] text-xs bg-white"
+                  />
+                  <input
+                    type="text"
+                    value={v.sku || ''}
+                    onChange={(e) => handleUpdateVariant(v.id, { sku: e.target.value })}
+                    placeholder="Variant SKU"
+                    className="h-8 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white font-mono"
                   />
                   <div className="flex items-center gap-1">
                     <span className="text-xs text-gray-400">₹</span>
@@ -587,20 +714,30 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     />
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-gray-500">Qty:</span>
+                    <span className="text-[10px] text-gray-400">MRP:₹</span>
                     <input
                       type="number"
-                      value={v.stock}
-                      onChange={(e) => handleUpdateVariant(v.id, { stock: Number(e.target.value) })}
-                      placeholder="Stock"
+                      value={v.regularPrice || v.price}
+                      onChange={(e) => handleUpdateVariant(v.id, { regularPrice: Number(e.target.value) })}
+                      placeholder="MRP"
                       className="w-full h-8 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white"
                     />
                   </div>
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-between gap-1">
+                    <div className="flex items-center gap-1 flex-1">
+                      <span className="text-[10px] text-gray-500">Qty:</span>
+                      <input
+                        type="number"
+                        value={v.stock}
+                        onChange={(e) => handleUpdateVariant(v.id, { stock: Number(e.target.value) })}
+                        placeholder="Stock"
+                        className="w-full h-8 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveVariant(v.id)}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                       title="Delete Variant"
                     >
                       <Trash2 className="w-4 h-4" />
