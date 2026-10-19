@@ -163,6 +163,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const barRow = rows.find((r: any) => r.key === 'announcement_bar');
         const shipRow = rows.find((r: any) => r.key === 'shipping');
         const infoRow = rows.find((r: any) => r.key === 'store_info');
+        const sectionsRow = rows.find((r: any) => r.key === 'storefront_sections');
         setSettings((prev) => {
           const next = {
             ...prev,
@@ -177,6 +178,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               storeName: infoRow.value.name || prev.storeName,
               contactEmail: infoRow.value.email || prev.contactEmail,
               contactPhone: infoRow.value.phone || prev.contactPhone
+            } : {}),
+            ...(sectionsRow && sectionsRow.value ? {
+              enableFloralTransformationSection: Boolean(sectionsRow.value.enable_floral_transformation)
             } : {})
           };
           localStorage.setItem('vk_admin_settings_v1', JSON.stringify(next));
@@ -412,6 +416,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             },
             updated_at: new Date().toISOString()
           }, { onConflict: 'key' });
+      }
+      if (newSettings.enableFloralTransformationSection !== undefined) {
+        supabase
+          .from('settings')
+          .upsert({
+            key: 'storefront_sections',
+            value: {
+              enable_floral_transformation: Boolean(updated.enableFloralTransformationSection)
+            },
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' })
+          .then((res) => {
+            if (res.error) console.warn('Supabase settings update warning:', res.error.message);
+          });
       }
     }
 

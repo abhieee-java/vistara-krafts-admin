@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Coupon } from '../types';
 import { Modal } from '../components/common/Modal';
-import { Ticket, Plus, Trash2, Megaphone, CheckCircle2, XCircle } from 'lucide-react';
+import { Ticket, Plus, Trash2, Megaphone, CheckCircle2, XCircle, Sliders } from 'lucide-react';
 
 export const Promotions: React.FC = () => {
   const { coupons, addCoupon, toggleCoupon, deleteCoupon, settings, updateSettings } = useStore();
@@ -17,6 +17,14 @@ export const Promotions: React.FC = () => {
 
   const [announcementText, setAnnouncementText] = useState(settings.announcementBarText);
   const [isBarActive, setIsBarActive] = useState(settings.announcementBarActive);
+  const [floralActive, setFloralActive] = useState<boolean>(Boolean(settings.enableFloralTransformationSection));
+
+  const handleToggleFloralSection = (active: boolean) => {
+    setFloralActive(active);
+    updateSettings({
+      enableFloralTransformationSection: active
+    });
+  };
 
   const handleCreateCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,6 +259,55 @@ export const Promotions: React.FC = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Storefront Feature Modules & Sections Toggle Card */}
+      <div className="bg-white border border-[#e6e2d8] rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-[#e6e2d8] pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-[#faf8f5] text-[#cda851] border border-[#e6e2d8]">
+              <Sliders className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-serif font-bold text-base text-[#1c1b18]">
+                Storefront Homepage Interactive Modules
+              </h3>
+              <p className="text-xs text-gray-500">
+                Instantly enable or disable optional promotional sections on the customer storefront
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-[#e6e2d8] bg-[#faf8f5]">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-xs text-[#1c1b18]">
+                21-Day Cryo-Silica Floral Transformation (Interactive Before/After Slider)
+              </span>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                floralActive ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600'
+              }`}>
+                {floralActive ? 'Active on Home' : 'Disabled / Hidden'}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-500 leading-relaxed max-w-2xl">
+              When disabled, the storefront homepage remains focused strictly on the authentic 19-product catalog (Epoxy Kits, Silicone Molds, and Studio Supplies) without the floral slider. You can re-enable it here at any time.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => handleToggleFloralSection(!floralActive)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+              floralActive
+                ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'
+                : 'bg-[#1c1b18] text-[#cda851] hover:bg-[#2d2a24]'
+            }`}
+          >
+            {floralActive ? 'Disable & Hide Section' : 'Enable on Home'}
+          </button>
         </div>
       </div>
 

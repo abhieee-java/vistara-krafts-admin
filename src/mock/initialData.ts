@@ -80,5 +80,6 @@ export const INITIAL_SETTINGS: StoreSettings = {
   defaultCourier: 'Delhivery Express',
   announcementBarText: '✨ Festive Atelier Drop: Free Pan-India Express Delivery on Orders Over ₹1,999',
   announcementBarActive: true,
-  lowStockAlertThreshold: 5
+  lowStockAlertThreshold: 5,
+  enableFloralTransformationSection: false
 };
