@@ -165,13 +165,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const infoRow = rows.find((r: any) => r.key === 'store_info');
         const sectionsRow = rows.find((r: any) => r.key === 'storefront_sections');
         setSettings((prev) => {
+          const localUpdated = (prev as any)?.updated_at ? new Date((prev as any).updated_at).getTime() : 0;
+          const barDbUpdated = barRow?.updated_at ? new Date(barRow.updated_at).getTime() : 0;
+          const shipDbUpdated = shipRow?.updated_at ? new Date(shipRow.updated_at).getTime() : 0;
+
           const next = {
             ...prev,
-            ...(barRow && barRow.value ? {
+            ...(barRow && barRow.value && (barDbUpdated >= localUpdated || !prev.announcementBarText) ? {
               announcementBarText: barRow.value.text ? String(barRow.value.text).replace('₹1,999', '₹1,499') : prev.announcementBarText,
               announcementBarActive: barRow.value.enabled !== undefined ? barRow.value.enabled : prev.announcementBarActive
             } : {}),
-            ...(shipRow && shipRow.value ? {
+            ...(shipRow && shipRow.value && (shipDbUpdated >= localUpdated || !prev.freeShippingThreshold) ? {
               freeShippingThreshold: shipRow.value.free_shipping_threshold === 1999 ? 1499 : (Number(shipRow.value.free_shipping_threshold) || prev.freeShippingThreshold)
             } : {}),
             ...(infoRow && infoRow.value ? {
@@ -184,6 +188,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             } : {})
           };
           localStorage.setItem('vk_admin_settings_v1', JSON.stringify(next));
+          localStorage.setItem('vk_settings_v1', JSON.stringify(next));
           return next;
         });
       }
@@ -213,6 +218,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setProducts(ev.data.products);
           } else if (ev.data.type === 'ORDERS_UPDATED' && Array.isArray(ev.data.orders)) {
             setOrders(ev.data.orders);
+          } else if (ev.data.type === 'COUPONS_UPDATED' && Array.isArray(ev.data.coupons)) {
+            setCoupons(ev.data.coupons);
           } else if (ev.data.type === 'ORDER_PLACED') {
             addToast('New patron order placed on storefront!', 'info');
             orderService.fetchFromSupabase().then(setOrders);
@@ -418,7 +425,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
-        channel.postMessage({ type: 'COUPONS_UPDATED', coupons: updated });
+        channel.postMessage({ type: 'COUPONS_UPDATED', coupons: updated, deletedCode: target?.code });
         channel.close();
       }
     } catch (e) {}
@@ -428,9 +435,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Settings
   const updateSettings = (newSettings: Partial<StoreSettings>) => {
-    const updated = { ...settings, ...newSettings };
+    const updated = { ...settings, ...newSettings, updated_at: new Date().toISOString() };
     setSettings(updated);
     localStorage.setItem('vk_admin_settings_v1', JSON.stringify(updated));
+    localStorage.setItem('vk_settings_v1', JSON.stringify(updated));
 
     // Save to live Supabase settings table
     if (isSupabaseConfigured) {
