@@ -76,9 +76,9 @@ export const INITIAL_SETTINGS: StoreSettings = {
   contactEmail: 'studio@vistarakrafts.com',
   contactPhone: '+91 98765 43210',
   currency: 'INR',
-  freeShippingThreshold: 1999,
+  freeShippingThreshold: 1499,
   defaultCourier: 'Delhivery Express',
-  announcementBarText: '✨ Festive Atelier Drop: Free Pan-India Express Delivery on Orders Over ₹1,999',
+  announcementBarText: '✨ Festive Atelier Drop: Free Pan-India Express Delivery on Orders Over ₹1,499',
   announcementBarActive: true,
   lowStockAlertThreshold: 5,
   enableFloralTransformationSection: false

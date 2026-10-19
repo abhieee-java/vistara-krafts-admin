@@ -84,6 +84,7 @@ export const productService = {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.postMessage({ type: 'PRODUCTS_UPDATED', products });
+        channel.close();
       }
     } catch (e) {}
   },

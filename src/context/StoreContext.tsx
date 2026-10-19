@@ -168,11 +168,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const next = {
             ...prev,
             ...(barRow && barRow.value ? {
-              announcementBarText: barRow.value.text || prev.announcementBarText,
+              announcementBarText: barRow.value.text ? String(barRow.value.text).replace('₹1,999', '₹1,499') : prev.announcementBarText,
               announcementBarActive: barRow.value.enabled !== undefined ? barRow.value.enabled : prev.announcementBarActive
             } : {}),
             ...(shipRow && shipRow.value ? {
-              freeShippingThreshold: shipRow.value.free_shipping_threshold || prev.freeShippingThreshold
+              freeShippingThreshold: shipRow.value.free_shipping_threshold === 1999 ? 1499 : (Number(shipRow.value.free_shipping_threshold) || prev.freeShippingThreshold)
             } : {}),
             ...(infoRow && infoRow.value ? {
               storeName: infoRow.value.name || prev.storeName,
@@ -340,10 +340,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCoupons(updated);
     localStorage.setItem('vk_admin_coupons_v1', JSON.stringify(updated));
 
+    if (isSupabaseConfigured) {
+      supabase
+        .from('coupons')
+        .upsert({
+          code: newCoupon.code,
+          discount_type: newCoupon.discountType === 'percentage' ? 'percentage' : 'fixed',
+          discount_value: Number(newCoupon.discountValue),
+          min_order_value: Number(newCoupon.minOrderValue || 0),
+          usage_limit: Number(newCoupon.usageLimit || 1000),
+          usage_count: Number(newCoupon.usageCount || 0),
+          is_active: Boolean(newCoupon.isActive),
+          expires_at: newCoupon.expiryDate ? new Date(newCoupon.expiryDate).toISOString() : null
+        }, { onConflict: 'code' })
+        .then((res) => {
+          if (res.error) console.warn('Supabase coupon upsert warning:', res.error.message);
+        });
+    }
+
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.postMessage({ type: 'COUPONS_UPDATED', coupons: updated });
+        channel.close();
       }
     } catch (e) {}
 
@@ -356,10 +375,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCoupons(updated);
     localStorage.setItem('vk_admin_coupons_v1', JSON.stringify(updated));
 
+    if (isSupabaseConfigured) {
+      const target = updated.find((c) => c.id === id);
+      if (target) {
+        supabase
+          .from('coupons')
+          .update({ is_active: target.isActive })
+          .eq('code', target.code)
+          .then((res) => {
+            if (res.error) console.warn('Supabase coupon toggle warning:', res.error.message);
+          });
+      }
+    }
+
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.postMessage({ type: 'COUPONS_UPDATED', coupons: updated });
+        channel.close();
       }
     } catch (e) {}
 
@@ -367,14 +400,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteCoupon = (id: string) => {
+    const target = coupons.find((c) => c.id === id);
     const updated = coupons.filter((c) => c.id !== id);
     setCoupons(updated);
     localStorage.setItem('vk_admin_coupons_v1', JSON.stringify(updated));
+
+    if (isSupabaseConfigured && target) {
+      supabase
+        .from('coupons')
+        .delete()
+        .eq('code', target.code)
+        .then((res) => {
+          if (res.error) console.warn('Supabase coupon delete warning:', res.error.message);
+        });
+    }
 
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.postMessage({ type: 'COUPONS_UPDATED', coupons: updated });
+        channel.close();
       }
     } catch (e) {}
 
@@ -411,7 +456,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             key: 'shipping',
             value: {
               free_shipping_threshold: Number(updated.freeShippingThreshold),
-              standard_shipping_fee: 149,
+              standard_shipping_fee: 99,
               express_shipping_fee: 299
             },
             updated_at: new Date().toISOString()
@@ -431,6 +476,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (res.error) console.warn('Supabase settings update warning:', res.error.message);
           });
       }
+      if (
+        newSettings.storeName !== undefined ||
+        newSettings.brandTagline !== undefined ||
+        newSettings.contactEmail !== undefined ||
+        newSettings.contactPhone !== undefined ||
+        newSettings.instagramHandle !== undefined
+      ) {
+        supabase
+          .from('settings')
+          .upsert({
+            key: 'store_info',
+            value: {
+              name: updated.storeName,
+              tagline: updated.brandTagline,
+              email: updated.contactEmail,
+              phone: updated.contactPhone,
+              instagram: updated.instagramHandle
+            },
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' })
+          .then((res) => {
+            if (res.error) console.warn('Supabase store_info settings update warning:', res.error.message);
+          });
+      }
     }
 
     // Broadcast across browser tabs to storefront
@@ -438,6 +507,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.postMessage({ type: 'SETTINGS_UPDATED', settings: updated });
+        channel.close();
       }
     } catch (e) {}
 
