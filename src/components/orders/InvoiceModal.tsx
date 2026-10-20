@@ -21,7 +21,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
       isOpen={isOpen}
       onClose={onClose}
       title="Store Order Invoice"
-      subtitle={`Tax Invoice #${order.orderNumber}`}
+      subtitle={`Tax Invoice #${(order.orderNumber || '').replace(/^#/, '')}`}
       maxWidth="2xl"
     >
       <div className="space-y-6 text-[#1c1b18]">
