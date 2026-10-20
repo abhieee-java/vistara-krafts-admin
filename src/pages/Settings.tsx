@@ -60,6 +60,17 @@ export const Settings: React.FC = () => {
     runApiDiagnostics();
   }, []);
 
+  useEffect(() => {
+    setStoreName(settings.storeName);
+    setBrandTagline(settings.brandTagline);
+    setInstagramHandle(settings.instagramHandle);
+    setContactEmail(settings.contactEmail);
+    setContactPhone(settings.contactPhone);
+    setFreeShippingThreshold(settings.freeShippingThreshold);
+    setDefaultCourier(settings.defaultCourier);
+    setLowStockAlertThreshold(settings.lowStockAlertThreshold);
+  }, [settings]);
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettings({

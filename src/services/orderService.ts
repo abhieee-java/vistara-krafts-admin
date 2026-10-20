@@ -119,7 +119,7 @@ export const orderService = {
 
   updateStatus(orderId: string, status: OrderStatus, note?: string): Order {
     const orders = this.getOrders();
-    const idx = orders.findIndex((o) => o.id === orderId);
+    const idx = orders.findIndex((o) => o.id === orderId || o.orderNumber === orderId);
     if (idx === -1) throw new Error('Order not found');
 
     const order = orders[idx];
@@ -139,11 +139,20 @@ export const orderService = {
     orders[idx] = updated;
     this.saveOrders(orders);
 
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel.postMessage({ type: 'ORDER_STATUS_CHANGED', order: updated, orderId: updated.orderNumber || updated.id, status });
+        channel.close();
+      }
+    } catch (e) {}
+
     if (isSupabaseConfigured) {
       const stageMap: Record<string, number> = {
         new: 1,
         pending: 1,
         processing: 2,
+        curing: 3,
         packed: 4,
         shipped: 5,
         delivered: 6,
@@ -160,7 +169,7 @@ export const orderService = {
               notes: note || order.notes || '',
               updated_at: new Date().toISOString()
             })
-            .eq('id', orderId),
+            .or(`id.eq.${orderId},order_number.eq.${orderId}`),
         'update order status'
       );
     }
@@ -170,7 +179,7 @@ export const orderService = {
 
   updateTracking(orderId: string, carrier: 'Delhivery' | 'BlueDart' | 'DTDC', trackingNumber: string): Order {
     const orders = this.getOrders();
-    const idx = orders.findIndex((o) => o.id === orderId);
+    const idx = orders.findIndex((o) => o.id === orderId || o.orderNumber === orderId);
     if (idx === -1) throw new Error('Order not found');
 
     const order = orders[idx];
@@ -192,6 +201,14 @@ export const orderService = {
     orders[idx] = updated;
     this.saveOrders(orders);
 
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel.postMessage({ type: 'ORDER_STATUS_CHANGED', order: updated, orderId: updated.orderNumber || updated.id, status: 'shipped' });
+        channel.close();
+      }
+    } catch (e) {}
+
     if (isSupabaseConfigured) {
       safeDbExec(
         () =>
@@ -204,7 +221,7 @@ export const orderService = {
               stage_index: 5,
               updated_at: new Date().toISOString()
             })
-            .eq('id', orderId),
+            .or(`id.eq.${orderId},order_number.eq.${orderId}`),
         'update order tracking'
       );
     }
@@ -218,7 +235,7 @@ export const orderService = {
 
   refundOrder(orderId: string): Order {
     const orders = this.getOrders();
-    const idx = orders.findIndex((o) => o.id === orderId);
+    const idx = orders.findIndex((o) => o.id === orderId || o.orderNumber === orderId);
     if (idx === -1) throw new Error('Order not found');
 
     const order = orders[idx];
@@ -239,6 +256,14 @@ export const orderService = {
     orders[idx] = updated;
     this.saveOrders(orders);
 
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel.postMessage({ type: 'ORDER_STATUS_CHANGED', order: updated, orderId: updated.orderNumber || updated.id, status: 'refunded' });
+        channel.close();
+      }
+    } catch (e) {}
+
     if (isSupabaseConfigured) {
       safeDbExec(
         () =>
@@ -249,7 +274,7 @@ export const orderService = {
               payment_status: 'refunded',
               updated_at: new Date().toISOString()
             })
-            .eq('id', orderId),
+            .or(`id.eq.${orderId},order_number.eq.${orderId}`),
         'refund order'
       );
     }

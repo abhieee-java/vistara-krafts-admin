@@ -172,16 +172,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const next = {
             ...prev,
             ...(barRow && barRow.value && (barDbUpdated >= localUpdated || !prev.announcementBarText) ? {
-              announcementBarText: barRow.value.text ? String(barRow.value.text).replace('₹1,999', '₹1,499') : prev.announcementBarText,
+              announcementBarText: barRow.value.text || prev.announcementBarText,
               announcementBarActive: barRow.value.enabled !== undefined ? barRow.value.enabled : prev.announcementBarActive
             } : {}),
             ...(shipRow && shipRow.value && (shipDbUpdated >= localUpdated || !prev.freeShippingThreshold) ? {
-              freeShippingThreshold: shipRow.value.free_shipping_threshold === 1999 ? 1499 : (Number(shipRow.value.free_shipping_threshold) || prev.freeShippingThreshold)
+              freeShippingThreshold: (shipRow.value.free_shipping_threshold !== undefined && !isNaN(Number(shipRow.value.free_shipping_threshold)))
+                ? Number(shipRow.value.free_shipping_threshold)
+                : prev.freeShippingThreshold,
+              defaultCourier: shipRow.value.default_courier || prev.defaultCourier
             } : {}),
             ...(infoRow && infoRow.value ? {
               storeName: infoRow.value.name || prev.storeName,
+              brandTagline: infoRow.value.tagline || prev.brandTagline,
               contactEmail: infoRow.value.email || prev.contactEmail,
-              contactPhone: infoRow.value.phone || prev.contactPhone
+              contactPhone: infoRow.value.phone || prev.contactPhone,
+              instagramHandle: infoRow.value.instagram || prev.instagramHandle
             } : {}),
             ...(sectionsRow && sectionsRow.value ? {
               enableFloralTransformationSection: Boolean(sectionsRow.value.enable_floral_transformation)
@@ -457,18 +462,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (res.error) console.warn('Supabase settings update warning:', res.error.message);
           });
       }
-      if (newSettings.freeShippingThreshold !== undefined) {
+      if (newSettings.freeShippingThreshold !== undefined || newSettings.defaultCourier !== undefined) {
         supabase
           .from('settings')
           .upsert({
             key: 'shipping',
             value: {
               free_shipping_threshold: Number(updated.freeShippingThreshold),
+              default_courier: updated.defaultCourier || 'Delhivery',
               standard_shipping_fee: 99,
               express_shipping_fee: 299
             },
             updated_at: new Date().toISOString()
-          }, { onConflict: 'key' });
+          }, { onConflict: 'key' })
+          .then((res) => {
+            if (res.error) console.warn('Supabase shipping settings update warning:', res.error.message);
+          });
       }
       if (newSettings.enableFloralTransformationSection !== undefined) {
         supabase
