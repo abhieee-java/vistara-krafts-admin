@@ -165,13 +165,54 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const shipRow = rows.find((r: any) => r.key === 'shipping');
         const infoRow = rows.find((r: any) => r.key === 'store_info');
         const sectionsRow = rows.find((r: any) => r.key === 'storefront_sections');
+
+        let catPayload: any = null;
+        if (supaCatSettingsRes.status === 'fulfilled' && (supaCatSettingsRes.value as any)?.data?.description) {
+          try {
+            catPayload = JSON.parse((supaCatSettingsRes.value as any).data.description);
+          } catch (_) {}
+        }
+
         setSettings((prev) => {
           const localUpdated = (prev as any)?.updated_at ? new Date((prev as any).updated_at).getTime() : 0;
           const barDbUpdated = barRow?.updated_at ? new Date(barRow.updated_at).getTime() : 0;
           const shipDbUpdated = shipRow?.updated_at ? new Date(shipRow.updated_at).getTime() : 0;
+          const infoDbUpdated = infoRow?.updated_at ? new Date(infoRow.updated_at).getTime() : 0;
+          const catDbUpdated = catPayload?.updated_at ? new Date(catPayload.updated_at).getTime() : 0;
 
-          const next = {
+          let resolvedEmail = prev.contactEmail;
+          let resolvedPhone = prev.contactPhone;
+          let resolvedName = prev.storeName;
+          let resolvedTagline = prev.brandTagline;
+          let resolvedInstagram = prev.instagramHandle;
+
+          if (infoDbUpdated >= catDbUpdated) {
+            if (infoRow && infoRow.value) {
+              resolvedEmail = infoRow.value.email || infoRow.value.contactEmail || infoRow.value.supportEmail || catPayload?.contactEmail || resolvedEmail;
+              resolvedPhone = infoRow.value.phone || infoRow.value.contactPhone || infoRow.value.supportPhone || catPayload?.contactPhone || resolvedPhone;
+              resolvedName = infoRow.value.name || catPayload?.storeName || resolvedName;
+              resolvedTagline = infoRow.value.tagline || catPayload?.brandTagline || resolvedTagline;
+              resolvedInstagram = infoRow.value.instagram || catPayload?.instagramHandle || resolvedInstagram;
+            }
+          } else {
+            if (catPayload) {
+              resolvedEmail = catPayload.contactEmail || catPayload.supportEmail || infoRow?.value?.email || resolvedEmail;
+              resolvedPhone = catPayload.contactPhone || catPayload.supportPhone || infoRow?.value?.phone || resolvedPhone;
+              resolvedName = catPayload.storeName || infoRow?.value?.name || resolvedName;
+              resolvedTagline = catPayload.brandTagline || infoRow?.value?.tagline || resolvedTagline;
+              resolvedInstagram = catPayload.instagramHandle || infoRow?.value?.instagram || resolvedInstagram;
+            }
+          }
+
+          const next: StoreSettings = {
             ...prev,
+            storeName: resolvedName,
+            brandTagline: resolvedTagline,
+            contactEmail: resolvedEmail,
+            supportEmail: resolvedEmail,
+            contactPhone: resolvedPhone,
+            supportPhone: resolvedPhone,
+            instagramHandle: resolvedInstagram,
             ...(barRow && barRow.value && (barDbUpdated >= localUpdated || !prev.announcementBarText) ? {
               announcementBarText: barRow.value.text || prev.announcementBarText,
               announcementBarActive: barRow.value.enabled !== undefined ? barRow.value.enabled : prev.announcementBarActive
@@ -182,38 +223,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 : prev.freeShippingThreshold,
               defaultCourier: shipRow.value.default_courier || prev.defaultCourier
             } : {}),
-            ...(infoRow && infoRow.value ? {
-              storeName: infoRow.value.name || prev.storeName,
-              brandTagline: infoRow.value.tagline || prev.brandTagline,
-              contactEmail: infoRow.value.email || prev.contactEmail,
-              contactPhone: infoRow.value.phone || prev.contactPhone,
-              instagramHandle: infoRow.value.instagram || prev.instagramHandle
-            } : {}),
             ...(sectionsRow && sectionsRow.value ? {
               enableFloralTransformationSection: Boolean(sectionsRow.value.enable_floral_transformation)
-            } : {})
+            } : (catPayload?.enableFloralTransformationSection !== undefined ? {
+              enableFloralTransformationSection: Boolean(catPayload.enableFloralTransformationSection)
+            } : {})),
+            updated_at: new Date(Math.max(infoDbUpdated, catDbUpdated, barDbUpdated, shipDbUpdated, localUpdated) || Date.now()).toISOString()
           };
+
           localStorage.setItem('vk_admin_settings_v1', JSON.stringify(next));
           localStorage.setItem('vk_settings_v1', JSON.stringify(next));
           localStorage.setItem('ram_vk_settings_v2', JSON.stringify(next));
           return next;
         });
-      }
-
-      // Sync Dynamic settings payload from categories store_settings_payload
-      if (supaCatSettingsRes.status === 'fulfilled' && (supaCatSettingsRes.value as any)?.data?.description) {
-        try {
-          const parsed = JSON.parse((supaCatSettingsRes.value as any).data.description);
-          if (parsed && typeof parsed === 'object') {
-            setSettings((prev) => {
-              const next = { ...prev, ...parsed };
-              localStorage.setItem('vk_admin_settings_v1', JSON.stringify(next));
-              localStorage.setItem('vk_settings_v1', JSON.stringify(next));
-              localStorage.setItem('ram_vk_settings_v2', JSON.stringify(next));
-              return next;
-            });
-          }
-        } catch (_e) {}
       }
     } finally {
       setIsLoadingDb(false);
@@ -472,7 +494,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         brandTagline: updated.brandTagline,
         instagramHandle: updated.instagramHandle,
         contactEmail: updated.contactEmail,
+        supportEmail: updated.contactEmail,
         contactPhone: updated.contactPhone,
+        supportPhone: updated.contactPhone,
         freeShippingThreshold: Number(updated.freeShippingThreshold) || 1499,
         defaultCourier: updated.defaultCourier || 'Delhivery Express',
         announcementBarText: updated.announcementBarText,
@@ -554,8 +578,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               name: updated.storeName,
               tagline: updated.brandTagline,
               email: updated.contactEmail,
+              contactEmail: updated.contactEmail,
+              supportEmail: updated.contactEmail,
               phone: updated.contactPhone,
-              instagram: updated.instagramHandle
+              contactPhone: updated.contactPhone,
+              supportPhone: updated.contactPhone,
+              instagram: updated.instagramHandle,
+              instagramHandle: updated.instagramHandle
             },
             updated_at: new Date().toISOString()
           }, { onConflict: 'key' })

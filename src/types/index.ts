@@ -187,4 +187,7 @@ export interface StoreSettings {
   announcementBarActive: boolean;
   lowStockAlertThreshold: number;
   enableFloralTransformationSection?: boolean;
+  supportEmail?: string;
+  supportPhone?: string;
+  updated_at?: string;
 }
