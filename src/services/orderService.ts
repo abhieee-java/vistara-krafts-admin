@@ -109,6 +109,9 @@ export const orderService = {
   saveOrders(orders: Order[]): void {
     localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
     try {
+      localStorage.setItem('ram_vk_orders_v2', JSON.stringify(orders));
+    } catch (_e) {}
+    try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.postMessage({ type: 'ORDERS_UPDATED', orders });

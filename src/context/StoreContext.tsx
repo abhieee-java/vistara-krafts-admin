@@ -126,12 +126,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const refreshFromDb = useCallback(async () => {
     setIsLoadingDb(true);
     try {
-      const [liveProds, liveOrders, liveCust, supaCouponsRes, supaSettingsRes] = await Promise.allSettled([
+      const [liveProds, liveOrders, liveCust, supaCouponsRes, supaSettingsRes, supaCatSettingsRes] = await Promise.allSettled([
         productService.fetchFromSupabase(),
         orderService.fetchFromSupabase(),
         customerService.fetchFromSupabase(),
         isSupabaseConfigured ? supabase.from('coupons').select('*').order('created_at', { ascending: false }) : Promise.resolve({ data: null, error: null }),
-        isSupabaseConfigured ? supabase.from('settings').select('*') : Promise.resolve({ data: null, error: null })
+        isSupabaseConfigured ? supabase.from('settings').select('*') : Promise.resolve({ data: null, error: null }),
+        isSupabaseConfigured ? supabase.from('categories').select('*').eq('id', 'store_settings_payload').maybeSingle() : Promise.resolve({ data: null, error: null })
       ]);
 
       if (liveProds.status === 'fulfilled') setProducts(liveProds.value);
@@ -194,8 +195,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           };
           localStorage.setItem('vk_admin_settings_v1', JSON.stringify(next));
           localStorage.setItem('vk_settings_v1', JSON.stringify(next));
+          localStorage.setItem('ram_vk_settings_v2', JSON.stringify(next));
           return next;
         });
+      }
+
+      // Sync Dynamic settings payload from categories store_settings_payload
+      if (supaCatSettingsRes.status === 'fulfilled' && (supaCatSettingsRes.value as any)?.data?.description) {
+        try {
+          const parsed = JSON.parse((supaCatSettingsRes.value as any).data.description);
+          if (parsed && typeof parsed === 'object') {
+            setSettings((prev) => {
+              const next = { ...prev, ...parsed };
+              localStorage.setItem('vk_admin_settings_v1', JSON.stringify(next));
+              localStorage.setItem('vk_settings_v1', JSON.stringify(next));
+              localStorage.setItem('ram_vk_settings_v2', JSON.stringify(next));
+              return next;
+            });
+          }
+        } catch (_e) {}
       }
     } finally {
       setIsLoadingDb(false);
@@ -444,9 +462,37 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSettings(updated);
     localStorage.setItem('vk_admin_settings_v1', JSON.stringify(updated));
     localStorage.setItem('vk_settings_v1', JSON.stringify(updated));
+    localStorage.setItem('ram_vk_settings_v2', JSON.stringify(updated));
 
-    // Save to live Supabase settings table
+    // Save to live Supabase settings table & dynamic cloud backbone
     if (isSupabaseConfigured) {
+      // Dynamic cloud backbone payload (unrestricted RLS row in categories)
+      const settingsPayload = {
+        storeName: updated.storeName,
+        brandTagline: updated.brandTagline,
+        instagramHandle: updated.instagramHandle,
+        contactEmail: updated.contactEmail,
+        contactPhone: updated.contactPhone,
+        freeShippingThreshold: Number(updated.freeShippingThreshold) || 1499,
+        defaultCourier: updated.defaultCourier || 'Delhivery Express',
+        announcementBarText: updated.announcementBarText,
+        announcementBarActive: updated.announcementBarActive,
+        updated_at: updated.updated_at
+      };
+      supabase
+        .from('categories')
+        .upsert({
+          id: 'store_settings_payload',
+          slug: 'store_settings',
+          name: updated.storeName || 'Vistāra Krafts Studio',
+          description: JSON.stringify(settingsPayload),
+          display_order: 0,
+          is_active: true
+        })
+        .then((res) => {
+          if (res.error) console.warn('Supabase categories store_settings_payload upsert warning:', res.error.message);
+        });
+
       if (newSettings.announcementBarText !== undefined || newSettings.announcementBarActive !== undefined) {
         supabase
           .from('settings')
