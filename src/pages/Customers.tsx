@@ -241,7 +241,7 @@ export const Customers: React.FC = () => {
                   {customerOrders.map((ord) => (
                     <div key={ord.id} className="p-3 flex items-center justify-between bg-white">
                       <div>
-                        <span className="font-mono font-bold text-[#1c1b18]">
+                        <span className="font-mono font-bold text-[#1c1b18] whitespace-nowrap">
                           {ord.orderNumber}
                         </span>
                         <div className="text-[11px] text-gray-500">

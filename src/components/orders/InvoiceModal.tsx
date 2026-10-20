@@ -46,7 +46,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
               <span className="text-[10px] uppercase font-bold tracking-widest text-[#cda851] bg-[#1c1b18] px-2.5 py-1 rounded">
                 TAX INVOICE
               </span>
-              <p className="text-xs font-mono font-bold mt-2">{order.orderNumber}</p>
+              <p className="text-xs font-mono font-bold mt-2 whitespace-nowrap">{order.orderNumber}</p>
               <p className="text-[11px] text-gray-500">
                 Date: {new Date(order.createdAt).toLocaleDateString()}
               </p>

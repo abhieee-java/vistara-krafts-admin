@@ -95,7 +95,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
             {/* Header: Order #, Date, Status */}
             <div className="flex items-center justify-between">
               <div>
-                <span className="font-mono font-bold text-sm text-[#1c1b18]">
+                <span className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
                   {ord.orderNumber}
                 </span>
                 <div className="text-[10px] text-gray-500 mt-0.5">
@@ -201,7 +201,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                 >
                   {/* Order Number & Date */}
                   <td className="py-3.5 px-4">
-                    <div className="font-mono font-bold text-sm text-[#1c1b18]">
+                    <div className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
                       {ord.orderNumber}
                     </div>
                     <div className="text-[10px] text-gray-400">

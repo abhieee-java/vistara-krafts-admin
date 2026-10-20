@@ -61,7 +61,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
           <div className="p-4 sm:p-6 bg-[#faf8f5] border-b border-[#e6e2d8] flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-serif font-bold text-lg text-[#1c1b18]">
+                <h3 className="font-serif font-bold text-lg text-[#1c1b18] whitespace-nowrap">
                   {order.orderNumber}
                 </h3>
                 <StatusBadge status={order.orderStatus} />

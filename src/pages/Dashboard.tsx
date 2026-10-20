@@ -200,7 +200,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 className="p-3.5 rounded-xl border border-[#e6e2d8] hover:border-[#cda851] bg-[#faf8f5]/50 active:bg-[#faf8f5] transition-all space-y-2 text-xs"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-xs text-[#1c1b18]">{ord.orderNumber}</span>
+                  <span className="font-mono font-bold text-xs text-[#1c1b18] whitespace-nowrap">{ord.orderNumber}</span>
                   <StatusBadge status={ord.orderStatus} />
                 </div>
                 <div className="flex items-center justify-between text-gray-700">
@@ -238,7 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <tbody className="divide-y divide-gray-100">
                 {recentOrders.map((ord) => (
                   <tr key={ord.id} className="interactive-row cursor-pointer" onClick={() => onOpenOrder(ord)}>
-                    <td className="py-3 font-mono font-bold text-[#1c1b18]">
+                    <td className="py-3 font-mono font-bold text-[#1c1b18] whitespace-nowrap">
                       {ord.orderNumber}
                     </td>
                     <td className="py-3">
