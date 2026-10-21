@@ -18,11 +18,23 @@ import {
   RefreshCw,
   Server,
   Key,
-  ShieldCheck
+  ShieldCheck,
+  Rocket
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
-  const { settings, updateSettings, products, refreshFromDb, isLoadingDb, addToast } = useStore();
+  const {
+    settings,
+    updateSettings,
+    products,
+    refreshFromDb,
+    isLoadingDb,
+    addToast,
+    publishToStorefront,
+    isPublishing,
+    lastPublishedVersion,
+    lastPublishedAt
+  } = useStore();
 
   const [storeName, setStoreName] = useState(settings.storeName);
   const [brandTagline, setBrandTagline] = useState(settings.brandTagline);
@@ -355,6 +367,71 @@ export const Settings: React.FC = () => {
                 onChange={(e) => setLowStockAlertThreshold(Number(e.target.value))}
                 className="w-full px-3 py-2 border border-[#e6e2d8] rounded-xl focus:outline-none focus:border-[#cda851]"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Live Storefront Deployment Section */}
+        <div className="bg-gradient-to-br from-[#ffffff] via-[#faf8f5] to-[#f4f0e6] border-2 border-[#9e3322]/20 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-[#e6e2d8] pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#9e3322] to-[#7f2617] text-white flex items-center justify-center shrink-0 shadow-md">
+                <Rocket className="w-5 h-5 text-amber-200" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-serif font-bold text-sm text-[#1c1b18]">
+                    Live Storefront Release Deployment
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                    Zero-Downtime Live Drop
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Publish authoritative releases to Supabase (<code>store_published_version</code>) and broadcast across customer browser tabs in real-time.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => publishToStorefront()}
+              disabled={isPublishing}
+              className="group relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#9e3322] via-[#b33a27] to-[#7f2617] hover:from-[#b33a27] hover:to-[#6b1e11] text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer overflow-hidden shrink-0"
+            >
+              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
+              {isPublishing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Publishing Release...</span>
+                </>
+              ) : (
+                <>
+                  <Rocket className="w-4 h-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 text-amber-200" />
+                  <span>🚀 Publish to Live Storefront</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-white border border-[#e6e2d8]">
+              <span className="text-[10px] text-gray-400 block font-semibold uppercase tracking-wider">Release Version</span>
+              <span className="font-mono font-bold text-[#1c1b18]">
+                {lastPublishedVersion ? `v${lastPublishedVersion}` : 'Not yet deployed this session'}
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-white border border-[#e6e2d8]">
+              <span className="text-[10px] text-gray-400 block font-semibold uppercase tracking-wider">Last Published</span>
+              <span className="font-semibold text-gray-700">
+                {lastPublishedAt ? new Date(lastPublishedAt).toLocaleString() : 'Pending publish'}
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-white border border-[#e6e2d8]">
+              <span className="text-[10px] text-gray-400 block font-semibold uppercase tracking-wider">Storefront Sync Method</span>
+              <span className="font-semibold text-emerald-700 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Supabase Realtime + BroadcastChannel
+              </span>
             </div>
           </div>
         </div>

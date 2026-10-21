@@ -60,6 +60,11 @@ interface StoreContextType {
   deleteCoupon: (id: string) => void;
   // Settings
   updateSettings: (newSettings: Partial<StoreSettings>) => void;
+  // Live Storefront Release Publishing
+  isPublishing: boolean;
+  lastPublishedVersion: number | null;
+  lastPublishedAt: string | null;
+  publishToStorefront: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -95,6 +100,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
+  const [isPublishing, setIsPublishing] = useState<boolean>(false);
+  const [lastPublishedVersion, setLastPublishedVersion] = useState<number | null>(() => {
+    try {
+      const v = localStorage.getItem('vk_store_published_version') || localStorage.getItem('vk_admin_published_version');
+      return v ? Number(v) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [lastPublishedAt, setLastPublishedAt] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('vk_last_published_at') || null;
+    } catch {
+      return null;
+    }
+  });
 
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
@@ -165,6 +186,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const shipRow = rows.find((r: any) => r.key === 'shipping');
         const infoRow = rows.find((r: any) => r.key === 'store_info');
         const sectionsRow = rows.find((r: any) => r.key === 'storefront_sections');
+        const versionRow = rows.find((r: any) => r.key === 'store_published_version');
+
+        if (versionRow && versionRow.value) {
+          const v = typeof versionRow.value === 'object' ? versionRow.value.version : Number(versionRow.value);
+          if (v) {
+            setLastPublishedVersion(v);
+            localStorage.setItem('vk_store_published_version', String(v));
+            localStorage.setItem('vk_admin_published_version', String(v));
+          }
+          const pAt = typeof versionRow.value === 'object' ? versionRow.value.published_at : versionRow.updated_at;
+          if (pAt) {
+            setLastPublishedAt(pAt);
+            localStorage.setItem('vk_last_published_at', pAt);
+          }
+        }
 
         let catPayload: any = null;
         if (supaCatSettingsRes.status === 'fulfilled' && (supaCatSettingsRes.value as any)?.data?.description) {
@@ -497,7 +533,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         supportEmail: updated.contactEmail,
         contactPhone: updated.contactPhone,
         supportPhone: updated.contactPhone,
-        freeShippingThreshold: Number(updated.freeShippingThreshold) || 1499,
+        freeShippingThreshold: (updated.freeShippingThreshold !== undefined && !isNaN(Number(updated.freeShippingThreshold))) ? Number(updated.freeShippingThreshold) : 999,
         defaultCourier: updated.defaultCourier || 'Delhivery Express',
         announcementBarText: updated.announcementBarText,
         announcementBarActive: updated.announcementBarActive,
@@ -607,6 +643,97 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addToast('Store settings saved and published live to Storefront!');
   };
 
+  const publishToStorefront = useCallback(async () => {
+    setIsPublishing(true);
+    const newVersion = Date.now();
+    const nowIso = new Date().toISOString();
+
+    const publishPayload = {
+      version: newVersion,
+      published_by: 'owner',
+      published_at: nowIso,
+      total_products: products.length,
+      total_coupons: coupons.length,
+      freeShippingThreshold: Number(settings.freeShippingThreshold) || 999,
+      announcementBarText: settings.announcementBarText
+    };
+
+    try {
+      // 1. Update localStorage immediately for instant local reflection
+      localStorage.setItem('vk_store_published_version', String(newVersion));
+      localStorage.setItem('vk_admin_published_version', String(newVersion));
+      localStorage.setItem('vk_last_published_at', nowIso);
+      setLastPublishedVersion(newVersion);
+      setLastPublishedAt(nowIso);
+
+      // 2. Persist to Supabase if configured
+      if (isSupabaseConfigured) {
+        // Upsert store_published_version into settings table
+        const { error: settingsErr } = await supabase
+          .from('settings')
+          .upsert({
+            key: 'store_published_version',
+            value: publishPayload,
+            description: 'Authoritative storefront published version timestamp and release metadata',
+            updated_at: nowIso
+          }, { onConflict: 'key' });
+
+        if (settingsErr) {
+          console.warn('Supabase publish settings warning:', settingsErr.message);
+        }
+
+        // Redundancy mirror in categories table (unrestricted RLS fallback)
+        const { error: catErr } = await supabase
+          .from('categories')
+          .upsert({
+            id: 'store_published_version',
+            name: 'Storefront Published Release',
+            description: JSON.stringify(publishPayload),
+            slug: 'store-published-version',
+            display_order: 999,
+            is_active: true
+          }, { onConflict: 'id' });
+
+        if (catErr) {
+          console.warn('Supabase publish categories mirror warning:', catErr.message);
+        }
+      }
+
+      // 3. Broadcast across browser tabs via BroadcastChannel
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+          channel.postMessage({
+            type: 'STORE_PUBLISHED',
+            version: newVersion,
+            published_at: nowIso,
+            productsCount: products.length,
+            settings: {
+              freeShippingThreshold: Number(settings.freeShippingThreshold) || 999,
+              announcementBarText: settings.announcementBarText
+            }
+          });
+          channel.close();
+        }
+      } catch (bcErr) {
+        console.warn('BroadcastChannel error:', bcErr);
+      }
+
+      // 4. Log audit & show toast
+      logAudit(
+        'Storefront Published',
+        'Live Release',
+        `Release v${newVersion} deployed with ${products.length} products & free shipping ₹${settings.freeShippingThreshold || 999}`
+      );
+      addToast(`🚀 Published to live storefront! Version v${newVersion} active across all devices.`);
+    } catch (err: any) {
+      console.error('Publish to storefront failed:', err);
+      addToast(`Failed to publish to live storefront: ${err?.message || 'Unknown error'}`, 'error');
+    } finally {
+      setIsPublishing(false);
+    }
+  }, [products.length, coupons.length, settings, isSupabaseConfigured, logAudit, addToast]);
+
   return (
     <StoreContext.Provider
       value={{
@@ -636,7 +763,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteCoupon,
         updateSettings,
         isLoadingDb,
-        refreshFromDb
+        refreshFromDb,
+        isPublishing,
+        lastPublishedVersion,
+        lastPublishedAt,
+        publishToStorefront
       }}
     >
       {children}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Menu, LogOut, Shield, Wifi } from 'lucide-react';
+import { useStore } from '../../context/StoreContext';
+import { Menu, LogOut, Shield, Wifi, Rocket } from 'lucide-react';
 
 interface HeaderProps {
   currentTab: string;
@@ -9,6 +10,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) => {
   const { user, logout } = useAuth();
+  const { publishToStorefront, isPublishing, lastPublishedVersion, lastPublishedAt } = useStore();
 
   const getTabTitle = (tab: string) => {
     switch (tab) {
@@ -89,10 +91,37 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
       {/* Right section: System state & Owner Profile */}
       <div className="flex items-center gap-3">
         {/* Service Readiness Pill */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-semibold">
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-semibold">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span>Live Supabase Connected</span>
         </div>
+
+        {/* Publish to Live Storefront Button */}
+        <button
+          onClick={() => publishToStorefront()}
+          disabled={isPublishing}
+          className="group relative inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-[#9e3322] via-[#b33a27] to-[#7f2617] hover:from-[#b33a27] hover:to-[#6b1e11] text-white text-xs font-semibold shadow-[0_2px_12px_rgba(158,51,34,0.35)] hover:shadow-[0_4px_20px_rgba(158,51,34,0.5)] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer overflow-hidden"
+          title={lastPublishedAt ? `Published: ${new Date(lastPublishedAt).toLocaleTimeString()}` : 'Deploy latest catalog & settings in-place to customer storefront'}
+        >
+          <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
+          {isPublishing ? (
+            <>
+              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Publishing...</span>
+            </>
+          ) : (
+            <>
+              <Rocket className="w-3.5 h-3.5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 text-amber-200" />
+              <span className="hidden sm:inline">Publish to Live Storefront</span>
+              <span className="sm:hidden">Publish</span>
+              {lastPublishedVersion && (
+                <span className="hidden md:inline-flex items-center px-1.5 py-0.2 rounded-full bg-black/20 text-[9px] font-mono opacity-80">
+                  v{String(lastPublishedVersion).slice(-4)}
+                </span>
+              )}
+            </>
+          )}
+        </button>
 
         {/* Owner Info & Logout */}
         <div className="flex items-center gap-2 pl-2 border-l border-[#e6e2d8]">
