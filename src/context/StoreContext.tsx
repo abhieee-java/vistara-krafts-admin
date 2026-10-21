@@ -249,8 +249,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             contactPhone: resolvedPhone,
             supportPhone: resolvedPhone,
             instagramHandle: resolvedInstagram,
-            ...(barRow && barRow.value && (barDbUpdated >= localUpdated || !prev.announcementBarText) ? {
-              announcementBarText: barRow.value.text || prev.announcementBarText,
+            ...(barRow && barRow.value ? {
+              announcementBarText: barRow.value.text !== undefined ? barRow.value.text : prev.announcementBarText,
               announcementBarActive: barRow.value.enabled !== undefined ? barRow.value.enabled : prev.announcementBarActive
             } : {}),
             ...(shipRow && shipRow.value && (shipDbUpdated >= localUpdated || !prev.freeShippingThreshold) ? {
@@ -680,6 +680,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         if (settingsErr) {
           console.warn('Supabase publish settings warning:', settingsErr.message);
+        }
+
+        // Ensure announcement_bar row is updated with latest published announcement
+        if (settings.announcementBarText !== undefined) {
+          await supabase
+            .from('settings')
+            .upsert({
+              key: 'announcement_bar',
+              value: {
+                text: settings.announcementBarText,
+                enabled: settings.announcementBarActive !== false
+              },
+              updated_at: nowIso
+            }, { onConflict: 'key' });
         }
 
         // Redundancy mirror in categories table (unrestricted RLS fallback)
