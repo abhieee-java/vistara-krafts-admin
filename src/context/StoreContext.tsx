@@ -16,6 +16,44 @@ import { customerService } from '../services/customerService';
 import { INITIAL_COUPONS, INITIAL_SETTINGS, INITIAL_AUDIT_LOGS } from '../mock/initialData';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
+export function syncDeliveryPrice(str: string, thresh: number): string {
+  if (!str) return '';
+  const threshNum = Number(thresh) || 999;
+  const threshStr = threshNum.toLocaleString('en-IN');
+
+  // Case 1: 'orders (over|above|exceeding|>|&gt;) [₹]X'
+  let updated = str.replace(
+    /(orders?\s+(?:over|above|exceeding|>|&gt;)\s*(?:₹|rs\.?|inr)?\s*)[\d,]+/gi,
+    (_m, p1) => p1.replace(/(?:₹|rs\.?|inr)?\s*$/i, '') + '₹' + threshStr
+  );
+
+  // Case 2: '(free ... shipping|delivery|dispatch) (over|above|exceeding|>|&gt;) [₹]X'
+  updated = updated.replace(
+    /((?:free\s+[\w\s-]*?(?:shipping|delivery|dispatch))\s*(?:>|&gt;|above|over|exceeding)\s*)(?:₹|rs\.?|inr)?\s*[\d,]+/gi,
+    (_m, p1) => p1.trimEnd() + ' ₹' + threshStr
+  );
+
+  // Case 3: 'shipping|delivery|dispatch ... (>|&gt;) [₹]X'
+  updated = updated.replace(
+    /((?:shipping|delivery|dispatch)[^•<]*?(?:>|&gt;)\s*)(?:₹|rs\.?|inr)?\s*[\d,]+/gi,
+    (_m, p1) => p1.trimEnd() + ' ₹' + threshStr
+  );
+
+  // Case 4: Any remaining '(>|&gt;)\s*[₹]X'
+  updated = updated.replace(
+    /(>|&gt;)\s*(?:₹|rs\.?|inr)?\s*[\d,]+/gi,
+    '> ₹' + threshStr
+  );
+
+  // Case 5: Any remaining '(above|over)\s*[₹]X'
+  updated = updated.replace(
+    /\b(above|over)\s+(?:₹|rs\.?|inr)?\s*[\d,]+/gi,
+    (_m, p1) => p1 + ' ₹' + threshStr
+  );
+
+  return updated;
+}
+
 interface ToastMessage {
   id: string;
   type: 'success' | 'error' | 'info';
@@ -516,7 +554,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Settings
   const updateSettings = (newSettings: Partial<StoreSettings>) => {
-    const updated = { ...settings, ...newSettings, updated_at: new Date().toISOString() };
+    let updated = { ...settings, ...newSettings, updated_at: new Date().toISOString() };
+
+    // Auto-sync delivery price into announcementBarText whenever freeShippingThreshold is updated
+    if (newSettings.freeShippingThreshold !== undefined && updated.announcementBarText) {
+      updated.announcementBarText = syncDeliveryPrice(updated.announcementBarText, Number(newSettings.freeShippingThreshold));
+    }
+
     setSettings(updated);
     localStorage.setItem('vk_admin_settings_v1', JSON.stringify(updated));
     localStorage.setItem('vk_settings_v1', JSON.stringify(updated));
@@ -553,14 +597,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (res.error) console.warn('Supabase categories store_settings_payload upsert warning:', res.error.message);
         });
 
-      if (newSettings.announcementBarText !== undefined || newSettings.announcementBarActive !== undefined) {
+      if (newSettings.announcementBarText !== undefined || newSettings.announcementBarActive !== undefined || newSettings.freeShippingThreshold !== undefined) {
         supabase
           .from('settings')
           .upsert({
             key: 'announcement_bar',
             value: {
               text: updated.announcementBarText,
-              enabled: updated.announcementBarActive
+              enabled: updated.announcementBarActive !== false
             },
             updated_at: new Date().toISOString()
           }, { onConflict: 'key' })
@@ -648,14 +692,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const newVersion = Date.now();
     const nowIso = new Date().toISOString();
 
+    const activeThreshold = Number(settings.freeShippingThreshold) || 999;
+    const syncedAnnouncementText = syncDeliveryPrice(settings.announcementBarText || '', activeThreshold);
+
     const publishPayload = {
       version: newVersion,
       published_by: 'owner',
       published_at: nowIso,
       total_products: products.length,
       total_coupons: coupons.length,
-      freeShippingThreshold: Number(settings.freeShippingThreshold) || 999,
-      announcementBarText: settings.announcementBarText
+      freeShippingThreshold: activeThreshold,
+      announcementBarText: syncedAnnouncementText
     };
 
     try {
@@ -683,18 +730,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
 
         // Ensure announcement_bar row is updated with latest published announcement
-        if (settings.announcementBarText !== undefined) {
-          await supabase
-            .from('settings')
-            .upsert({
-              key: 'announcement_bar',
-              value: {
-                text: settings.announcementBarText,
-                enabled: settings.announcementBarActive !== false
-              },
-              updated_at: nowIso
-            }, { onConflict: 'key' });
-        }
+        await supabase
+          .from('settings')
+          .upsert({
+            key: 'announcement_bar',
+            value: {
+              text: syncedAnnouncementText,
+              enabled: settings.announcementBarActive !== false
+            },
+            updated_at: nowIso
+          }, { onConflict: 'key' });
 
         // Redundancy mirror in categories table (unrestricted RLS fallback)
         const { error: catErr } = await supabase
@@ -723,8 +768,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             published_at: nowIso,
             productsCount: products.length,
             settings: {
-              freeShippingThreshold: Number(settings.freeShippingThreshold) || 999,
-              announcementBarText: settings.announcementBarText
+              freeShippingThreshold: activeThreshold,
+              announcementBarText: syncedAnnouncementText
             }
           });
           channel.close();

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Coupon } from '../types';
 import { Modal } from '../components/common/Modal';
@@ -18,6 +18,12 @@ export const Promotions: React.FC = () => {
   const [announcementText, setAnnouncementText] = useState(settings.announcementBarText);
   const [isBarActive, setIsBarActive] = useState(settings.announcementBarActive);
   const [floralActive, setFloralActive] = useState<boolean>(Boolean(settings.enableFloralTransformationSection));
+
+  useEffect(() => {
+    setAnnouncementText(settings.announcementBarText);
+    setIsBarActive(settings.announcementBarActive);
+    setFloralActive(Boolean(settings.enableFloralTransformationSection));
+  }, [settings.announcementBarText, settings.announcementBarActive, settings.enableFloralTransformationSection]);
 
   const handleToggleFloralSection = (active: boolean) => {
     setFloralActive(active);
