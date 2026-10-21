@@ -544,7 +544,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         .upsert({
           id: 'store_settings_payload',
           slug: 'store_settings',
-          name: updated.storeName || 'Vistāra Krafts Studio',
+          name: updated.storeName || 'Vistāra Krafts',
           description: JSON.stringify(settingsPayload),
           display_order: 0,
           is_active: true

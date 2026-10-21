@@ -131,7 +131,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
 
           {/* Footer note */}
           <div className="text-[10px] text-gray-400 text-center pt-4 border-t border-dashed border-[#e6e2d8]">
-            Thank you for supporting handcrafted resin art and floral preservation by Vistāra Krafts Studio.
+            Thank you for supporting handcrafted resin art and floral preservation by Vistāra Krafts.
           </div>
         </div>
 

@@ -70,7 +70,7 @@ export const INITIAL_AUDIT_LOGS: AuditLog[] = [
 ];
 
 export const INITIAL_SETTINGS: StoreSettings = {
-  storeName: 'Vistāra Krafts Studio',
+  storeName: 'Vistāra Krafts',
   brandTagline: 'Curated Resin Art & Museum-Grade Preservation',
   instagramHandle: '@vistarakrafts',
   contactEmail: 'studio@vistarakrafts.com',

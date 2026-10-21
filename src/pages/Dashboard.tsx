@@ -58,7 +58,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </span>
           </div>
           <h2 className="font-serif font-bold text-xl md:text-2xl text-white">
-            Vistāra Krafts Studio Operations
+            Vistāra Krafts Operations
           </h2>
           <p className="text-xs text-gray-300 max-w-xl">
             Real-time catalog sync, express bridal floral dispatches, optical epoxy stock, and customer orders.

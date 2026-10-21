@@ -83,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
             <span className="hidden sm:inline">{getTabTitle(currentTab)}</span>
           </h2>
           <p className="text-[10px] text-gray-500 hidden sm:block truncate">
-            Vistāra Krafts Studio Administration
+            Vistāra Krafts Administration
           </p>
         </div>
       </div>
