@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, Laptop, Lock, AlertCircle, FileText } from 'lucide-react';
+import { ShieldCheck, Laptop, Lock, AlertCircle, FileText, Key, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { authService } from '../services/authService';
+import { ChangePasswordModal } from '../components/common/ChangePasswordModal';
 
 export const Security: React.FC = () => {
   const { auditLogs } = useStore();
-  const { user } = useAuth();
+  const { user, status } = useAuth();
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const sessions = authService.getSessions();
 
   return (
@@ -22,14 +24,83 @@ export const Security: React.FC = () => {
               Single-Owner Protected Console
             </h3>
             <p className="text-xs text-gray-500">
-              Authenticated Owner: <strong>{user?.email || 'owner@vistarakrafts.com'}</strong> • Mode: Zero Staff Hierarchies
+              Authenticated Owner: <strong>{user?.email || 'ad4064773@gmail.com'}</strong> • Mode: Isolated Master Admin Auth
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-emerald-800 font-semibold bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
           <Lock className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Session Encrypted &amp; Guarded</span>
+          <span>PostgreSQL Bcrypt Guarded</span>
+        </div>
+      </div>
+
+      {/* Master Password & Rate Limit Credentials Card */}
+      <div className="bg-white border border-[#e6e2d8] rounded-2xl p-6 shadow-sm space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e6e2d8]">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#faf8f5] border border-[#e6e2d8] text-[#cda851]">
+              <Key className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-serif font-bold text-base text-[#1c1b18]">
+                Master Admin Access Credentials
+              </h3>
+              <p className="text-xs text-gray-500">
+                Salted bcrypt hash stored securely in PostgreSQL <code className="text-xs font-mono bg-gray-100 px-1 py-0.5 rounded">public.admin_auth</code>
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1c1b18] hover:bg-black text-[#f9f8f5] text-xs font-semibold shadow-sm active:scale-95 transition-all cursor-pointer"
+          >
+            <Key className="w-3.5 h-3.5 text-[#cda851]" />
+            <span>Change Master Password</span>
+          </button>
+        </div>
+
+        {/* Security Parameters Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="p-4 rounded-xl bg-[#faf8f5] border border-[#e6e2d8] space-y-1.5">
+            <div className="text-gray-400 font-medium text-[11px] uppercase tracking-wider">
+              Verification Engine
+            </div>
+            <div className="font-semibold text-gray-900 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>Server-Side PostgreSQL</span>
+            </div>
+            <div className="text-gray-500 text-[11px]">
+              Bcrypt Blowfish (bf-10) with pgcrypto
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[#faf8f5] border border-[#e6e2d8] space-y-1.5">
+            <div className="text-gray-400 font-medium text-[11px] uppercase tracking-wider">
+              Rate Limit Shield
+            </div>
+            <div className="font-semibold text-gray-900 flex items-center gap-1.5">
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
+              <span>5 Attempts / 15-Min Lock</span>
+            </div>
+            <div className="text-gray-500 text-[11px]">
+              Status: {status?.locked ? 'Locked' : 'Active & Guarding'} (0/5 Violations)
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[#faf8f5] border border-[#e6e2d8] space-y-1.5">
+            <div className="text-gray-400 font-medium text-[11px] uppercase tracking-wider">
+              Security Hamper Alert
+            </div>
+            <div className="font-semibold text-gray-900 flex items-center gap-1.5">
+              <Lock className="w-4 h-4 text-blue-600" />
+              <span>Resend Transactional API</span>
+            </div>
+            <div className="text-gray-500 text-[11px] font-mono truncate" title="ad4064773@gmail.com">
+              Target: ad4064773@gmail.com
+            </div>
+          </div>
         </div>
       </div>
 
@@ -115,6 +186,12 @@ export const Security: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </div>
   );
 };

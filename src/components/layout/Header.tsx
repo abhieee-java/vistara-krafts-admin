@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
-import { Menu, LogOut, Shield, Wifi, Rocket } from 'lucide-react';
+import { Menu, LogOut, Shield, Wifi, Rocket, Key } from 'lucide-react';
+import { ChangePasswordModal } from '../common/ChangePasswordModal';
 
 interface HeaderProps {
   currentTab: string;
@@ -11,6 +12,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) => {
   const { user, logout } = useAuth();
   const { publishToStorefront, isPublishing, lastPublishedVersion, lastPublishedAt } = useStore();
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const getTabTitle = (tab: string) => {
     switch (tab) {
@@ -137,6 +139,17 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
             </div>
           </div>
 
+          {/* Change Password Button */}
+          <button
+            onClick={() => setIsPasswordModalOpen(true)}
+            title="Change Master Admin Password"
+            className="p-2 text-gray-600 hover:text-[#1c1b18] hover:bg-amber-100/60 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+            aria-label="Change master admin password"
+          >
+            <Key className="w-4 h-4 text-[#cda851]" />
+            <span className="hidden xl:inline text-[11px]">Change Password</span>
+          </button>
+
           <button
             onClick={logout}
             title="Log out of Owner Portal"
@@ -147,6 +160,12 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
           </button>
         </div>
       </div>
+
+      {/* Change Master Password Modal */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </header>
   );
 };

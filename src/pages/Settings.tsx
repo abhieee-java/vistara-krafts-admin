@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Rocket
 } from 'lucide-react';
+import { ChangePasswordModal } from '../components/common/ChangePasswordModal';
 
 export const Settings: React.FC = () => {
   const {
@@ -48,6 +49,7 @@ export const Settings: React.FC = () => {
   const [lowStockAlertThreshold, setLowStockAlertThreshold] = useState(
     settings.lowStockAlertThreshold
   );
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   // Live API Telemetry State
   const [apiChecks, setApiChecks] = useState<DetailedServiceCheck[]>([]);
@@ -261,7 +263,37 @@ export const Settings: React.FC = () => {
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. BRAND & OPERATIONAL SETTINGS FORM */}
+      {/* 2. MASTER ACCESS & SECURITY CREDENTIALS */}
+      {/* ========================================================================= */}
+      <div className="bg-white border border-[#e6e2d8] rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[#1c1b18] text-[#cda851]">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="font-serif font-bold text-sm text-[#1c1b18]">
+                Master Admin Access Security
+              </h4>
+              <p className="text-xs text-gray-500">
+                Encrypted master password with 5-attempt rate limit and automated Resend security alerts
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsPasswordModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1c1b18] hover:bg-black text-[#f9f8f5] text-xs font-semibold shadow-sm active:scale-95 transition-all cursor-pointer"
+          >
+            <Key className="w-3.5 h-3.5 text-[#cda851]" />
+            <span>Change Master Password</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. BRAND & OPERATIONAL SETTINGS FORM */}
       {/* ========================================================================= */}
       <form onSubmit={handleSave} className="space-y-6">
         {/* Brand & Identity Card */}
@@ -447,6 +479,12 @@ export const Settings: React.FC = () => {
           </button>
         </div>
       </form>
+
+      {/* Change Master Password Modal */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </div>
   );
 };

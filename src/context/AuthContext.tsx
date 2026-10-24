@@ -1,34 +1,51 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService, OwnerAuthUser } from '../services/authService';
+import { authService, OwnerAuthUser, AdminAuthStatus } from '../services/authService';
 
 interface AuthContextType {
   user: OwnerAuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  status: AdminAuthStatus | null;
+  login: (passwordOrEmail: string, pass?: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
   logout: () => void;
+  refreshStatus: () => Promise<AdminAuthStatus | null>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<OwnerAuthUser | null>(null);
+  const [status, setStatus] = useState<AdminAuthStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refreshStatus = async (): Promise<AdminAuthStatus | null> => {
+    try {
+      const s = await authService.getStatus();
+      setStatus(s);
+      return s;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     const existing = authService.getStoredSession();
     if (existing) {
       setUser(existing);
     }
-    setIsLoading(false);
+    refreshStatus().finally(() => {
+      setIsLoading(false);
+    });
   }, []);
 
-  const login = async (email: string, pass: string) => {
+  const login = async (passwordOrEmail: string, pass?: string) => {
     setIsLoading(true);
     try {
-      const u = await authService.login(email, pass);
+      const u = await authService.login(passwordOrEmail, pass);
       setUser(u);
+      await refreshStatus();
     } finally {
       setIsLoading(false);
     }
@@ -39,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const u = await authService.loginWithGoogle();
       setUser(u);
+      await refreshStatus();
     } finally {
       setIsLoading(false);
     }
@@ -49,15 +67,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    const res = await authService.changePassword(currentPassword, newPassword);
+    await refreshStatus();
+    return res;
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isAuthenticated: !!user,
         isLoading,
+        status,
         login,
         loginWithGoogle,
-        logout
+        logout,
+        refreshStatus,
+        changePassword
       }}
     >
       {children}
