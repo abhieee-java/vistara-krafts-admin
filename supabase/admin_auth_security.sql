@@ -419,3 +419,56 @@ GRANT EXECUTE ON FUNCTION public.verify_admin_login(text, jsonb) TO anon, authen
 GRANT EXECUTE ON FUNCTION public.get_admin_auth_status() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.reset_admin_lockout() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.change_admin_password(text, text) TO anon, authenticated;
+
+-- 9. Get Real Customer Directory for Admin Analytics & Traffic Monitoring
+CREATE OR REPLACE FUNCTION public.get_customer_directory()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+  v_result jsonb;
+BEGIN
+  SELECT jsonb_agg(cust) INTO v_result
+  FROM (
+    SELECT 
+      u.id,
+      u.email,
+      COALESCE(p.full_name, u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name', 'Vistāra Patron') as name,
+      COALESCE(p.phone, '') as phone,
+      to_char(u.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD HH24:MI:SS') as "registeredDate",
+      COALESCE(to_char(u.last_sign_in_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD HH24:MI:SS'), to_char(u.created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD HH24:MI:SS')) as "lastLogin",
+      u.last_sign_in_at,
+      u.created_at,
+      COALESCE(p.provider, u.raw_app_meta_data->>'provider', 'google') as provider,
+      'active' as status,
+      COALESCE(p.member_tier, 'Verified Patron') as "memberTier",
+      COALESCE(ord.order_count, 0) as "totalOrders",
+      COALESCE(ord.total_spent, 0) as "totalSpent",
+      jsonb_build_object(
+        'fullName', COALESCE(p.full_name, u.raw_user_meta_data->>'name', ''),
+        'phone', COALESCE(p.phone, ''),
+        'street', COALESCE(p.address, ''),
+        'city', 'Bengaluru',
+        'state', 'KA',
+        'pincode', COALESCE(p.pincode, '')
+      ) as "defaultAddress"
+    FROM auth.users u
+    LEFT JOIN public.profiles p ON p.id = u.id
+    LEFT JOIN (
+      SELECT 
+        customer_email,
+        COUNT(*)::int as order_count,
+        COALESCE(SUM(total), 0)::numeric as total_spent
+      FROM public.orders
+      GROUP BY customer_email
+    ) ord ON lower(ord.customer_email) = lower(u.email)
+    ORDER BY u.last_sign_in_at DESC NULLS LAST, u.created_at DESC
+  ) cust;
+
+  RETURN COALESCE(v_result, '[]'::jsonb);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_customer_directory() TO anon, authenticated;

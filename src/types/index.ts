@@ -124,6 +124,10 @@ export interface Customer {
   totalSpent: number;
   status: 'active' | 'blocked';
   defaultAddress?: ShippingAddress;
+  provider?: string;
+  last_sign_in_at?: string;
+  created_at?: string;
+  memberTier?: string;
 }
 
 export interface InventoryMovement {

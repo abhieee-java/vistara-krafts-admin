@@ -22,13 +22,43 @@ export const customerService = {
     if (!isSupabaseConfigured) return this.getCustomers();
 
     try {
+      // 1. Primary: Use dedicated SECURITY DEFINER RPC to query live auth.users and profiles
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_customer_directory');
+
+      if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+        const customers: Customer[] = rpcData.map((row: any) => ({
+          id: row.id,
+          name: row.name || 'Vistāra Patron',
+          email: row.email,
+          phone: row.phone || '',
+          registeredDate: row.registeredDate || (row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recent'),
+          lastLogin: row.lastLogin || (row.last_sign_in_at ? new Date(row.last_sign_in_at).toLocaleDateString() : 'Recent'),
+          last_sign_in_at: row.last_sign_in_at,
+          created_at: row.created_at,
+          provider: row.provider || 'google',
+          memberTier: row.memberTier || 'Verified Patron',
+          totalOrders: Number(row.totalOrders || 0),
+          totalSpent: Number(row.totalSpent || 0),
+          status: (row.status as 'active' | 'blocked') || 'active',
+          defaultAddress: row.defaultAddress || undefined
+        }));
+
+        localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+        return customers;
+      }
+
+      if (rpcError) {
+        console.warn('[customerService] RPC notice:', rpcError.message);
+      }
+
+      // 2. Fallback: Standard profiles query
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.warn('Profiles fetch notice:', error.message);
+        console.warn('[customerService] Profiles fetch notice:', error.message);
         return this.getCustomers();
       }
 
@@ -48,7 +78,7 @@ export const customerService = {
         return customers;
       }
     } catch (e) {
-      console.error('Customer sync exception:', e);
+      console.error('[customerService] Customer sync exception:', e);
     }
 
     return this.getCustomers();
