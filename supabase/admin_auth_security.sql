@@ -450,8 +450,8 @@ BEGIN
         'fullName', COALESCE(p.full_name, u.raw_user_meta_data->>'name', ''),
         'phone', COALESCE(p.phone, ''),
         'street', COALESCE(p.address, ''),
-        'city', 'Bengaluru',
-        'state', 'KA',
+        'city', 'Guwahati',
+        'state', 'AS',
         'pincode', COALESCE(p.pincode, '')
       ) as "defaultAddress"
     FROM auth.users u
