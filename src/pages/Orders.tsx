@@ -5,7 +5,9 @@ import { StatusBadge } from '../components/common/Badge';
 import { OrderDetailDrawer } from '../components/orders/OrderDetailDrawer';
 import { InvoiceModal } from '../components/orders/InvoiceModal';
 import { ConfirmationDialog } from '../components/common/ConfirmationDialog';
-import { Search, Filter, FileText, Truck, Eye } from 'lucide-react';
+import { EmptyState } from '../components/common/EmptyState';
+import { TableSkeleton, MobileCardSkeleton } from '../components/common/Skeleton';
+import { Search, Filter, FileText, Truck, Eye, Package, RefreshCw } from 'lucide-react';
 
 interface OrdersProps {
   selectedOrder: Order | null;
@@ -18,7 +20,9 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
     updateOrderStatus,
     updateOrderTracking,
     cancelOrder,
-    refundOrder
+    refundOrder,
+    refreshFromDb,
+    isLoadingDb
   } = useStore();
 
   const [search, setSearch] = useState('');
@@ -85,9 +89,58 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
         </div>
       </div>
 
+      {/* Loading Skeletons during live database sync */}
+      {isLoadingDb && orders.length === 0 && (
+        <div className="space-y-4">
+          <div className="md:hidden">
+            <MobileCardSkeleton count={3} />
+          </div>
+          <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden p-2">
+            <TableSkeleton rows={5} columns={7} />
+          </div>
+        </div>
+      )}
+
+      {/* Zero Orders in Store State */}
+      {!isLoadingDb && orders.length === 0 && (
+        <div className="my-6">
+          <EmptyState
+            icon={Package}
+            title="No Customer Orders Yet"
+            description="Real-time orders placed on the live storefront via Razorpay or COD will automatically appear here for verification and dispatch."
+            secondaryAction={{
+              label: isLoadingDb ? 'Checking DB...' : 'Sync Orders from Supabase',
+              onClick: refreshFromDb,
+              icon: RefreshCw,
+              loading: isLoadingDb
+            }}
+          />
+        </div>
+      )}
+
+      {/* Empty Filter State (Mobile & Desktop) */}
+      {orders.length > 0 && filteredOrders.length === 0 && (
+        <div className="py-4">
+          <EmptyState
+            icon={Search}
+            title="No Matching Orders"
+            description="No orders match your filter criteria. Try adjusting your search term or switching to 'All Orders'."
+            compact
+            secondaryAction={{
+              label: 'Reset Filters',
+              onClick: () => {
+                setSearch('');
+                setStatusFilter('all');
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* Mobile Orders Card List (Visible on Phone Screens < 768px) */}
-      <div className="md:hidden space-y-3">
-        {filteredOrders.map((ord) => (
+      {filteredOrders.length > 0 && (
+        <div className="md:hidden space-y-3">
+          {filteredOrders.map((ord) => (
           <div
             key={ord.id}
             className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3"
@@ -166,7 +219,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
               </button>
               <button
                 onClick={() => setInvoiceOrder(ord)}
-                className="py-2 px-3 rounded-xl border border-[#e6e2d8] text-gray-700 hover:bg-gray-50 text-xs font-semibold transition-colors flex items-center gap-1"
+                className="py-2 px-3 rounded-xl border border-[#e6e2d8] text-gray-700 hover:bg-gray-50 text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
                 title="View Invoice"
               >
                 <FileText className="w-3.5 h-3.5" />
@@ -175,124 +228,117 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Desktop Orders Table (Hidden on Mobile) */}
-      <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-[#faf8f5] border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
-                <th className="py-3 px-4 text-left">Order &amp; Date</th>
-                <th className="py-3 px-3 text-left">Customer &amp; Location</th>
-                <th className="py-3 px-3 text-left">Preserved Keepsakes / Kits</th>
-                <th className="py-3 px-3 text-right">Total (₹)</th>
-                <th className="py-3 px-3 text-left">Courier Tracking</th>
-                <th className="py-3 px-3 text-center">Fulfillment</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredOrders.map((ord) => (
-                <tr
-                  key={ord.id}
-                  onClick={() => setSelectedOrder(ord)}
-                  className="interactive-row cursor-pointer group"
-                >
-                  {/* Order Number & Date */}
-                  <td className="py-3.5 px-4">
-                    <div className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
-                      {ord.orderNumber}
-                    </div>
-                    <div className="text-[10px] text-gray-400">
-                      {new Date(ord.createdAt).toLocaleDateString()} at{' '}
-                      {new Date(ord.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </div>
-                  </td>
-
-                  {/* Customer & Location */}
-                  <td className="py-3.5 px-3">
-                    <div className="font-semibold text-gray-800">{ord.customerName}</div>
-                    <div className="text-[11px] text-gray-500 font-mono">
-                      {ord.shippingAddress.city} • PIN: {ord.shippingAddress.pincode}
-                    </div>
-                  </td>
-
-                  {/* Items */}
-                  <td className="py-3.5 px-3 max-w-xs">
-                    <div className="truncate font-medium text-gray-700">
-                      {ord.items.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
-                    </div>
-                    {ord.items.some((i) => i.customNote) && (
-                      <span className="inline-block mt-0.5 text-[9px] font-bold text-amber-800 bg-amber-50 px-1 rounded border border-amber-200">
-                        Custom Note Attached
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Total Amount */}
-                  <td className="py-3.5 px-3 text-right">
-                    <div className="font-bold text-sm text-[#1c1b18]">
-                      ₹{ord.totalAmount.toLocaleString()}
-                    </div>
-                    <div className="text-[10px] text-emerald-700 font-semibold uppercase">
-                      {ord.paymentMethod} • {ord.paymentStatus}
-                    </div>
-                  </td>
-
-                  {/* Tracking */}
-                  <td className="py-3.5 px-3">
-                    {ord.trackingNumber ? (
-                      <div className="flex items-center gap-1.5 text-teal-800 font-mono font-medium text-[11px]">
-                        <Truck className="w-3.5 h-3.5 text-teal-600" />
-                        <span>
-                          {ord.carrier}: {ord.trackingNumber}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 italic text-[11px]">Unassigned</span>
-                    )}
-                  </td>
-
-                  {/* Status Badge */}
-                  <td className="py-3.5 px-3 text-center">
-                    <StatusBadge status={ord.orderStatus} />
-                  </td>
-
-                  {/* Actions */}
-                  <td className="py-3.5 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        onClick={() => setInvoiceOrder(ord)}
-                        className="p-1.5 text-gray-500 hover:text-[#cda851] hover:bg-gray-100 rounded-lg transition-colors"
-                        title="Print Order Invoice"
-                      >
-                        <FileText className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setSelectedOrder(ord)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#1c1b18] text-[#cda851] text-xs font-bold hover:bg-[#2d2a24] transition-colors"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        Manage
-                      </button>
-                    </div>
-                  </td>
+      {filteredOrders.length > 0 && (
+        <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-[#faf8f5] border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
+                  <th className="py-3 px-4 text-left">Order &amp; Date</th>
+                  <th className="py-3 px-3 text-left">Customer &amp; Location</th>
+                  <th className="py-3 px-3 text-left">Preserved Keepsakes / Kits</th>
+                  <th className="py-3 px-3 text-right">Total (₹)</th>
+                  <th className="py-3 px-3 text-left">Courier Tracking</th>
+                  <th className="py-3 px-3 text-center">Fulfillment</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredOrders.map((ord) => (
+                  <tr
+                    key={ord.id}
+                    onClick={() => setSelectedOrder(ord)}
+                    className="interactive-row cursor-pointer group"
+                  >
+                    {/* Order Number & Date */}
+                    <td className="py-3.5 px-4">
+                      <div className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
+                        {ord.orderNumber}
+                      </div>
+                      <div className="text-[10px] text-gray-400">
+                        {new Date(ord.createdAt).toLocaleDateString()} at{' '}
+                        {new Date(ord.createdAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </td>
 
-        {filteredOrders.length === 0 && (
-          <div className="p-12 text-center text-gray-400 text-xs">
-            No orders match the selected search or filter status.
+                    {/* Customer & Location */}
+                    <td className="py-3.5 px-3">
+                      <div className="font-semibold text-gray-800">{ord.customerName}</div>
+                      <div className="text-[11px] text-gray-500 font-mono">
+                        {ord.shippingAddress.city} • PIN: {ord.shippingAddress.pincode}
+                      </div>
+                    </td>
+
+                    {/* Items */}
+                    <td className="py-3.5 px-3 max-w-xs">
+                      <div className="truncate font-medium text-gray-700">
+                        {ord.items.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
+                      </div>
+                      {ord.items.some((i) => i.customNote) && (
+                        <span className="inline-block mt-0.5 text-[9px] font-bold text-amber-800 bg-amber-50 px-1 rounded border border-amber-200">
+                          Custom Note Attached
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Total Amount */}
+                    <td className="py-3.5 px-3 text-right">
+                      <div className="font-bold text-sm text-[#1c1b18]">
+                        ₹{ord.totalAmount.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-emerald-700 font-semibold uppercase">
+                        {ord.paymentMethod} • {ord.paymentStatus}
+                      </div>
+                    </td>
+
+                    {/* Tracking */}
+                    <td className="py-3.5 px-3">
+                      {ord.trackingNumber ? (
+                        <div className="flex items-center gap-1.5 text-teal-800 font-mono font-medium text-[11px]">
+                          <Truck className="w-3.5 h-3.5 text-teal-600" />
+                          <span>
+                            {ord.carrier}: {ord.trackingNumber}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 italic text-[11px]">Unassigned</span>
+                      )}
+                    </td>
+
+                    {/* Status Badge */}
+                    <td className="py-3.5 px-3 text-center">
+                      <StatusBadge status={ord.orderStatus} />
+                    </td>
+
+                    {/* Actions - Canonical Entry Point */}
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrder(ord);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1c1b18] text-[#cda851] text-xs font-bold hover:bg-[#2d2a24] transition-colors cursor-pointer shadow-sm active:scale-95"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Manage</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Slide-Over Order Detail Drawer */}
       {selectedOrder && (

@@ -4,6 +4,8 @@ import { Customer } from '../types';
 import { Modal } from '../components/common/Modal';
 import { ConfirmationDialog } from '../components/common/ConfirmationDialog';
 import { StatusBadge } from '../components/common/Badge';
+import { EmptyState } from '../components/common/EmptyState';
+import { TableSkeleton, MobileCardSkeleton } from '../components/common/Skeleton';
 import {
   Search,
   Mail,
@@ -232,18 +234,60 @@ export const Customers: React.FC = () => {
         </div>
       </div>
 
+      {/* Loading Skeletons during live database sync */}
+      {isLoadingDb && customers.length === 0 && (
+        <div className="space-y-4">
+          <div className="md:hidden">
+            <MobileCardSkeleton count={3} />
+          </div>
+          <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden p-2">
+            <TableSkeleton rows={5} columns={8} />
+          </div>
+        </div>
+      )}
+
+      {/* Zero Registered Patrons State */}
+      {!isLoadingDb && customers.length === 0 && (
+        <div className="my-6">
+          <EmptyState
+            icon={Users}
+            title="Patron Directory Initialized"
+            description="Real-time customer signups and authentications via Google SSO or email on the live storefront will synchronize here automatically."
+            secondaryAction={{
+              label: isLoadingDb ? 'Checking DB...' : 'Sync from Supabase',
+              onClick: handleManualRefresh,
+              icon: RefreshCw,
+              loading: isLoadingDb
+            }}
+          />
+        </div>
+      )}
+
+      {/* Empty Filter State (Mobile & Desktop) */}
+      {customers.length > 0 && filteredCustomers.length === 0 && (
+        <div className="py-4">
+          <EmptyState
+            icon={Search}
+            title="No Matching Patrons"
+            description="No patrons found matching your search criteria. Try adjusting your search term or switching to 'All Patrons'."
+            compact
+            secondaryAction={{
+              label: 'Reset Filters',
+              onClick: () => {
+                setSearch('');
+                setFilterTab('all');
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* 3. MOBILE PATRON CARDS (< 768px) */}
       {/* ========================================================================= */}
-      <div className="md:hidden space-y-3">
-        {filteredCustomers.length === 0 ? (
-          <div className="bg-white border border-[#e6e2d8] rounded-2xl p-8 text-center text-xs text-gray-500 space-y-2">
-            <Users className="w-8 h-8 text-gray-300 mx-auto" />
-            <p className="font-semibold text-gray-700">No patrons found matching your search</p>
-            <p className="text-[11px] text-gray-400">Try adjusting your search criteria or filter tabs</p>
-          </div>
-        ) : (
-          filteredCustomers.map((c) => (
+      {filteredCustomers.length > 0 && (
+        <div className="md:hidden space-y-3">
+          {filteredCustomers.map((c) => (
             <div
               key={c.id}
               className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3 text-xs"
@@ -323,39 +367,31 @@ export const Customers: React.FC = () => {
                 </button>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 4. DESKTOP CUSTOMERS TABLE (>= 768px) */}
       {/* ========================================================================= */}
-      <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-[#faf8f5] border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
-                <th className="py-3 px-4 text-left">Patron Name &amp; SSO</th>
-                <th className="py-3 px-3 text-left">Contact Info</th>
-                <th className="py-3 px-3 text-left">Last Login / Active</th>
-                <th className="py-3 px-3 text-left">Registered Date</th>
-                <th className="py-3 px-3 text-center">Orders</th>
-                <th className="py-3 px-3 text-right">Lifetime Spend</th>
-                <th className="py-3 px-3 text-center">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredCustomers.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-400">
-                    <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="font-semibold text-gray-600">No patrons found</p>
-                    <p className="text-[11px]">No registered users matching this view or search filter</p>
-                  </td>
+      {filteredCustomers.length > 0 && (
+        <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-[#faf8f5] border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
+                  <th className="py-3 px-4 text-left">Patron Name &amp; SSO</th>
+                  <th className="py-3 px-3 text-left">Contact Info</th>
+                  <th className="py-3 px-3 text-left">Last Login / Active</th>
+                  <th className="py-3 px-3 text-left">Registered Date</th>
+                  <th className="py-3 px-3 text-center">Orders</th>
+                  <th className="py-3 px-3 text-right">Lifetime Spend</th>
+                  <th className="py-3 px-3 text-center">Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
-              ) : (
-                filteredCustomers.map((c) => (
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredCustomers.map((c) => (
                   <tr key={c.id} className="hover:bg-[#faf8f5]/80 transition-colors">
                     {/* Patron Name & SSO Badge */}
                     <td className="py-3.5 px-4">
@@ -461,12 +497,12 @@ export const Customers: React.FC = () => {
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 5. CUSTOMER DETAILED PROFILE & ORDERS MODAL */}

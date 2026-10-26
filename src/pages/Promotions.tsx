@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Coupon } from '../types';
 import { Modal } from '../components/common/Modal';
+import { EmptyState } from '../components/common/EmptyState';
 import { Ticket, Plus, Trash2, Megaphone, CheckCircle2, XCircle, Sliders } from 'lucide-react';
 
 export const Promotions: React.FC = () => {
@@ -121,18 +122,37 @@ export const Promotions: React.FC = () => {
             Active promo codes validated during customer checkout
           </p>
         </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#cda851] text-[#1c1b18] text-xs font-bold hover:bg-[#dfc27d] transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Create New Coupon
-        </button>
+        {coupons.length > 0 && (
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#cda851] text-[#1c1b18] text-xs font-bold hover:bg-[#dfc27d] transition-colors shadow-sm cursor-pointer active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            Create New Coupon
+          </button>
+        )}
       </div>
 
+      {/* Empty Coupons State */}
+      {coupons.length === 0 && (
+        <div className="my-4">
+          <EmptyState
+            icon={Ticket}
+            title="No Promotional Coupons Yet"
+            description="Create discount vouchers or promo codes for customers to apply at checkout."
+            action={{
+              label: 'Create First Coupon',
+              onClick: () => setIsAddModalOpen(true),
+              icon: Plus
+            }}
+          />
+        </div>
+      )}
+
       {/* Mobile Coupon Cards (Phone Screens < 768px) */}
-      <div className="md:hidden space-y-3">
-        {coupons.map((c) => (
+      {coupons.length > 0 && (
+        <div className="md:hidden space-y-3">
+          {coupons.map((c) => (
           <div
             key={c.id}
             className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3 text-xs"
@@ -184,7 +204,7 @@ export const Promotions: React.FC = () => {
               <div>Used: <strong className="text-gray-700">{c.usageCount} / {c.usageLimit}</strong></div>
               <button
                 onClick={() => deleteCoupon(c.id)}
-                className="p-1 text-gray-400 hover:text-red-600"
+                className="p-1 text-gray-400 hover:text-red-600 cursor-pointer"
                 title="Delete Coupon"
               >
                 <Trash2 className="w-4 h-4" />
@@ -192,81 +212,84 @@ export const Promotions: React.FC = () => {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Desktop Coupons Table (Hidden on Mobile) */}
-      <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-[#faf8f5] border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
-                <th className="py-3 px-4 text-left">Coupon Code</th>
-                <th className="py-3 px-3 text-left">Discount Offer</th>
-                <th className="py-3 px-3 text-right">Min Order Value</th>
-                <th className="py-3 px-3 text-center">Expiry Date</th>
-                <th className="py-3 px-3 text-center">Redemptions</th>
-                <th className="py-3 px-3 text-center">Status</th>
-                <th className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {coupons.map((c) => (
-                <tr key={c.id} className="hover:bg-[#faf8f5]/80 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-sm text-[#1c1b18]">
-                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#faf8f5] border border-[#e6e2d8]">
-                      <Ticket className="w-3.5 h-3.5 text-[#cda851]" />
-                      <span>{c.code}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 font-semibold text-emerald-800">
-                    {c.discountType === 'percentage'
-                      ? `${c.discountValue}% OFF`
-                      : `Flat ₹${c.discountValue} OFF`}
-                  </td>
-                  <td className="py-3 px-3 text-right text-gray-700">
-                    ₹{c.minOrderValue.toLocaleString()}
-                  </td>
-                  <td className="py-3 px-3 text-center text-gray-500 font-mono">{c.expiryDate}</td>
-                  <td className="py-3 px-3 text-center font-bold text-[#1c1b18]">
-                    {c.usageCount} / {c.usageLimit}
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <button
-                      onClick={() => toggleCoupon(c.id)}
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                        c.isActive
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {c.isActive ? (
-                        <>
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>Active</span>
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3 h-3 text-gray-500" />
-                          <span>Disabled</span>
-                        </>
-                      )}
-                    </button>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => deleteCoupon(c.id)}
-                      className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete Coupon"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
+      {coupons.length > 0 && (
+        <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-[#faf8f5] border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
+                  <th className="py-3 px-4 text-left">Coupon Code</th>
+                  <th className="py-3 px-3 text-left">Discount Offer</th>
+                  <th className="py-3 px-3 text-right">Min Order Value</th>
+                  <th className="py-3 px-3 text-center">Expiry Date</th>
+                  <th className="py-3 px-3 text-center">Redemptions</th>
+                  <th className="py-3 px-3 text-center">Status</th>
+                  <th className="py-3 px-4 text-right">Action</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {coupons.map((c) => (
+                  <tr key={c.id} className="hover:bg-[#faf8f5]/80 transition-colors">
+                    <td className="py-3 px-4 font-mono font-bold text-sm text-[#1c1b18]">
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#faf8f5] border border-[#e6e2d8]">
+                        <Ticket className="w-3.5 h-3.5 text-[#cda851]" />
+                        <span>{c.code}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 font-semibold text-emerald-800">
+                      {c.discountType === 'percentage'
+                        ? `${c.discountValue}% OFF`
+                        : `Flat ₹${c.discountValue} OFF`}
+                    </td>
+                    <td className="py-3 px-3 text-right text-gray-700">
+                      ₹{c.minOrderValue.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 text-center text-gray-500 font-mono">{c.expiryDate}</td>
+                    <td className="py-3 px-3 text-center font-bold text-[#1c1b18]">
+                      {c.usageCount} / {c.usageLimit}
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <button
+                        onClick={() => toggleCoupon(c.id)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase cursor-pointer ${
+                          c.isActive
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {c.isActive ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Active</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-3 h-3 text-gray-500" />
+                            <span>Disabled</span>
+                          </>
+                        )}
+                      </button>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => deleteCoupon(c.id)}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Delete Coupon"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Storefront Feature Modules & Sections Toggle Card */}
       <div className="bg-white border border-[#e6e2d8] rounded-2xl p-6 shadow-sm space-y-4">

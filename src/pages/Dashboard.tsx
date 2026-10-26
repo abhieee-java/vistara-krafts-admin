@@ -1,6 +1,8 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { StatusBadge } from '../components/common/Badge';
+import { EmptyState } from '../components/common/EmptyState';
+import { CardSkeleton } from '../components/common/Skeleton';
 import {
   TrendingUp,
   ShoppingBag,
@@ -27,7 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onOpenOrder,
   onOpenNewProduct
 }) => {
-  const { products, orders, customers, auditLogs } = useStore();
+  const { products, orders, customers, auditLogs, isLoadingDb } = useStore();
 
   // Metrics Calculations
   const totalRevenue = orders
@@ -105,74 +107,78 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Total Revenue */}
-        <div className="p-4 sm:p-5 luxury-card space-y-3 cursor-default group">
-          <div className="flex items-center justify-between text-gray-500">
-            <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Total Revenue</span>
-            <div className="p-2 rounded-xl bg-[#faf8f5] text-[#cda851] border border-[#e6e2d8] group-hover:border-[#cda851]/50 group-hover:scale-105 transition-all">
-              <TrendingUp className="w-4 h-4" />
+      {isLoadingDb && products.length === 0 && orders.length === 0 ? (
+        <CardSkeleton count={4} />
+      ) : (
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Total Revenue */}
+          <div className="p-4 sm:p-5 luxury-card space-y-3 cursor-default group">
+            <div className="flex items-center justify-between text-gray-500">
+              <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Total Revenue</span>
+              <div className="p-2 rounded-xl bg-[#faf8f5] text-[#cda851] border border-[#e6e2d8] group-hover:border-[#cda851]/50 group-hover:scale-105 transition-all">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#cda851] transition-colors">
+                ₹{totalRevenue.toLocaleString()}
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium mt-1">
+                <ArrowUpRight className="w-3.5 h-3.5" />
+                <span>+18.4% vs last week</span>
+              </div>
             </div>
           </div>
-          <div>
-            <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#cda851] transition-colors">
-              ₹{totalRevenue.toLocaleString()}
-            </div>
-            <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium mt-1">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>+18.4% vs last week</span>
-            </div>
-          </div>
-        </div>
 
-        {/* Total & Pending Orders */}
-        <div className="p-5 luxury-card space-y-3 cursor-default group">
-          <div className="flex items-center justify-between text-gray-500">
-            <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Orders &amp; Dispatch</span>
-            <div className="p-2 rounded-xl bg-[#faf8f5] text-purple-600 border border-[#e6e2d8] group-hover:border-purple-300 group-hover:scale-105 transition-all">
-              <ShoppingBag className="w-4 h-4" />
+          {/* Total & Pending Orders */}
+          <div className="p-5 luxury-card space-y-3 cursor-default group">
+            <div className="flex items-center justify-between text-gray-500">
+              <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Orders &amp; Dispatch</span>
+              <div className="p-2 rounded-xl bg-[#faf8f5] text-purple-600 border border-[#e6e2d8] group-hover:border-purple-300 group-hover:scale-105 transition-all">
+                <ShoppingBag className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-purple-900 transition-colors">{orders.length}</div>
+              <div className="text-[11px] text-amber-700 font-semibold mt-1">
+                {pendingOrders} awaiting fulfillment
+              </div>
             </div>
           </div>
-          <div>
-            <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-purple-900 transition-colors">{orders.length}</div>
-            <div className="text-[11px] text-amber-700 font-semibold mt-1">
-              {pendingOrders} awaiting fulfillment
-            </div>
-          </div>
-        </div>
 
-        {/* Active Catalog */}
-        <div className="p-5 luxury-card space-y-3 cursor-default group">
-          <div className="flex items-center justify-between text-gray-500">
-            <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Products in Catalog</span>
-            <div className="p-2 rounded-xl bg-[#faf8f5] text-blue-600 border border-[#e6e2d8] group-hover:border-blue-300 group-hover:scale-105 transition-all">
-              <Package className="w-4 h-4" />
+          {/* Active Catalog */}
+          <div className="p-5 luxury-card space-y-3 cursor-default group">
+            <div className="flex items-center justify-between text-gray-500">
+              <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Products in Catalog</span>
+              <div className="p-2 rounded-xl bg-[#faf8f5] text-blue-600 border border-[#e6e2d8] group-hover:border-blue-300 group-hover:scale-105 transition-all">
+                <Package className="w-4 h-4" />
+              </div>
+            </div>
+            <div>
+              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-blue-900 transition-colors">{products.length}</div>
+              <div className="text-[11px] text-gray-500 font-medium mt-1">
+                {products.filter((p) => p.inStock).length} active for purchase
+              </div>
             </div>
           </div>
-          <div>
-            <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-blue-900 transition-colors">{products.length}</div>
-            <div className="text-[11px] text-gray-500 font-medium mt-1">
-              {products.filter((p) => p.inStock).length} active for purchase
-            </div>
-          </div>
-        </div>
 
-        {/* Patrons & Customers */}
-        <div className="p-5 luxury-card space-y-3 cursor-default group">
-          <div className="flex items-center justify-between text-gray-500">
-            <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Registered Patrons</span>
-            <div className="p-2 rounded-xl bg-[#faf8f5] text-teal-600 border border-[#e6e2d8] group-hover:border-teal-300 group-hover:scale-105 transition-all">
-              <Users className="w-4 h-4" />
+          {/* Patrons & Customers */}
+          <div className="p-5 luxury-card space-y-3 cursor-default group">
+            <div className="flex items-center justify-between text-gray-500">
+              <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Registered Patrons</span>
+              <div className="p-2 rounded-xl bg-[#faf8f5] text-teal-600 border border-[#e6e2d8] group-hover:border-teal-300 group-hover:scale-105 transition-all">
+                <Users className="w-4 h-4" />
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-teal-900 transition-colors">{customers.length}</div>
-            <div className="text-[11px] text-emerald-600 font-medium mt-1">
-              100% account delivery rate
+            <div>
+              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-teal-900 transition-colors">{customers.length}</div>
+              <div className="text-[11px] text-emerald-600 font-medium mt-1">
+                100% account delivery rate
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Two Column Section: Recent Orders & Top Products */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -191,82 +197,96 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
           </div>
 
-          {/* Mobile Recent Orders Cards (Phone Screens < 768px) */}
-          <div className="md:hidden space-y-2.5">
-            {recentOrders.map((ord) => (
-              <div
-                key={ord.id}
-                onClick={() => onOpenOrder(ord)}
-                className="p-3.5 rounded-xl border border-[#e6e2d8] hover:border-[#cda851] bg-[#faf8f5]/50 active:bg-[#faf8f5] transition-all space-y-2 text-xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono font-bold text-xs text-[#1c1b18] whitespace-nowrap">{ord.orderNumber}</span>
-                  <StatusBadge status={ord.orderStatus} />
-                </div>
-                <div className="flex items-center justify-between text-gray-700">
-                  <div>
-                    <span className="font-semibold">{ord.customerName}</span>
-                    <span className="text-gray-400 text-[10px] ml-1">({ord.shippingAddress.city})</span>
-                  </div>
-                  <span className="font-serif font-bold text-sm text-[#1c1b18]">
-                    ₹{ord.totalAmount.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100">
-                  <span className="truncate max-w-[200px]">
-                    {ord.items.map((i) => i.productName).join(', ')}
-                  </span>
-                  <span className="text-[#cda851] font-bold">Details →</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop Table (Hidden on Mobile) */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
-                  <th className="py-2.5 text-left">Order #</th>
-                  <th className="py-2.5 text-left">Customer</th>
-                  <th className="py-2.5 text-left">Items</th>
-                  <th className="py-2.5 text-right">Amount</th>
-                  <th className="py-2.5 text-center">Status</th>
-                  <th className="py-2.5 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+          {/* Orders Content or Empty State */}
+          {orders.length === 0 ? (
+            <div className="py-4">
+              <EmptyState
+                icon={ShoppingBag}
+                title="No Studio Orders Recorded"
+                description="Live customer orders placed on the storefront will stream here automatically for verification and fulfillment."
+                compact
+              />
+            </div>
+          ) : (
+            <>
+              {/* Mobile Recent Orders Cards (Phone Screens < 768px) */}
+              <div className="md:hidden space-y-2.5">
                 {recentOrders.map((ord) => (
-                  <tr key={ord.id} className="interactive-row cursor-pointer" onClick={() => onOpenOrder(ord)}>
-                    <td className="py-3 font-mono font-bold text-[#1c1b18] whitespace-nowrap">
-                      {ord.orderNumber}
-                    </td>
-                    <td className="py-3">
-                      <p className="font-semibold text-gray-800">{ord.customerName}</p>
-                      <p className="text-[10px] text-gray-400">{ord.shippingAddress.city}</p>
-                    </td>
-                    <td className="py-3 text-gray-600 max-w-[180px] truncate">
-                      {ord.items.map((i) => i.productName).join(', ')}
-                    </td>
-                    <td className="py-3 text-right font-bold text-[#1c1b18]">
-                      ₹{ord.totalAmount.toLocaleString()}
-                    </td>
-                    <td className="py-3 text-center">
+                  <div
+                    key={ord.id}
+                    onClick={() => onOpenOrder(ord)}
+                    className="p-3.5 rounded-xl border border-[#e6e2d8] hover:border-[#cda851] bg-[#faf8f5]/50 active:bg-[#faf8f5] transition-all space-y-2 text-xs cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-xs text-[#1c1b18] whitespace-nowrap">{ord.orderNumber}</span>
                       <StatusBadge status={ord.orderStatus} />
-                    </td>
-                    <td className="py-3 text-right">
-                      <button
-                        onClick={() => onOpenOrder(ord)}
-                        className="px-2.5 py-1 rounded-lg border border-[#e6e2d8] text-[11px] font-semibold text-gray-700 hover:bg-gray-100"
-                      >
-                        Details
-                      </button>
-                    </td>
-                  </tr>
+                    </div>
+                    <div className="flex items-center justify-between text-gray-700">
+                      <div>
+                        <span className="font-semibold">{ord.customerName}</span>
+                        <span className="text-gray-400 text-[10px] ml-1">({ord.shippingAddress.city})</span>
+                      </div>
+                      <span className="font-serif font-bold text-sm text-[#1c1b18]">
+                        ₹{ord.totalAmount.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100">
+                      <span className="truncate max-w-[200px]">
+                        {ord.items.map((i) => i.productName).join(', ')}
+                      </span>
+                      <span className="text-[#cda851] font-bold">Details →</span>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+
+              {/* Desktop Table (Hidden on Mobile) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
+                      <th className="py-2.5 text-left">Order #</th>
+                      <th className="py-2.5 text-left">Customer</th>
+                      <th className="py-2.5 text-left">Items</th>
+                      <th className="py-2.5 text-right">Amount</th>
+                      <th className="py-2.5 text-center">Status</th>
+                      <th className="py-2.5 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {recentOrders.map((ord) => (
+                      <tr key={ord.id} className="interactive-row cursor-pointer" onClick={() => onOpenOrder(ord)}>
+                        <td className="py-3 font-mono font-bold text-[#1c1b18] whitespace-nowrap">
+                          {ord.orderNumber}
+                        </td>
+                        <td className="py-3">
+                          <p className="font-semibold text-gray-800">{ord.customerName}</p>
+                          <p className="text-[10px] text-gray-400">{ord.shippingAddress.city}</p>
+                        </td>
+                        <td className="py-3 text-gray-600 max-w-[180px] truncate">
+                          {ord.items.map((i) => i.productName).join(', ')}
+                        </td>
+                        <td className="py-3 text-right font-bold text-[#1c1b18]">
+                          ₹{ord.totalAmount.toLocaleString()}
+                        </td>
+                        <td className="py-3 text-center">
+                          <StatusBadge status={ord.orderStatus} />
+                        </td>
+                        <td className="py-3 text-right">
+                          <button
+                            onClick={() => onOpenOrder(ord)}
+                            className="px-2.5 py-1 rounded-lg border border-[#e6e2d8] text-[11px] font-semibold text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          >
+                            Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right Column: Catalog Highlights & Live Logs */}
@@ -277,30 +297,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <Sparkles className="w-4 h-4 text-[#cda851]" />
               Top Products
             </h3>
-            <div className="space-y-3">
-              {products.slice(0, 4).map((p) => (
-                <div key={p.id} className="flex items-center gap-3">
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    className="w-10 h-10 rounded-lg object-cover border border-[#e6e2d8]"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-[#1c1b18] truncate">{p.shortName}</p>
-                    <p className="text-[10px] text-gray-500">
-                      ₹{p.price.toLocaleString()} • {p.stockQuantity} in stock
-                    </p>
+            {products.length === 0 ? (
+              <EmptyState
+                icon={Package}
+                title="Catalog Empty"
+                description="Products added to your catalog will be spotlighted here."
+                compact
+              />
+            ) : (
+              <div className="space-y-3">
+                {products.slice(0, 4).map((p) => (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      className="w-10 h-10 rounded-lg object-cover border border-[#e6e2d8]"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-[#1c1b18] truncate">{p.shortName}</p>
+                      <p className="text-[10px] text-gray-500">
+                        ₹{p.price.toLocaleString()} • {p.stockQuantity} in stock
+                      </p>
+                    </div>
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                        p.inStock ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {p.inStock ? 'ACTIVE' : 'OUT'}
+                    </span>
                   </div>
-                  <span
-                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                      p.inStock ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {p.inStock ? 'ACTIVE' : 'OUT'}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Recent Operations Log */}

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Modal } from '../components/common/Modal';
-import { Boxes, AlertTriangle, ArrowUpDown, History, Plus, Minus, Search } from 'lucide-react';
+import { EmptyState } from '../components/common/EmptyState';
+import { TableSkeleton, MobileCardSkeleton } from '../components/common/Skeleton';
+import { Boxes, AlertTriangle, ArrowUpDown, History, Plus, Minus, Search, RefreshCw } from 'lucide-react';
 
 export const Inventory: React.FC = () => {
-  const { products, movements, adjustStock } = useStore();
+  const { products, movements, adjustStock, refreshFromDb, isLoadingDb } = useStore();
 
   const [search, setSearch] = useState('');
   const [adjustingProductId, setAdjustingProductId] = useState<string | null>(null);
@@ -47,107 +49,155 @@ export const Inventory: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Stock Cards (Phone Screens < 768px) */}
-      <div className="md:hidden space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <Boxes className="w-4 h-4 text-[#cda851]" />
-            <span className="font-serif font-bold text-xs text-[#1c1b18]">Current Atelier Stock</span>
+      {/* Loading Skeletons during live database sync */}
+      {isLoadingDb && products.length === 0 && (
+        <div className="space-y-4">
+          <div className="md:hidden">
+            <MobileCardSkeleton count={3} />
           </div>
-          <span className="text-[10px] text-gray-500 font-medium">{products.length} items</span>
+          <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden p-2">
+            <TableSkeleton rows={5} columns={6} />
+          </div>
         </div>
+      )}
 
-        {filteredProducts.map((p) => {
-          const isOut = p.stockQuantity === 0;
-          const isLow = !isOut && p.stockQuantity <= (p.lowStockThreshold || 5);
+      {/* Zero Products in Inventory State */}
+      {!isLoadingDb && products.length === 0 && (
+        <div className="my-6">
+          <EmptyState
+            icon={Boxes}
+            title="Inventory Directory Empty"
+            description="Products created in the atelier catalog will automatically appear here for real-time stock level and threshold auditing."
+            secondaryAction={{
+              label: isLoadingDb ? 'Checking DB...' : 'Sync Catalog from Supabase',
+              onClick: refreshFromDb,
+              icon: RefreshCw,
+              loading: isLoadingDb
+            }}
+          />
+        </div>
+      )}
 
-          return (
-            <div
-              key={p.id}
-              className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h4 className="font-bold text-sm text-[#1c1b18]">{p.shortName}</h4>
-                  <p className="text-[11px] text-gray-500 line-clamp-1">{p.name}</p>
-                  <span className="font-mono text-[10px] text-gray-400 mt-1 inline-block">
-                    SKU: {p.sku}
-                  </span>
-                </div>
-                <div>
-                  {isOut ? (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">
-                      OUT OF STOCK
-                    </span>
-                  ) : isLow ? (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                      LOW STOCK
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                      HEALTHY
-                    </span>
-                  )}
-                </div>
-              </div>
+      {/* Empty Filter State (Mobile & Desktop) */}
+      {products.length > 0 && filteredProducts.length === 0 && (
+        <div className="py-4">
+          <EmptyState
+            icon={Search}
+            title="No Matching Inventory Items"
+            description="No inventory items match your search keyword. Try clearing or searching for another SKU or title."
+            compact
+            secondaryAction={{
+              label: 'Clear Search',
+              onClick: () => setSearch('')
+            }}
+          />
+        </div>
+      )}
 
-              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-gray-400">Available Stock:</div>
-                  <div className="font-serif font-bold text-lg text-[#1c1b18]">
-                    {p.stockQuantity} <span className="text-xs font-normal text-gray-500">units</span>
-                  </div>
-                  <div className="text-[10px] text-gray-400">
-                    Threshold: {p.lowStockThreshold || 5} units
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setAdjustingProductId(p.id)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#1c1b18] bg-[#cda851] hover:bg-[#dfc27d] transition-colors shadow-sm flex items-center gap-1.5"
-                >
-                  <ArrowUpDown className="w-3.5 h-3.5" />
-                  <span>Adjust Stock</span>
-                </button>
-              </div>
+      {/* Mobile Stock Cards (Phone Screens < 768px) */}
+      {filteredProducts.length > 0 && (
+        <div className="md:hidden space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <Boxes className="w-4 h-4 text-[#cda851]" />
+              <span className="font-serif font-bold text-xs text-[#1c1b18]">Current Atelier Stock</span>
             </div>
-          );
-        })}
-      </div>
+            <span className="text-[10px] text-gray-500 font-medium">{filteredProducts.length} items</span>
+          </div>
+
+          {filteredProducts.map((p) => {
+            const isOut = p.stockQuantity === 0;
+            const isLow = !isOut && p.stockQuantity <= (p.lowStockThreshold || 5);
+
+            return (
+              <div
+                key={p.id}
+                className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-sm text-[#1c1b18]">{p.shortName}</h4>
+                    <p className="text-[11px] text-gray-500 line-clamp-1">{p.name}</p>
+                    <span className="font-mono text-[10px] text-gray-400 mt-1 inline-block">
+                      SKU: {p.sku}
+                    </span>
+                  </div>
+                  <div>
+                    {isOut ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">
+                        OUT OF STOCK
+                      </span>
+                    ) : isLow ? (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                        LOW STOCK
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        HEALTHY
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-gray-400">Available Stock:</div>
+                    <div className="font-serif font-bold text-lg text-[#1c1b18]">
+                      {p.stockQuantity} <span className="text-xs font-normal text-gray-500">units</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400">
+                      Threshold: {p.lowStockThreshold || 5} units
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setAdjustingProductId(p.id)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-[#1c1b18] bg-[#cda851] hover:bg-[#dfc27d] transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <span>Adjust Stock</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Desktop Stock Table Card (Hidden on Mobile) */}
-      <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-[#e6e2d8] bg-[#faf8f5] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Boxes className="w-4 h-4 text-[#cda851]" />
-            <h3 className="font-serif font-bold text-sm text-[#1c1b18]">
-              Current Atelier Stock &amp; Thresholds
-            </h3>
+      {filteredProducts.length > 0 && (
+        <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-[#e6e2d8] bg-[#faf8f5] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Boxes className="w-4 h-4 text-[#cda851]" />
+              <h3 className="font-serif font-bold text-sm text-[#1c1b18]">
+                Current Atelier Stock &amp; Thresholds
+              </h3>
+            </div>
+            <span className="text-[11px] text-gray-500 font-medium">
+              {filteredProducts.length} catalog items tracked
+            </span>
           </div>
-          <span className="text-[11px] text-gray-500 font-medium">
-            {products.length} catalog items tracked
-          </span>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
-                <th className="py-3 px-4 text-left">Product Item</th>
-                <th className="py-3 px-3 text-left">SKU</th>
-                <th className="py-3 px-3 text-center">Available Stock</th>
-                <th className="py-3 px-3 text-center">Low Threshold</th>
-                <th className="py-3 px-3 text-center">Health</th>
-                <th className="py-3 px-4 text-right">Adjustment</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredProducts.map((p) => {
-                const isOut = p.stockQuantity === 0;
-                const isLow = !isOut && p.stockQuantity <= (p.lowStockThreshold || 5);
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
+                  <th className="py-3 px-4 text-left">Product Item</th>
+                  <th className="py-3 px-3 text-left">SKU</th>
+                  <th className="py-3 px-3 text-center">Available Stock</th>
+                  <th className="py-3 px-3 text-center">Low Threshold</th>
+                  <th className="py-3 px-3 text-center">Health</th>
+                  <th className="py-3 px-4 text-right">Adjustment</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredProducts.map((p) => {
+                  const isOut = p.stockQuantity === 0;
+                  const isLow = !isOut && p.stockQuantity <= (p.lowStockThreshold || 5);
 
-                return (
-                  <tr key={p.id} className="hover:bg-[#faf8f5]/80 transition-colors">
+                  return (
+                    <tr key={p.id} className="hover:bg-[#faf8f5]/80 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-bold text-[#1c1b18]">{p.shortName}</div>
                       <div className="text-[11px] text-gray-500 truncate max-w-sm">{p.name}</div>
@@ -195,6 +245,7 @@ export const Inventory: React.FC = () => {
           </table>
         </div>
       </div>
+      )}
 
       {/* Stock Adjustment Modal */}
       {adjustingProductId && selectedProduct && (
@@ -283,17 +334,30 @@ export const Inventory: React.FC = () => {
         </Modal>
       )}
 
-      {/* Mobile Movements Audit Cards (Phone Screens < 768px) */}
-      <div className="md:hidden space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-[#cda851]" />
-            <span className="font-serif font-bold text-xs text-[#1c1b18]">Recent Movement History</span>
-          </div>
-          <span className="text-[10px] text-gray-500 font-mono">{movements.length} events</span>
+      {/* Empty Movement History State */}
+      {movements.length === 0 && (
+        <div className="py-2">
+          <EmptyState
+            icon={History}
+            title="No Stock Movements Logged"
+            description="Stock adjustments, restock batches, customer deductions, and damage write-offs will log a live audit record here."
+            compact
+          />
         </div>
+      )}
 
-        {movements.map((m) => (
+      {/* Mobile Movements Audit Cards (Phone Screens < 768px) */}
+      {movements.length > 0 && (
+        <div className="md:hidden space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-[#cda851]" />
+              <span className="font-serif font-bold text-xs text-[#1c1b18]">Recent Movement History</span>
+            </div>
+            <span className="text-[10px] text-gray-500 font-mono">{movements.length} events</span>
+          </div>
+
+          {movements.map((m) => (
           <div
             key={m.id}
             className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-2 text-xs"
@@ -326,65 +390,68 @@ export const Inventory: React.FC = () => {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Desktop Inventory Movements Audit History (Hidden on Mobile) */}
-      <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-[#e6e2d8] bg-[#faf8f5] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-[#cda851]" />
-            <h3 className="font-serif font-bold text-sm text-[#1c1b18]">
-              Stock Movement History &amp; Audit Trail
-            </h3>
+      {movements.length > 0 && (
+        <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-[#e6e2d8] bg-[#faf8f5] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-[#cda851]" />
+              <h3 className="font-serif font-bold text-sm text-[#1c1b18]">
+                Stock Movement History &amp; Audit Trail
+              </h3>
+            </div>
+            <span className="text-[11px] text-gray-500 font-mono">
+              {movements.length} logged events
+            </span>
           </div>
-          <span className="text-[11px] text-gray-500 font-mono">
-            {movements.length} logged events
-          </span>
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
-                <th className="py-3 px-4 text-left">Timestamp</th>
-                <th className="py-3 px-3 text-left">Product</th>
-                <th className="py-3 px-3 text-center">Movement</th>
-                <th className="py-3 px-3 text-center">Resulting Stock</th>
-                <th className="py-3 px-3 text-left">Audit Reason</th>
-                <th className="py-3 px-4 text-right">Authorized By</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {movements.map((m) => (
-                <tr key={m.id} className="hover:bg-[#faf8f5]/80 transition-colors">
-                  <td className="py-3 px-4 text-gray-500 font-mono">
-                    {new Date(m.timestamp).toLocaleString()}
-                  </td>
-                  <td className="py-3 px-3 font-semibold text-[#1c1b18]">{m.productName}</td>
-                  <td className="py-3 px-3 text-center">
-                    <span
-                      className={`font-mono font-bold px-2 py-0.5 rounded text-xs ${
-                        m.change > 0
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {m.change > 0 ? `+${m.change}` : m.change}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 text-center font-bold text-gray-800">
-                    {m.newStock} units
-                  </td>
-                  <td className="py-3 px-3 text-gray-600">{m.reason}</td>
-                  <td className="py-3 px-4 text-right font-medium text-gray-500">
-                    {m.performedBy}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
+                  <th className="py-3 px-4 text-left">Timestamp</th>
+                  <th className="py-3 px-3 text-left">Product</th>
+                  <th className="py-3 px-3 text-center">Movement</th>
+                  <th className="py-3 px-3 text-center">Resulting Stock</th>
+                  <th className="py-3 px-3 text-left">Audit Reason</th>
+                  <th className="py-3 px-4 text-right">Authorized By</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {movements.map((m) => (
+                  <tr key={m.id} className="hover:bg-[#faf8f5]/80 transition-colors">
+                    <td className="py-3 px-4 text-gray-500 font-mono">
+                      {new Date(m.timestamp).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 font-semibold text-[#1c1b18]">{m.productName}</td>
+                    <td className="py-3 px-3 text-center">
+                      <span
+                        className={`font-mono font-bold px-2 py-0.5 rounded text-xs ${
+                          m.change > 0
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {m.change > 0 ? `+${m.change}` : m.change}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-center font-bold text-gray-800">
+                      {m.newStock} units
+                    </td>
+                    <td className="py-3 px-3 text-gray-600">{m.reason}</td>
+                    <td className="py-3 px-4 text-right font-medium text-gray-500">
+                      {m.performedBy}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

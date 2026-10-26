@@ -425,25 +425,12 @@ export const Settings: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => publishToStorefront()}
-              disabled={isPublishing}
-              className="group relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#9e3322] via-[#b33a27] to-[#7f2617] hover:from-[#b33a27] hover:to-[#6b1e11] text-white text-xs font-bold shadow-md hover:shadow-lg active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer overflow-hidden shrink-0"
-            >
-              <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
-              {isPublishing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Publishing Release...</span>
-                </>
-              ) : (
-                <>
-                  <Rocket className="w-4 h-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 text-amber-200" />
-                  <span>🚀 Publish to Live Storefront</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2 py-2 px-3.5 rounded-xl bg-white border border-[#e6e2d8] shadow-sm text-xs shrink-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[11px] font-medium text-gray-700">
+                Trigger releases via <strong className="text-[#9e3322]">🚀 Publish</strong> in top navigation
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
