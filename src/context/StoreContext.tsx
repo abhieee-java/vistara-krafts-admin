@@ -91,7 +91,7 @@ interface StoreContextType {
     reason: 'Manual Restock' | 'Order Deduction' | 'Damaged / Spoilage' | 'Correction' | 'Return Restock'
   ) => void;
   // Customers
-  toggleCustomerStatus: (customerId: string) => void;
+  toggleCustomerStatus: (customerId: string) => Promise<void> | void;
   // Coupons
   addCoupon: (coupon: Omit<Coupon, 'id' | 'usageCount'>) => void;
   toggleCoupon: (id: string) => void;
@@ -448,8 +448,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Customer Actions
-  const toggleCustomerStatus = (customerId: string) => {
-    const updated = customerService.toggleCustomerStatus(customerId);
+  const toggleCustomerStatus = async (customerId: string) => {
+    const updated = await customerService.toggleCustomerStatus(customerId);
     setCustomers(customerService.getCustomers());
     logAudit('Customer Status Changed', updated.name, `New status: ${updated.status}`);
     addToast(`Customer ${updated.name} is now ${updated.status}`);

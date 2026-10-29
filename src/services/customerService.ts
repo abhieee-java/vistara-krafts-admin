@@ -84,16 +84,37 @@ export const customerService = {
     return this.getCustomers();
   },
 
-  toggleCustomerStatus(customerId: string): Customer {
+  async toggleCustomerStatus(customerId: string): Promise<Customer> {
     const customers = this.getCustomers();
     const idx = customers.findIndex((c) => c.id === customerId);
     if (idx === -1) throw new Error('Customer not found');
 
     const customer = customers[idx];
     const newStatus = customer.status === 'active' ? 'blocked' : 'active';
+    const isBlocked = newStatus === 'blocked';
     const updated = { ...customer, status: newStatus as 'active' | 'blocked' };
     customers[idx] = updated;
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.rpc('toggle_customer_block_status', {
+          p_user_id: customerId,
+          p_blocked: isBlocked,
+          p_reason: isBlocked ? 'Account suspended by atelier administrator.' : null
+        });
+        if (error) {
+          console.warn('[customerService] Supabase RPC notice:', error.message);
+          await supabase
+            .from('profiles')
+            .update({ is_blocked: isBlocked, status: newStatus, updated_at: new Date().toISOString() })
+            .eq('id', customerId);
+        }
+      } catch (err) {
+        console.warn('[customerService] toggleCustomerStatus exception:', err);
+      }
+    }
+
     return updated;
   }
 };
