@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { systemService, DetailedServiceCheck } from '../services/systemService';
 import { useStore } from '../context/StoreContext';
-import { Activity, Database, Cloud, CreditCard, Radio, RefreshCw, CheckCircle2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Activity, Database, Cloud, CreditCard, Radio, RefreshCw, CheckCircle2, ShieldCheck, AlertTriangle, Key } from 'lucide-react';
 import { SUPABASE_URL, CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '../config/env';
 
 export const SystemHealth: React.FC = () => {
@@ -199,6 +199,17 @@ export const SystemHealth: React.FC = () => {
             <span>Automated 2-way CDC sync engine between Owner Portal and Storefront catalog.</span>
           </div>
         </div>
+      </div>
+
+      {/* Vercel Environment Variables Status Guide */}
+      <div className="p-5 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-2">
+        <div className="flex items-center gap-2">
+          <Key className="w-4 h-4 text-[#cda851]" />
+          <h5 className="font-bold text-xs text-[#1c1b18]">Vercel &amp; Cloud Environment Variables</h5>
+        </div>
+        <p className="text-[11px] text-gray-600 leading-relaxed">
+          The admin console automatically resolves both standard production names (<code>SUPABASE_URL</code>, <code>CLOUDINARY_CLOUD_NAME</code>, etc.) and Vite-prefixed names (<code>VITE_SUPABASE_URL</code>). All configured variables in Vercel or local <code>.env</code> are bound securely to system telemetry.
+        </p>
       </div>
     </div>
   );
