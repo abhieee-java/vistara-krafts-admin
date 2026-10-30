@@ -36,7 +36,7 @@ export const Security: React.FC = () => {
       </div>
 
       {/* Master Password & Rate Limit Credentials Card */}
-      <div className="bg-white border border-[#e6e2d8] rounded-2xl p-6 shadow-sm space-y-5">
+      <div className="luxury-card rounded-2xl p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e6e2d8]">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-[#faf8f5] border border-[#e6e2d8] text-[#cda851]">
@@ -105,7 +105,7 @@ export const Security: React.FC = () => {
       </div>
 
       {/* Active Sessions Grid */}
-      <div className="bg-white border border-[#e6e2d8] rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="luxury-card rounded-2xl p-6 space-y-4">
         <h3 className="font-serif font-bold text-base text-[#1c1b18] flex items-center gap-2">
           <Laptop className="w-4 h-4 text-[#cda851]" />
           <span>Active &amp; Previous Owner Sessions</span>
@@ -144,7 +144,7 @@ export const Security: React.FC = () => {
       </div>
 
       {/* Audit Log Table */}
-      <div className="bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+      <div className="luxury-card rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-[#e6e2d8] bg-[#faf8f5] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-[#cda851]" />

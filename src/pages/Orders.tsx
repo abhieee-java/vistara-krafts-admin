@@ -77,7 +77,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
             <button
               key={s.value}
               onClick={() => setStatusFilter(s.value)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`interactive-btn px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer active:scale-95 ${
                 statusFilter === s.value
                   ? 'bg-[#1c1b18] text-[#cda851] shadow-sm'
                   : 'bg-white text-gray-600 border border-[#e6e2d8] hover:bg-gray-50'

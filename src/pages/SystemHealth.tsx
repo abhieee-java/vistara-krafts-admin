@@ -50,7 +50,7 @@ export const SystemHealth: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Overview Banner */}
-      <div className="p-6 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="luxury-card p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-[#cda851]" />
@@ -68,7 +68,7 @@ export const SystemHealth: React.FC = () => {
             type="button"
             onClick={refreshFromDb}
             disabled={isLoadingDb}
-            className="px-3 py-2 rounded-xl border border-[#e6e2d8] text-xs font-semibold text-[#1c1b18] hover:bg-[#faf8f5] transition-colors inline-flex items-center gap-1.5"
+            className="interactive-btn px-3 py-2 rounded-xl border border-[#e6e2d8] text-xs font-semibold text-[#1c1b18] hover:bg-[#faf8f5] active:scale-95 transition-all inline-flex items-center gap-1.5 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-[#cda851] ${isLoadingDb ? 'animate-spin' : ''}`} />
             <span>{isLoadingDb ? 'Syncing...' : 'Sync Catalog'}</span>
@@ -78,7 +78,7 @@ export const SystemHealth: React.FC = () => {
             type="button"
             onClick={loadHealth}
             disabled={isChecking}
-            className="px-4 py-2 rounded-xl bg-[#23211d] text-[#cda851] text-xs font-bold hover:bg-[#33302a] transition-colors shadow-sm inline-flex items-center gap-1.5"
+            className="interactive-btn px-4 py-2 rounded-xl bg-[#23211d] text-[#cda851] text-xs font-bold hover:bg-[#33302a] active:scale-95 transition-all shadow-sm inline-flex items-center gap-1.5 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
             <span>{isChecking ? 'Running Pings...' : 'Run Diagnostics'}</span>
@@ -113,7 +113,7 @@ export const SystemHealth: React.FC = () => {
           return (
             <div
               key={svc.id}
-              className="p-5 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-4"
+              className="luxury-card p-5 rounded-2xl space-y-4 hover:border-[#cda851]/40 transition-colors"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -168,7 +168,7 @@ export const SystemHealth: React.FC = () => {
                   type="button"
                   onClick={() => handleTest(svc)}
                   disabled={isTesting}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e6e2d8] text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  className="interactive-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e6e2d8] text-xs font-semibold text-gray-700 hover:bg-gray-100 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
                   <span>{isTesting ? 'Pinging API...' : 'Ping Test'}</span>
@@ -202,7 +202,7 @@ export const SystemHealth: React.FC = () => {
       </div>
 
       {/* Vercel Environment Variables Status Guide */}
-      <div className="p-5 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-2">
+      <div className="luxury-card p-5 rounded-2xl space-y-2">
         <div className="flex items-center gap-2">
           <Key className="w-4 h-4 text-[#cda851]" />
           <h5 className="font-bold text-xs text-[#1c1b18]">Vercel &amp; Cloud Environment Variables</h5>

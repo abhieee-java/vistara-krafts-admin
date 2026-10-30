@@ -197,9 +197,9 @@ export const Inventory: React.FC = () => {
                   const isLow = !isOut && p.stockQuantity <= (p.lowStockThreshold || 5);
 
                   return (
-                    <tr key={p.id} className="hover:bg-[#faf8f5]/80 transition-colors">
+                    <tr key={p.id} className="interactive-row group">
                     <td className="py-3 px-4">
-                      <div className="font-bold text-[#1c1b18]">{p.shortName}</div>
+                      <div className="font-bold text-[#1c1b18] group-hover:text-[#cda851] transition-colors">{p.shortName}</div>
                       <div className="text-[11px] text-gray-500 truncate max-w-sm">{p.name}</div>
                     </td>
                     <td className="py-3 px-3 font-mono text-gray-500">{p.sku}</td>
@@ -212,15 +212,15 @@ export const Inventory: React.FC = () => {
                     </td>
                     <td className="py-3 px-3 text-center">
                       {isOut ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
                           OUT OF STOCK
                         </span>
                       ) : isLow ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
                           LOW STOCK
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                           OPTIMAL
                         </span>
                       )}
@@ -232,10 +232,10 @@ export const Inventory: React.FC = () => {
                           setIsAddition(true);
                           setChangeAmount(10);
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#e6e2d8] text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="interactive-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#e6e2d8] text-xs font-semibold text-gray-700 bg-white hover:bg-[#faf8f5] hover:text-[#1c1b18] hover:border-[#cda851]/50 transition-all cursor-pointer active:scale-95 shadow-2xs"
                       >
                         <ArrowUpDown className="w-3.5 h-3.5 text-[#cda851]" />
-                        Adjust Stock
+                        <span>Adjust Stock</span>
                       </button>
                     </td>
                   </tr>

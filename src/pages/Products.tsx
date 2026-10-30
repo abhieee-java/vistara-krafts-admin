@@ -410,7 +410,7 @@ export const Products: React.FC<ProductsProps> = ({
                       <button
                         onClick={() => toggleStock(p.id)}
                         title="Click to toggle stock status"
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all cursor-pointer ${
+                        className={`interactive-btn inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all cursor-pointer active:scale-95 ${
                           p.inStock
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-200 hover:bg-emerald-200'
                             : 'bg-red-100 text-red-800 border border-red-200 hover:bg-red-200'
@@ -435,21 +435,21 @@ export const Products: React.FC<ProductsProps> = ({
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => duplicateProduct(p.id)}
-                          className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                          className="interactive-btn p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all cursor-pointer active:scale-90"
                           title="Duplicate Product"
                         >
                           <Copy className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setEditingProduct(p)}
-                          className="p-1.5 text-gray-400 hover:text-[#cda851] hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                          className="interactive-btn p-1.5 text-gray-400 hover:text-[#cda851] hover:bg-amber-50 rounded-lg transition-all cursor-pointer active:scale-90"
                           title="Edit Product"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeletingProductId(p.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                          className="interactive-btn p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all cursor-pointer active:scale-90"
                           title="Delete Product"
                         >
                           <Trash2 className="w-4 h-4" />

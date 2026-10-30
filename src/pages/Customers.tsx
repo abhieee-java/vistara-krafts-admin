@@ -100,14 +100,14 @@ export const Customers: React.FC = () => {
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Metric 1: Total Registered Patrons */}
-        <div className="p-4 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-1">
+        <div className="p-4 rounded-2xl luxury-card space-y-1 cursor-default group">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Registered Patrons</span>
-            <div className="p-2 rounded-xl bg-amber-50 text-[#cda851]">
+            <span className="text-[11px] font-semibold uppercase tracking-wider group-hover:text-[#1c1b18] transition-colors">Registered Patrons</span>
+            <div className="p-2 rounded-xl bg-amber-50 text-[#cda851] border border-[#e6e2d8] group-hover:border-[#cda851]/60 group-hover:scale-105 transition-all">
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-serif font-bold text-[#1c1b18]">
+          <div className="text-2xl font-serif font-bold text-[#1c1b18] group-hover:text-[#cda851] transition-colors">
             {totalPatrons}
           </div>
           <div className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
@@ -117,14 +117,14 @@ export const Customers: React.FC = () => {
         </div>
 
         {/* Metric 2: Active / Logged-in Patrons */}
-        <div className="p-4 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-1">
+        <div className="p-4 rounded-2xl luxury-card space-y-1 cursor-default group">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Logged-In Traffic</span>
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+            <span className="text-[11px] font-semibold uppercase tracking-wider group-hover:text-[#1c1b18] transition-colors">Logged-In Traffic</span>
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-[#e6e2d8] group-hover:border-emerald-300 group-hover:scale-105 transition-all">
               <Activity className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-serif font-bold text-[#1c1b18]">
+          <div className="text-2xl font-serif font-bold text-[#1c1b18] group-hover:text-emerald-900 transition-colors">
             {customers.filter((c) => Boolean(c.lastLogin || c.last_sign_in_at)).length}
           </div>
           <div className="text-[11px] text-gray-500 font-medium flex items-center gap-1">
@@ -134,14 +134,14 @@ export const Customers: React.FC = () => {
         </div>
 
         {/* Metric 3: Converting Patrons */}
-        <div className="p-4 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-1">
+        <div className="p-4 rounded-2xl luxury-card space-y-1 cursor-default group">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Ordering Patrons</span>
-            <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+            <span className="text-[11px] font-semibold uppercase tracking-wider group-hover:text-[#1c1b18] transition-colors">Ordering Patrons</span>
+            <div className="p-2 rounded-xl bg-[#faf8f5] text-[#b08d57] border border-[#e6e2d8] group-hover:border-[#b08d57]/50 group-hover:scale-105 transition-all">
               <ShoppingBag className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-serif font-bold text-[#1c1b18]">
+          <div className="text-2xl font-serif font-bold text-[#1c1b18] group-hover:text-[#b08d57] transition-colors">
             {patronsWithOrders}{' '}
             <span className="text-xs font-normal text-gray-400">
               ({totalPatrons > 0 ? Math.round((patronsWithOrders / totalPatrons) * 100) : 0}% conv.)
@@ -153,14 +153,14 @@ export const Customers: React.FC = () => {
         </div>
 
         {/* Metric 4: Total Patron GMV */}
-        <div className="p-4 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-1">
+        <div className="p-4 rounded-2xl luxury-card space-y-1 cursor-default group">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[11px] font-semibold uppercase tracking-wider">Patron Lifetime Spend</span>
-            <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+            <span className="text-[11px] font-semibold uppercase tracking-wider group-hover:text-[#1c1b18] transition-colors">Patron Lifetime Spend</span>
+            <div className="p-2 rounded-xl bg-[#faf8f5] text-[#9e3322] border border-[#e6e2d8] group-hover:border-[#9e3322]/40 group-hover:scale-105 transition-all">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-2xl font-serif font-bold text-[#1c1b18]">
+          <div className="text-2xl font-serif font-bold text-[#1c1b18] group-hover:text-[#9e3322] transition-colors">
             ₹{totalPatronSpend.toLocaleString()}
           </div>
           <div className="text-[11px] text-gray-500 font-medium">

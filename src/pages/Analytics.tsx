@@ -48,13 +48,13 @@ export const Analytics: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#e6e2d8] self-start sm:self-auto overflow-x-auto max-w-full">
+        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#e6e2d8] self-start sm:self-auto overflow-x-auto max-w-full shadow-2xs">
           <Calendar className="w-3.5 h-3.5 text-gray-400 ml-2 shrink-0" />
           {(['7d', '30d', '90d', 'all'] as const).map((r) => (
             <button
               key={r}
               onClick={() => setTimeRange(r)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase whitespace-nowrap ${
+              className={`interactive-btn px-3 py-1 rounded-lg text-xs font-semibold uppercase whitespace-nowrap transition-all cursor-pointer active:scale-95 ${
                 timeRange === r
                   ? 'bg-[#1c1b18] text-[#cda851] shadow-sm'
                   : 'text-gray-500 hover:text-gray-800'
@@ -68,33 +68,36 @@ export const Analytics: React.FC = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-2">
-          <div className="text-xs font-semibold text-gray-500">Total Net Revenue</div>
-          <div className="font-serif font-bold text-2xl text-[#1c1b18]">
+        <div className="p-5 luxury-card space-y-2 cursor-default group">
+          <div className="text-xs font-semibold text-gray-500 group-hover:text-[#1c1b18] transition-colors">Total Net Revenue</div>
+          <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#cda851] transition-colors">
             ₹{totalRevenue.toLocaleString()}
           </div>
-          <div className="text-[11px] text-emerald-600 font-medium">98.2% settlement rate</div>
+          <div className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>98.2% settlement rate</span>
+          </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-2">
-          <div className="text-xs font-semibold text-gray-500">Average Order Value (AOV)</div>
-          <div className="font-serif font-bold text-2xl text-[#1c1b18]">
+        <div className="p-5 luxury-card space-y-2 cursor-default group">
+          <div className="text-xs font-semibold text-gray-500 group-hover:text-[#1c1b18] transition-colors">Average Order Value (AOV)</div>
+          <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#b08d57] transition-colors">
             ₹{avgOrderValue.toLocaleString()}
           </div>
-          <div className="text-[11px] text-purple-600 font-medium">High-ticket bridal keepsakes</div>
+          <div className="text-[11px] text-[#b08d57] font-medium">High-ticket bridal keepsakes</div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-2">
-          <div className="text-xs font-semibold text-gray-500">Conversion Rate</div>
-          <div className="font-serif font-bold text-2xl text-[#1c1b18]">4.6%</div>
-          <div className="text-[11px] text-blue-600 font-medium">Instagram traffic benchmark</div>
+        <div className="p-5 luxury-card space-y-2 cursor-default group">
+          <div className="text-xs font-semibold text-gray-500 group-hover:text-[#1c1b18] transition-colors">Conversion Rate</div>
+          <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#9e3322] transition-colors">4.6%</div>
+          <div className="text-[11px] text-[#9e3322] font-medium">Instagram traffic benchmark</div>
         </div>
       </div>
 
       {/* Two Column Layout: Cities & Categories */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sales by City */}
-        <div className="p-6 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-4">
+        <div className="p-6 luxury-card space-y-4">
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-[#cda851]" />
             <h4 className="font-serif font-bold text-base text-[#1c1b18]">
@@ -126,7 +129,7 @@ export const Analytics: React.FC = () => {
         </div>
 
         {/* Sales by Category */}
-        <div className="p-6 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-4">
+        <div className="p-6 luxury-card space-y-4">
           <div className="flex items-center gap-2">
             <Award className="w-5 h-5 text-[#cda851]" />
             <h4 className="font-serif font-bold text-base text-[#1c1b18]">

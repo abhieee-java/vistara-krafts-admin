@@ -284,7 +284,7 @@ export const Settings: React.FC = () => {
         <div className="flex justify-end">
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-[#23211d] text-[#cda851] text-xs font-bold hover:bg-[#33302a] transition-all flex items-center gap-2 shadow-sm"
+            className="interactive-btn px-6 py-2.5 rounded-xl bg-[#23211d] text-[#cda851] text-xs font-bold hover:bg-[#33302a] transition-all flex items-center gap-2 shadow-sm cursor-pointer active:scale-95"
           >
             <Save className="w-4 h-4" />
             <span>Save Operational Settings</span>

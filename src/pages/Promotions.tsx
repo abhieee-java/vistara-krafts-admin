@@ -63,7 +63,7 @@ export const Promotions: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Storefront Announcement Bar CMS Card */}
-      <div className="bg-white border border-[#e6e2d8] rounded-2xl p-6 shadow-sm space-y-4">
+      <div className="luxury-card p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-[#e6e2d8] pb-4">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-[#faf8f5] text-[#cda851] border border-[#e6e2d8]">
@@ -79,12 +79,12 @@ export const Promotions: React.FC = () => {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={isBarActive}
               onChange={(e) => setIsBarActive(e.target.checked)}
-              className="w-4 h-4 accent-[#cda851] rounded"
+              className="w-4 h-4 accent-[#cda851] rounded cursor-pointer"
             />
             <span className="text-xs font-bold text-[#1c1b18]">Active on Store</span>
           </label>
@@ -104,7 +104,7 @@ export const Promotions: React.FC = () => {
             />
             <button
               type="submit"
-              className="px-5 h-10 rounded-xl bg-[#1c1b18] text-[#cda851] text-xs font-bold hover:bg-[#2d2a24] transition-colors shrink-0"
+              className="interactive-btn px-5 h-10 rounded-xl bg-[#1c1b18] text-[#cda851] text-xs font-bold hover:bg-[#2d2a24] transition-all shrink-0 cursor-pointer active:scale-95 shadow-sm"
             >
               Push to Live Storefront
             </button>

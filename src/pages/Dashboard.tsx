@@ -115,7 +115,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="p-4 sm:p-5 luxury-card space-y-3 cursor-default group">
             <div className="flex items-center justify-between text-gray-500">
               <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Total Revenue</span>
-              <div className="p-2 rounded-xl bg-[#faf8f5] text-[#cda851] border border-[#e6e2d8] group-hover:border-[#cda851]/50 group-hover:scale-105 transition-all">
+              <div className="p-2 rounded-xl bg-[#faf8f5] text-[#cda851] border border-[#e6e2d8] group-hover:border-[#cda851]/60 group-hover:scale-105 transition-all">
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
@@ -123,39 +123,49 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#cda851] transition-colors">
                 ₹{totalRevenue.toLocaleString()}
               </div>
-              <div className="flex items-center gap-1 text-[11px] text-emerald-600 font-medium mt-1">
-                <ArrowUpRight className="w-3.5 h-3.5" />
-                <span>+18.4% vs last week</span>
+              <div className="flex items-center gap-1 text-[11px] font-medium mt-1">
+                {totalRevenue > 0 ? (
+                  <>
+                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-emerald-600 font-semibold">+18.4% vs last week</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400">Awaiting first live customer checkout</span>
+                )}
               </div>
             </div>
           </div>
 
           {/* Total & Pending Orders */}
-          <div className="p-5 luxury-card space-y-3 cursor-default group">
+          <div className="p-4 sm:p-5 luxury-card space-y-3 cursor-default group">
             <div className="flex items-center justify-between text-gray-500">
               <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Orders &amp; Dispatch</span>
-              <div className="p-2 rounded-xl bg-[#faf8f5] text-purple-600 border border-[#e6e2d8] group-hover:border-purple-300 group-hover:scale-105 transition-all">
+              <div className="p-2 rounded-xl bg-[#faf8f5] text-[#9e3322] border border-[#e6e2d8] group-hover:border-[#9e3322]/40 group-hover:scale-105 transition-all">
                 <ShoppingBag className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-purple-900 transition-colors">{orders.length}</div>
-              <div className="text-[11px] text-amber-700 font-semibold mt-1">
-                {pendingOrders} awaiting fulfillment
+              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#9e3322] transition-colors">{orders.length}</div>
+              <div className="text-[11px] font-medium mt-1">
+                {orders.length > 0 ? (
+                  <span className="text-amber-700 font-semibold">{pendingOrders} awaiting fulfillment</span>
+                ) : (
+                  <span className="text-gray-400">Zero pending orders in queue</span>
+                )}
               </div>
             </div>
           </div>
 
           {/* Active Catalog */}
-          <div className="p-5 luxury-card space-y-3 cursor-default group">
+          <div className="p-4 sm:p-5 luxury-card space-y-3 cursor-default group">
             <div className="flex items-center justify-between text-gray-500">
               <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Products in Catalog</span>
-              <div className="p-2 rounded-xl bg-[#faf8f5] text-blue-600 border border-[#e6e2d8] group-hover:border-blue-300 group-hover:scale-105 transition-all">
+              <div className="p-2 rounded-xl bg-[#faf8f5] text-[#b08d57] border border-[#e6e2d8] group-hover:border-[#b08d57]/50 group-hover:scale-105 transition-all">
                 <Package className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-blue-900 transition-colors">{products.length}</div>
+              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#b08d57] transition-colors">{products.length}</div>
               <div className="text-[11px] text-gray-500 font-medium mt-1">
                 {products.filter((p) => p.inStock).length} active for purchase
               </div>
@@ -163,17 +173,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Patrons & Customers */}
-          <div className="p-5 luxury-card space-y-3 cursor-default group">
+          <div className="p-4 sm:p-5 luxury-card space-y-3 cursor-default group">
             <div className="flex items-center justify-between text-gray-500">
               <span className="text-xs font-semibold group-hover:text-[#1c1b18] transition-colors">Registered Patrons</span>
-              <div className="p-2 rounded-xl bg-[#faf8f5] text-teal-600 border border-[#e6e2d8] group-hover:border-teal-300 group-hover:scale-105 transition-all">
+              <div className="p-2 rounded-xl bg-[#faf8f5] text-[#266b4e] border border-[#e6e2d8] group-hover:border-[#266b4e]/40 group-hover:scale-105 transition-all">
                 <Users className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-teal-900 transition-colors">{customers.length}</div>
-              <div className="text-[11px] text-emerald-600 font-medium mt-1">
-                100% account delivery rate
+              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#266b4e] transition-colors">{customers.length}</div>
+              <div className="text-[11px] text-emerald-700 font-medium mt-1 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>100% verified patron delivery</span>
               </div>
             </div>
           </div>
