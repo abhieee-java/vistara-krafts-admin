@@ -19,25 +19,52 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
       case 'dashboard':
         return 'Executive Overview';
       case 'products':
-        return 'Products & Optical Resin Catalog';
+        return 'Products & Catalog';
       case 'inventory':
-        return 'Inventory & Stock Auditing';
+        return 'Inventory & Stock';
       case 'orders':
-        return 'Orders, Garlands & Express Dispatch';
+        return 'Orders & Dispatch';
       case 'customers':
-        return 'Customer & Patron Directory';
+        return 'Customer Directory';
       case 'promotions':
-        return 'Coupons & Announcement Banners';
+        return 'Coupons & Banners';
       case 'analytics':
-        return 'Sales & Conversion Analytics';
+        return 'Sales Analytics';
       case 'security':
-        return 'Security, Sessions & Audit Logs';
+        return 'Security & Logs';
       case 'system':
-        return 'System Health & Cloud Services';
+        return 'System Health';
       case 'settings':
-        return 'Store & Brand Settings';
+        return 'Store Settings';
       default:
         return 'Owner Portal';
+    }
+  };
+
+  const getTabSubtitle = (tab: string) => {
+    switch (tab) {
+      case 'dashboard':
+        return 'Atelier Command Center • Vistāra Krafts';
+      case 'products':
+        return 'Optical resin, bridal keepsakes & raw materials';
+      case 'inventory':
+        return 'Real-time stock auditing & threshold management';
+      case 'orders':
+        return 'Garland bookings & Pan-India express dispatch';
+      case 'customers':
+        return 'Verified patron directory & session tracking';
+      case 'promotions':
+        return 'Promotional coupon codes & announcement ribbon';
+      case 'analytics':
+        return 'Conversion rates, revenue metrics & volume';
+      case 'security':
+        return 'Bcrypt guarded owner sessions & audit trail';
+      case 'system':
+        return 'Supabase PostgreSQL & Cloudinary telemetry';
+      case 'settings':
+        return 'Brand identity, shipping logistics & tax rules';
+      default:
+        return 'Vistāra Krafts Administration';
     }
   };
 
@@ -85,16 +112,16 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
             <span className="hidden sm:inline">{getTabTitle(currentTab)}</span>
           </h2>
           <p className="text-[10px] text-gray-500 hidden sm:block truncate">
-            Vistāra Krafts Administration
+            {getTabSubtitle(currentTab)}
           </p>
         </div>
       </div>
 
       {/* Right section: System state & Owner Profile */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
         {/* Service Readiness Pill */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-[10px] font-semibold shadow-2xs">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
           <span>Live Supabase Connected</span>
         </div>
 
@@ -102,7 +129,7 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
         <button
           onClick={() => publishToStorefront()}
           disabled={isPublishing}
-          className="group relative inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-[#9e3322] via-[#b33a27] to-[#7f2617] hover:from-[#b33a27] hover:to-[#6b1e11] text-white text-xs font-semibold shadow-[0_2px_12px_rgba(158,51,34,0.35)] hover:shadow-[0_4px_20px_rgba(158,51,34,0.5)] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer overflow-hidden"
+          className="interactive-btn group relative inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-[#9e3322] via-[#b33a27] to-[#7f2617] hover:from-[#b33a27] hover:to-[#6b1e11] text-white text-xs font-semibold shadow-[0_2px_12px_rgba(158,51,34,0.35)] hover:shadow-[0_4px_20px_rgba(158,51,34,0.5)] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed transition-all cursor-pointer overflow-hidden"
           title={lastPublishedAt ? `Published: ${new Date(lastPublishedAt).toLocaleTimeString()}` : 'Deploy latest catalog & settings in-place to customer storefront'}
         >
           <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-700 ease-out group-hover:translate-x-full" />
@@ -126,7 +153,7 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
         </button>
 
         {/* Owner Info & Logout */}
-        <div className="flex items-center gap-2 pl-2 border-l border-[#e6e2d8]">
+        <div className="flex items-center gap-1 sm:gap-2 pl-2 border-l border-[#e6e2d8]">
           <div className="flex items-center gap-2 text-right">
             <div className="w-8 h-8 rounded-full bg-[#1c1b18] text-[#cda851] flex items-center justify-center font-serif font-bold text-xs shadow-sm">
               <Shield className="w-4 h-4 text-[#cda851]" />
@@ -143,7 +170,7 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
           <button
             onClick={() => setIsPasswordModalOpen(true)}
             title="Change Master Admin Password"
-            className="p-2 text-gray-600 hover:text-[#1c1b18] hover:bg-amber-100/60 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+            className="p-2 text-gray-600 hover:text-[#1c1b18] hover:bg-amber-100/60 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 text-xs font-medium cursor-pointer"
             aria-label="Change master admin password"
           >
             <Key className="w-4 h-4 text-[#cda851]" />
@@ -153,7 +180,7 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
           <button
             onClick={logout}
             title="Log out of Owner Portal"
-            className="p-2 text-gray-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-2 text-gray-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all active:scale-95 cursor-pointer"
             aria-label="Log out"
           >
             <LogOut className="w-4 h-4" />

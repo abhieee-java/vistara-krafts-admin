@@ -60,48 +60,50 @@ const AdminPortalApp: React.FC = () => {
 
         {/* Main Content with responsive padding for phone screens & safe bottom spacing for mobile nav dock */}
         <main className="flex-1 px-3 py-4 sm:px-6 lg:p-8 pb-24 lg:pb-8 overflow-y-auto">
-          {currentTab === 'dashboard' && (
-            <Dashboard
-              onNavigateTab={(tab) => navigate(tab)}
-              onOpenOrder={(ord) => {
-                setActiveOrderForDrawer(ord);
-                navigate('orders');
-              }}
-              onOpenNewProduct={() => {
-                navigate('products');
-                setIsNewProductModalOpen(true);
-              }}
-            />
-          )}
+          <div key={currentTab} className="view-enter min-h-full">
+            {currentTab === 'dashboard' && (
+              <Dashboard
+                onNavigateTab={(tab) => navigate(tab)}
+                onOpenOrder={(ord) => {
+                  setActiveOrderForDrawer(ord);
+                  navigate('orders');
+                }}
+                onOpenNewProduct={() => {
+                  navigate('products');
+                  setIsNewProductModalOpen(true);
+                }}
+              />
+            )}
 
-          {currentTab === 'products' && (
-            <Products
-              onOpenNewProduct={() => setIsNewProductModalOpen(true)}
-              isCreateModalOpen={isNewProductModalOpen}
-              setIsCreateModalOpen={setIsNewProductModalOpen}
-            />
-          )}
+            {currentTab === 'products' && (
+              <Products
+                onOpenNewProduct={() => setIsNewProductModalOpen(true)}
+                isCreateModalOpen={isNewProductModalOpen}
+                setIsCreateModalOpen={setIsNewProductModalOpen}
+              />
+            )}
 
-          {currentTab === 'inventory' && <Inventory />}
+            {currentTab === 'inventory' && <Inventory />}
 
-          {currentTab === 'orders' && (
-            <Orders
-              selectedOrder={activeOrderForDrawer}
-              setSelectedOrder={setActiveOrderForDrawer}
-            />
-          )}
+            {currentTab === 'orders' && (
+              <Orders
+                selectedOrder={activeOrderForDrawer}
+                setSelectedOrder={setActiveOrderForDrawer}
+              />
+            )}
 
-          {currentTab === 'customers' && <Customers />}
+            {currentTab === 'customers' && <Customers />}
 
-          {currentTab === 'promotions' && <Promotions />}
+            {currentTab === 'promotions' && <Promotions />}
 
-          {currentTab === 'analytics' && <Analytics />}
+            {currentTab === 'analytics' && <Analytics />}
 
-          {currentTab === 'security' && <Security />}
+            {currentTab === 'security' && <Security />}
 
-          {currentTab === 'system' && <SystemHealth />}
+            {currentTab === 'system' && <SystemHealth />}
 
-          {currentTab === 'settings' && <Settings />}
+            {currentTab === 'settings' && <Settings />}
+          </div>
         </main>
       </div>
 

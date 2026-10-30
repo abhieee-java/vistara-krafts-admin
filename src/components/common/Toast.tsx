@@ -8,16 +8,16 @@ export const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+    <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 left-3 sm:left-auto z-50 flex flex-col gap-2.5 max-w-sm w-auto pointer-events-none">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-xl border text-sm transition-all transform animate-in slide-in-from-bottom-2 ${
+          className={`pointer-events-auto flex items-start gap-3 p-3.5 sm:p-4 rounded-xl shadow-2xl border text-sm transition-all toast-enter ${
             t.type === 'error'
               ? 'bg-red-50 text-red-900 border-red-200'
               : t.type === 'info'
               ? 'bg-blue-50 text-blue-900 border-blue-200'
-              : 'bg-[#1c1b18] text-[#f9f8f5] border-[#cda851]/40'
+              : 'bg-[#1c1b18] text-[#f9f8f5] border-[#cda851]/40 shadow-[0_12px_32px_rgba(0,0,0,0.3)]'
           }`}
         >
           {t.type === 'error' && <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />}
@@ -26,10 +26,10 @@ export const ToastContainer: React.FC = () => {
           <div className="flex-1 text-xs font-medium leading-relaxed">{t.message}</div>
           <button
             onClick={() => removeToast(t.id)}
-            className="p-1 hover:opacity-75 transition-opacity"
+            className="p-1 hover:opacity-100 transition-opacity active:scale-90"
             aria-label="Close toast"
           >
-            <X className="w-4 h-4 opacity-60" />
+            <X className="w-4 h-4 opacity-60 hover:opacity-100" />
           </button>
         </div>
       ))}

@@ -54,8 +54,10 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="absolute inset-y-0 right-0 w-full sm:max-w-xl flex pl-0 sm:pl-10">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm modal-backdrop-enter">
+      {/* Click outside to close backdrop */}
+      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-y-0 right-0 w-full sm:max-w-xl flex pl-0 sm:pl-10 z-10 drawer-slide-in">
         <div className="w-full bg-white shadow-2xl flex flex-col border-l border-[#e6e2d8]">
           {/* Drawer Header */}
           <div className="p-4 sm:p-6 bg-[#faf8f5] border-b border-[#e6e2d8] flex items-center justify-between">
@@ -73,14 +75,15 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onOpenInvoice(order)}
-                className="p-2 rounded-lg text-gray-600 hover:text-[#1c1b18] hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-xl text-gray-600 hover:text-[#1c1b18] hover:bg-gray-100 transition-all active:scale-95 cursor-pointer"
                 title="Print Invoice"
               >
                 <FileText className="w-5 h-5 text-[#cda851]" />
               </button>
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all active:scale-95 cursor-pointer"
+                aria-label="Close drawer"
               >
                 <X className="w-5 h-5" />
               </button>

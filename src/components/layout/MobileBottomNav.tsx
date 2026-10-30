@@ -22,7 +22,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenSidebar 
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-[#1c1b18]/95 backdrop-blur-xl border-t border-[#2d2a24] shadow-[0_-4px_20px_rgba(0,0,0,0.3)] px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]"
+      className="fixed bottom-0 left-0 right-0 z-30 lg:hidden bg-[#1c1b18]/95 backdrop-blur-xl border-t border-[#2d2a24] shadow-[0_-4px_20px_rgba(0,0,0,0.3)] px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]"
       aria-label="Mobile Bottom Navigation"
     >
       <div className="flex items-center justify-around max-w-lg mx-auto">
