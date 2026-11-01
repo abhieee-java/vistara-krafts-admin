@@ -43,18 +43,33 @@ export const orderService = {
     if (!isSupabaseConfigured) return this.getOrders();
 
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // 1. Primary: Use dedicated SECURITY DEFINER RPC to query live orders bypassing RLS
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_admin_orders');
 
-      if (error) {
-        console.warn('Supabase orders fetch notice:', error.message);
-        return this.getOrders();
+      let orderRows: any[] | null = null;
+
+      if (!rpcError && Array.isArray(rpcData)) {
+        orderRows = rpcData;
+      } else {
+        if (rpcError) {
+          console.warn('[orderService] get_admin_orders RPC notice:', rpcError.message);
+        }
+        // 2. Fallback: Direct table query (works when authenticated admin session exists)
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          orderRows = data;
+        } else if (error) {
+          console.warn('[orderService] Supabase orders fallback notice:', error.message);
+          return this.getOrders();
+        }
       }
 
-      if (Array.isArray(data)) {
-        const orders: Order[] = data.map((row: any) => ({
+      if (Array.isArray(orderRows)) {
+        const orders: Order[] = orderRows.map((row: any) => ({
           id: String(row.id),
           orderNumber: row.order_number || row.orderId || row.id,
           customerName: row.customer_name || 'Valued Patron',
@@ -162,17 +177,30 @@ export const orderService = {
         cancelled: 1,
         refunded: 1
       };
+
+      // 1. Primary: Use dedicated SECURITY DEFINER RPC to update order status bypassing RLS
       safeDbExec(
-        () =>
-          supabase
-            .from('orders')
-            .update({
-              order_status: status,
-              stage_index: stageMap[status] || 2,
-              notes: note || order.notes || '',
-              updated_at: new Date().toISOString()
-            })
-            .or(`id.eq.${orderId},order_number.eq.${orderId}`),
+        async () => {
+          const { error } = await supabase.rpc('update_admin_order_status', {
+            p_order_id: orderId,
+            p_status: status,
+            p_stage_index: stageMap[status] || 2,
+            p_notes: note || order.notes || ''
+          });
+          if (error) {
+            // 2. Fallback: Direct table update
+            return supabase
+              .from('orders')
+              .update({
+                order_status: status,
+                stage_index: stageMap[status] || 2,
+                notes: note || order.notes || '',
+                updated_at: new Date().toISOString()
+              })
+              .or(`id.eq.${orderId},order_number.eq.${orderId}`);
+          }
+          return { error: null };
+        },
         'update order status'
       );
     }
@@ -213,18 +241,29 @@ export const orderService = {
     } catch (e) {}
 
     if (isSupabaseConfigured) {
+      // 1. Primary: Use dedicated SECURITY DEFINER RPC to update tracking bypassing RLS
       safeDbExec(
-        () =>
-          supabase
-            .from('orders')
-            .update({
-              courier: carrier,
-              tracking_number: trackingNumber,
-              order_status: 'shipped',
-              stage_index: 5,
-              updated_at: new Date().toISOString()
-            })
-            .or(`id.eq.${orderId},order_number.eq.${orderId}`),
+        async () => {
+          const { error } = await supabase.rpc('update_admin_order_tracking', {
+            p_order_id: orderId,
+            p_courier: carrier,
+            p_tracking_number: trackingNumber
+          });
+          if (error) {
+            // 2. Fallback: Direct table update
+            return supabase
+              .from('orders')
+              .update({
+                courier: carrier,
+                tracking_number: trackingNumber,
+                order_status: 'shipped',
+                stage_index: 5,
+                updated_at: new Date().toISOString()
+              })
+              .or(`id.eq.${orderId},order_number.eq.${orderId}`);
+          }
+          return { error: null };
+        },
         'update order tracking'
       );
     }
@@ -269,15 +308,25 @@ export const orderService = {
 
     if (isSupabaseConfigured) {
       safeDbExec(
-        () =>
-          supabase
-            .from('orders')
-            .update({
-              order_status: 'refunded',
-              payment_status: 'refunded',
-              updated_at: new Date().toISOString()
-            })
-            .or(`id.eq.${orderId},order_number.eq.${orderId}`),
+        async () => {
+          const { error } = await supabase.rpc('update_admin_order_status', {
+            p_order_id: orderId,
+            p_status: 'refunded',
+            p_stage_index: 1,
+            p_notes: 'Refund processed to original payment method'
+          });
+          if (error) {
+            return supabase
+              .from('orders')
+              .update({
+                order_status: 'refunded',
+                payment_status: 'refunded',
+                updated_at: new Date().toISOString()
+              })
+              .or(`id.eq.${orderId},order_number.eq.${orderId}`);
+          }
+          return { error: null };
+        },
         'refund order'
       );
     }
