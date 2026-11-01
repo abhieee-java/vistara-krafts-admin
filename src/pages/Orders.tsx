@@ -7,7 +7,23 @@ import { InvoiceModal } from '../components/orders/InvoiceModal';
 import { ConfirmationDialog } from '../components/common/ConfirmationDialog';
 import { EmptyState } from '../components/common/EmptyState';
 import { TableSkeleton, MobileCardSkeleton } from '../components/common/Skeleton';
-import { Search, Filter, FileText, Truck, Eye, Package, RefreshCw } from 'lucide-react';
+import { Search, Filter, FileText, Truck, Eye, Package, RefreshCw, Clock } from 'lucide-react';
+
+const formatOrderTimestamp = (dateStr: string) => {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr || 'Just now';
+  const dateFormatted = d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+  const timeFormatted = d.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+  return `${dateFormatted}, ${timeFormatted}`;
+};
 
 interface OrdersProps {
   selectedOrder: Order | null;
@@ -151,12 +167,9 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                 <span className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
                   {ord.orderNumber}
                 </span>
-                <div className="text-[10px] text-gray-500 mt-0.5">
-                  {new Date(ord.createdAt).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric'
-                  })}
+                <div className="flex items-center gap-1 text-[10.5px] text-gray-500 font-medium mt-0.5">
+                  <Clock className="w-3 h-3 text-[#cda851] shrink-0" />
+                  <span>{formatOrderTimestamp(ord.createdAt)}</span>
                 </div>
               </div>
               <StatusBadge status={ord.orderStatus} />
@@ -254,17 +267,14 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                     onClick={() => setSelectedOrder(ord)}
                     className="interactive-row cursor-pointer group"
                   >
-                    {/* Order Number & Date */}
+                    {/* Order Number & Timestamp */}
                     <td className="py-3.5 px-4">
                       <div className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
                         {ord.orderNumber}
                       </div>
-                      <div className="text-[10px] text-gray-400">
-                        {new Date(ord.createdAt).toLocaleDateString()} at{' '}
-                        {new Date(ord.createdAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                      <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium mt-1 whitespace-nowrap">
+                        <Clock className="w-3.5 h-3.5 text-[#cda851] shrink-0" />
+                        <span>{formatOrderTimestamp(ord.createdAt)}</span>
                       </div>
                     </td>
 

@@ -68,9 +68,12 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 </h3>
                 <StatusBadge status={order.orderStatus} />
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Placed on {new Date(order.createdAt).toLocaleString()} • Payment: {order.paymentMethod.toUpperCase()} ({order.paymentStatus})
-              </p>
+              <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1 font-medium flex-wrap">
+                <Clock className="w-3.5 h-3.5 text-[#cda851] shrink-0" />
+                <span>Placed: <strong className="text-gray-900">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</strong></span>
+                <span>•</span>
+                <span className="uppercase text-[11px] font-semibold text-emerald-700">{order.paymentMethod} ({order.paymentStatus})</span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button
