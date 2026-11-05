@@ -1,5 +1,6 @@
 import { Customer } from '../types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { authService } from './authService';
 
 const CUSTOMERS_KEY = 'vk_admin_customers_v1';
 
@@ -22,10 +23,13 @@ export const customerService = {
     if (!isSupabaseConfigured) return this.getCustomers();
 
     try {
-      // 1. Primary: Use dedicated SECURITY DEFINER RPC to query live auth.users and profiles
-      const { data: rpcData, error: rpcError } = await supabase.rpc('get_customer_directory');
+      // 1. Primary: Use dedicated SECURITY DEFINER RPC with session token to query live directory
+      const session = authService.getStoredSession();
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_customer_directory', {
+        p_token: session?.token || ''
+      });
 
-      if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+      if (!rpcError && Array.isArray(rpcData)) {
         const customers: Customer[] = rpcData.map((row: any) => ({
           id: row.id,
           name: row.name || 'Vistāra Patron',
@@ -98,10 +102,12 @@ export const customerService = {
 
     if (isSupabaseConfigured) {
       try {
+        const session = authService.getStoredSession();
         const { error } = await supabase.rpc('toggle_customer_block_status', {
           p_user_id: customerId,
           p_blocked: isBlocked,
-          p_reason: isBlocked ? 'Account suspended by atelier administrator.' : null
+          p_reason: isBlocked ? 'Account suspended by atelier administrator.' : null,
+          p_token: session?.token || ''
         });
         if (error) {
           console.warn('[customerService] Supabase RPC notice:', error.message);

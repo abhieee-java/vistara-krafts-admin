@@ -87,7 +87,8 @@ export const authService = {
       email: data.user?.email || 'ad4064773@gmail.com',
       name: data.user?.name || 'Vistāra Krafts Owner',
       role: 'Owner',
-      lastLogin: data.user?.lastLogin || new Date().toISOString()
+      lastLogin: data.user?.lastLogin || new Date().toISOString(),
+      token: data.session_token || data.user?.session_token || ''
     };
 
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));

@@ -1,8 +1,8 @@
 import { Order, OrderStatus } from '../types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { authService } from './authService';
 
 const ORDERS_STORAGE_KEY = 'vk_admin_orders_v1';
-const STOREFRONT_ORDERS_KEY = 'ram_vk_orders_v2';
 
 async function safeDbExec(action: () => PromiseLike<any>, desc: string) {
   try {
@@ -23,15 +23,6 @@ export const orderService = {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
       }
-
-      const storefrontData = localStorage.getItem(STOREFRONT_ORDERS_KEY);
-      if (storefrontData) {
-        const parsed = JSON.parse(storefrontData);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(parsed));
-          return parsed;
-        }
-      }
     } catch (e) {
       console.error('Failed to load orders', e);
     }
@@ -43,8 +34,11 @@ export const orderService = {
     if (!isSupabaseConfigured) return this.getOrders();
 
     try {
-      // 1. Primary: Use dedicated SECURITY DEFINER RPC to query live orders bypassing RLS
-      const { data: rpcData, error: rpcError } = await supabase.rpc('get_admin_orders');
+      // 1. Primary: Use dedicated SECURITY DEFINER RPC with session token to query live orders
+      const session = authService.getStoredSession();
+      const { data: rpcData, error: rpcError } = await supabase.rpc('get_admin_orders', {
+        p_token: session?.token || ''
+      });
 
       let orderRows: any[] | null = null;
 
