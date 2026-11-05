@@ -175,11 +175,13 @@ export const orderService = {
       // 1. Primary: Use dedicated SECURITY DEFINER RPC to update order status bypassing RLS
       safeDbExec(
         async () => {
+          const session = authService.getStoredSession();
           const { error } = await supabase.rpc('update_admin_order_status', {
             p_order_id: orderId,
             p_status: status,
             p_stage_index: stageMap[status] || 2,
-            p_notes: note || order.notes || ''
+            p_notes: note || order.notes || '',
+            p_token: session?.token || ''
           });
           if (error) {
             // 2. Fallback: Direct table update
@@ -238,10 +240,12 @@ export const orderService = {
       // 1. Primary: Use dedicated SECURITY DEFINER RPC to update tracking bypassing RLS
       safeDbExec(
         async () => {
+          const session = authService.getStoredSession();
           const { error } = await supabase.rpc('update_admin_order_tracking', {
             p_order_id: orderId,
             p_courier: carrier,
-            p_tracking_number: trackingNumber
+            p_tracking_number: trackingNumber,
+            p_token: session?.token || ''
           });
           if (error) {
             // 2. Fallback: Direct table update
@@ -303,11 +307,13 @@ export const orderService = {
     if (isSupabaseConfigured) {
       safeDbExec(
         async () => {
+          const session = authService.getStoredSession();
           const { error } = await supabase.rpc('update_admin_order_status', {
             p_order_id: orderId,
             p_status: 'refunded',
             p_stage_index: 1,
-            p_notes: 'Refund processed to original payment method'
+            p_notes: 'Refund processed to original payment method',
+            p_token: session?.token || ''
           });
           if (error) {
             return supabase

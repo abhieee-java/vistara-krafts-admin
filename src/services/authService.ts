@@ -107,9 +107,11 @@ export const authService = {
       throw new Error('New password must be at least 4 characters long.');
     }
 
+    const session = this.getStoredSession();
     const { data, error } = await supabase.rpc('change_admin_password', {
       p_current_password: currentPassword.trim(),
-      p_new_password: newPassword.trim()
+      p_new_password: newPassword.trim(),
+      p_token: session?.token || ''
     });
 
     if (error) {
