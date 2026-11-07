@@ -152,6 +152,7 @@ export interface Coupon {
   usageCount: number;
   usageLimit: number;
   isActive: boolean;
+  showInStorefront?: boolean;
 }
 
 export interface OwnerSession {

@@ -21,7 +21,8 @@ export const INITIAL_COUPONS: Coupon[] = [
     expiryDate: '2027-12-31',
     usageLimit: 500,
     usageCount: 0,
-    isActive: true
+    isActive: true,
+    showInStorefront: true
   },
   {
     id: 'coup-2',
@@ -32,7 +33,8 @@ export const INITIAL_COUPONS: Coupon[] = [
     expiryDate: '2027-12-31',
     usageLimit: 250,
     usageCount: 0,
-    isActive: true
+    isActive: true,
+    showInStorefront: true
   },
   {
     id: 'coup-3',
@@ -43,7 +45,8 @@ export const INITIAL_COUPONS: Coupon[] = [
     expiryDate: '2027-12-31',
     usageLimit: 1000,
     usageCount: 0,
-    isActive: true
+    isActive: true,
+    showInStorefront: true
   }
 ];
 

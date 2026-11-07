@@ -93,9 +93,10 @@ interface StoreContextType {
   // Customers
   toggleCustomerStatus: (customerId: string) => Promise<void> | void;
   // Coupons
-  addCoupon: (coupon: Omit<Coupon, 'id' | 'usageCount'>) => void;
-  toggleCoupon: (id: string) => void;
-  deleteCoupon: (id: string) => void;
+  addCoupon: (coupon: Omit<Coupon, 'id' | 'usageCount'>) => Promise<void> | void;
+  editCoupon: (id: string, updates: Partial<Coupon>) => Promise<void> | void;
+  toggleCoupon: (id: string) => Promise<void> | void;
+  deleteCoupon: (id: string) => Promise<void> | void;
   // Settings
   updateSettings: (newSettings: Partial<StoreSettings>) => void;
   // Live Storefront Release Publishing
@@ -211,7 +212,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           expiryDate: c.expires_at ? c.expires_at.split('T')[0] : '2027-12-31',
           usageLimit: Number(c.usage_limit || 1000),
           usageCount: Number(c.usage_count || 0),
-          isActive: Boolean(c.is_active)
+          isActive: Boolean(c.is_active),
+          showInStorefront: c.show_in_storefront !== false
         }));
         setCoupons(mappedCoupons);
         localStorage.setItem('vk_admin_coupons_v1', JSON.stringify(mappedCoupons));
@@ -456,32 +458,42 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Coupon Actions
-  const addCoupon = (c: Omit<Coupon, 'id' | 'usageCount'>) => {
+  const addCoupon = async (c: Omit<Coupon, 'id' | 'usageCount'>) => {
     const newCoupon: Coupon = {
       ...c,
       id: 'cpn-' + Date.now().toString(36),
-      usageCount: 0
+      usageCount: 0,
+      showInStorefront: c.showInStorefront !== false
     };
     const updated = [newCoupon, ...coupons];
     setCoupons(updated);
     localStorage.setItem('vk_admin_coupons_v1', JSON.stringify(updated));
 
     if (isSupabaseConfigured) {
-      supabase
-        .from('coupons')
-        .upsert({
-          code: newCoupon.code,
-          discount_type: newCoupon.discountType === 'percentage' ? 'percentage' : 'fixed',
-          discount_value: Number(newCoupon.discountValue),
-          min_order_value: Number(newCoupon.minOrderValue || 0),
-          usage_limit: Number(newCoupon.usageLimit || 1000),
-          usage_count: Number(newCoupon.usageCount || 0),
-          is_active: Boolean(newCoupon.isActive),
-          expires_at: newCoupon.expiryDate ? new Date(newCoupon.expiryDate).toISOString() : null
-        }, { onConflict: 'code' })
-        .then((res) => {
-          if (res.error) console.warn('Supabase coupon upsert warning:', res.error.message);
-        });
+      try {
+        const { error } = await supabase
+          .from('coupons')
+          .upsert({
+            code: newCoupon.code,
+            discount_type: newCoupon.discountType === 'percentage' ? 'percentage' : 'fixed',
+            discount_value: Number(newCoupon.discountValue),
+            min_order_value: Number(newCoupon.minOrderValue || 0),
+            usage_limit: Number(newCoupon.usageLimit || 1000),
+            usage_count: Number(newCoupon.usageCount || 0),
+            is_active: Boolean(newCoupon.isActive),
+            show_in_storefront: newCoupon.showInStorefront !== false,
+            expires_at: newCoupon.expiryDate ? new Date(newCoupon.expiryDate).toISOString() : null
+          }, { onConflict: 'code' });
+
+        if (error) {
+          console.error('Supabase coupon upsert error:', error.message);
+          addToast(`Coupon saved locally, but database warning: ${error.message}`, 'error');
+        } else {
+          console.log(`[Supabase] Coupon ${newCoupon.code} synced to database.`);
+        }
+      } catch (err: any) {
+        console.error('Supabase coupon network error:', err);
+      }
     }
 
     try {
@@ -492,26 +504,87 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (e) {}
 
-    logAudit('Coupon Created', newCoupon.code, `Type: ${newCoupon.discountType}, Value: ${newCoupon.discountValue}`);
+    logAudit('Coupon Created', newCoupon.code, `Type: ${newCoupon.discountType}, Value: ${newCoupon.discountValue}, Public: ${newCoupon.showInStorefront !== false}`);
     addToast(`Coupon "${newCoupon.code}" created and pushed live!`);
   };
 
-  const toggleCoupon = (id: string) => {
-    const updated = coupons.map((c) => (c.id === id ? { ...c, isActive: !c.isActive } : c));
+  const editCoupon = async (id: string, updates: Partial<Coupon>) => {
+    const existing = coupons.find((c) => c.id === id);
+    if (!existing) return;
+
+    const updatedCoupon: Coupon = {
+      ...existing,
+      ...updates,
+      code: updates.code ? updates.code.trim().toUpperCase() : existing.code,
+      showInStorefront: updates.showInStorefront !== undefined ? updates.showInStorefront : existing.showInStorefront !== false
+    };
+
+    const updated = coupons.map((c) => (c.id === id ? updatedCoupon : c));
     setCoupons(updated);
     localStorage.setItem('vk_admin_coupons_v1', JSON.stringify(updated));
 
     if (isSupabaseConfigured) {
-      const target = updated.find((c) => c.id === id);
-      if (target) {
-        supabase
+      try {
+        // If code changed, delete old code first
+        if (existing.code !== updatedCoupon.code) {
+          await supabase.from('coupons').delete().eq('code', existing.code);
+        }
+
+        const { error } = await supabase
           .from('coupons')
-          .update({ is_active: target.isActive })
-          .eq('code', target.code)
-          .then((res) => {
-            if (res.error) console.warn('Supabase coupon toggle warning:', res.error.message);
-          });
+          .upsert({
+            code: updatedCoupon.code,
+            discount_type: updatedCoupon.discountType === 'percentage' ? 'percentage' : 'fixed',
+            discount_value: Number(updatedCoupon.discountValue),
+            min_order_value: Number(updatedCoupon.minOrderValue || 0),
+            usage_limit: Number(updatedCoupon.usageLimit || 1000),
+            usage_count: Number(updatedCoupon.usageCount || 0),
+            is_active: Boolean(updatedCoupon.isActive),
+            show_in_storefront: updatedCoupon.showInStorefront !== false,
+            expires_at: updatedCoupon.expiryDate ? new Date(updatedCoupon.expiryDate).toISOString() : null
+          }, { onConflict: 'code' });
+
+        if (error) {
+          console.error('Supabase coupon update error:', error.message);
+          addToast(`Coupon updated locally, but database warning: ${error.message}`, 'error');
+        } else {
+          console.log(`[Supabase] Coupon ${updatedCoupon.code} updated in database.`);
+        }
+      } catch (err: any) {
+        console.error('Supabase coupon update network error:', err);
       }
+    }
+
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel.postMessage({ type: 'COUPONS_UPDATED', coupons: updated, previousCode: existing.code !== updatedCoupon.code ? existing.code : undefined });
+        channel.close();
+      }
+    } catch (e) {}
+
+    logAudit('Coupon Updated', updatedCoupon.code, `Type: ${updatedCoupon.discountType}, Value: ${updatedCoupon.discountValue}, Public: ${updatedCoupon.showInStorefront !== false}`);
+    addToast(`Coupon "${updatedCoupon.code}" updated and synced live!`);
+  };
+
+  const toggleCoupon = async (id: string) => {
+    const target = coupons.find((c) => c.id === id);
+    if (!target) return;
+    const newActiveState = !target.isActive;
+
+    const updated = coupons.map((c) => (c.id === id ? { ...c, isActive: newActiveState } : c));
+    setCoupons(updated);
+    localStorage.setItem('vk_admin_coupons_v1', JSON.stringify(updated));
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase
+          .from('coupons')
+          .update({ is_active: newActiveState })
+          .eq('code', target.code);
+
+        if (error) console.warn('Supabase coupon toggle warning:', error.message);
+      } catch (err) {}
     }
 
     try {
@@ -522,23 +595,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (e) {}
 
-    addToast('Coupon status updated and synced live!');
+    addToast(`Coupon "${target.code}" is now ${newActiveState ? 'active' : 'paused'}.`);
   };
 
-  const deleteCoupon = (id: string) => {
+  const deleteCoupon = async (id: string) => {
     const target = coupons.find((c) => c.id === id);
     const updated = coupons.filter((c) => c.id !== id);
     setCoupons(updated);
     localStorage.setItem('vk_admin_coupons_v1', JSON.stringify(updated));
 
     if (isSupabaseConfigured && target) {
-      supabase
-        .from('coupons')
-        .delete()
-        .eq('code', target.code)
-        .then((res) => {
-          if (res.error) console.warn('Supabase coupon delete warning:', res.error.message);
-        });
+      try {
+        const { error } = await supabase
+          .from('coupons')
+          .delete()
+          .eq('code', target.code);
+
+        if (error) console.warn('Supabase coupon delete warning:', error.message);
+      } catch (err) {}
     }
 
     try {
@@ -549,7 +623,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (e) {}
 
-    addToast('Coupon deleted', 'info');
+    logAudit('Coupon Deleted', target?.code || id, 'Coupon deleted from database and storefront');
+    addToast(`Coupon ${target?.code || ''} deleted`, 'info');
   };
 
   // Settings
@@ -818,6 +893,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         adjustStock,
         toggleCustomerStatus,
         addCoupon,
+        editCoupon,
         toggleCoupon,
         deleteCoupon,
         updateSettings,
