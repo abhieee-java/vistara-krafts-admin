@@ -17,6 +17,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { ToastContainer } from './components/common/Toast';
+import { Coachmarks } from './components/common/Coachmarks';
 import { Order } from './types';
 
 const AdminPortalApp: React.FC = () => {
@@ -109,6 +110,9 @@ const AdminPortalApp: React.FC = () => {
 
       {/* Mobile Bottom Navigation Dock for Phone Screens */}
       <MobileBottomNav onOpenSidebar={() => setIsMobileSidebarOpen(true)} />
+
+      {/* Apple-style TipKit Coachmarks (First-time login guide & on-demand tips) */}
+      <Coachmarks onNavigateTab={(tab) => navigate(tab)} />
 
       {/* Global Toast Container */}
       <ToastContainer />

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
-import { Menu, LogOut, Shield, Wifi, Rocket, Key } from 'lucide-react';
+import { Menu, LogOut, Shield, Wifi, Rocket, Key, Sparkles } from 'lucide-react';
 import { ChangePasswordModal } from '../common/ChangePasswordModal';
 
 interface HeaderProps {
@@ -165,6 +165,17 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
               <div className="text-[10px] text-gray-500 font-medium">Single Owner</div>
             </div>
           </div>
+
+          {/* Quick Tips / Coachmarks Button */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('vk_open_coachmarks'))}
+            title="Open Guided Admin Tips"
+            className="p-2 text-gray-600 hover:text-[#1c1b18] hover:bg-amber-100/60 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 text-xs font-medium cursor-pointer"
+            aria-label="Open guided admin tips"
+          >
+            <Sparkles className="w-4 h-4 text-[#cda851]" />
+            <span className="hidden xl:inline text-[11px]">Coach Tips</span>
+          </button>
 
           {/* Change Password Button */}
           <button
