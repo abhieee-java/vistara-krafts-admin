@@ -93,7 +93,6 @@
 
 .view-enter {
   animation: viewEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  will-change: opacity, transform;
 }
 
 /* 2. Modal Backdrop Smooth Fade */

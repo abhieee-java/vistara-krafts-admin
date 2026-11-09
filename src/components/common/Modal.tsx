@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -8,6 +9,7 @@ interface ModalProps {
   subtitle?: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+  headerActions?: React.ReactNode;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -16,7 +18,8 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   subtitle,
   children,
-  maxWidth = 'lg'
+  maxWidth = 'lg',
+  headerActions
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -43,30 +46,44 @@ export const Modal: React.FC<ModalProps> = ({
     '4xl': 'max-w-4xl'
   }[maxWidth];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm modal-backdrop-enter">
+  const modalElement = (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/65 backdrop-blur-md modal-backdrop-enter"
+      style={{ isolation: 'isolate' }}
+    >
       {/* Click outside to close backdrop */}
-      <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 -z-10" onClick={onClose} aria-hidden="true" />
+
+      {/* Modal Surface */}
       <div
-        className={`relative w-full ${widthClass} bg-white rounded-2xl shadow-2xl border border-[#e6e2d8] flex flex-col max-h-[95vh] sm:max-h-[90vh] overflow-hidden modal-card-enter z-10`}
+        className={`relative w-full ${widthClass} bg-white rounded-2xl sm:rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] border border-[#e6e2d8] flex flex-col max-h-[92dvh] sm:max-h-[88vh] overflow-hidden modal-card-enter z-10`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#e6e2d8] flex items-center justify-between bg-[#faf8f5]">
-          <div>
-            <h3 className="font-serif font-bold text-base sm:text-lg text-[#1c1b18]">{title}</h3>
-            {subtitle && <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5">{subtitle}</p>}
+        {/* Header */}
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[#e6e2d8] flex items-center justify-between gap-3 bg-[#faf8f5]/95 backdrop-blur-xs shrink-0">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-serif font-bold text-base sm:text-lg text-[#1c1b18] truncate leading-tight">{title}</h3>
+            {subtitle && <p className="text-[11px] sm:text-xs text-gray-500 mt-0.5 truncate">{subtitle}</p>}
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all active:scale-95 cursor-pointer"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {headerActions}
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-[40px] min-w-[40px] p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all active:scale-95 cursor-pointer flex items-center justify-center"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Scrollable Body */}
         <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
       </div>
     </div>
   );
+
+  return createPortal(modalElement, document.body);
 };

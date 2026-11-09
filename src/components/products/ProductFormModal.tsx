@@ -127,7 +127,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setLowStockThreshold(5);
       setInStock(true);
       setIsCustomizable(false);
-      setImage('https://res.cloudinary.com/ecugysfd/image/upload/v1792353785/catalog_cata1_resin_bottles_set_1792353782.png');
+      setImage('');
       setGallery([]);
       setVariants([]);
       setColorsText('');
@@ -247,8 +247,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       lowStockThreshold: Number(lowStockThreshold),
       inStock: stockQuantity > 0 ? inStock : false,
       isCustomizable,
-      image: image || gallery[0] || '',
-      gallery: gallery.length > 0 ? gallery : [image],
+      image: image || (gallery && gallery[0]) || '',
+      gallery: gallery.length > 0 ? gallery : (image ? [image] : []),
       variants,
       colors: parsedColors,
       shapes: parsedShapes,
@@ -261,15 +261,30 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     onClose();
   };
 
+  const handleAutoGenerateSku = () => {
+    const prefix = category ? category.slice(0, 3).toUpperCase() : 'RES';
+    const rand = Math.floor(100 + Math.random() * 900);
+    setSku(`VK-${prefix}-${rand}`);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
       title={product ? 'Edit Product / Keepsake' : 'Add New Product to Atelier'}
-      subtitle="Changes sync directly to the live customer storefront via BroadcastChannel"
+      subtitle="Changes sync directly to the live customer storefront & Supabase"
       maxWidth="2xl"
+      headerActions={
+        <button
+          type="submit"
+          form="product-form"
+          className="h-8 px-4 rounded-xl text-xs font-bold text-[#1c1b18] bg-[#cda851] hover:bg-[#dfc27d] transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-1 shrink-0"
+        >
+          {product ? 'Save' : 'Create'}
+        </button>
+      }
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form id="product-form" onSubmit={handleSubmit} className="space-y-5 pb-2">
         {/* Basic Info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
@@ -300,9 +315,18 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-              SKU Identifier *
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-[#1c1b18]">
+                SKU Identifier *
+              </label>
+              <button
+                type="button"
+                onClick={handleAutoGenerateSku}
+                className="text-[10px] text-[#8a7238] hover:text-[#cda851] font-semibold cursor-pointer underline"
+              >
+                Auto-Gen
+              </button>
+            </div>
             <input
               type="text"
               required
@@ -749,8 +773,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           )}
         </div>
 
-        {/* Modal Submit Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#e6e2d8]">
+        {/* Sticky Modal Submit Actions */}
+        <div className="sticky bottom-0 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 px-4 sm:px-6 py-3 bg-[#faf8f5]/95 backdrop-blur-md border-t border-[#e6e2d8] flex items-center justify-end gap-3 z-20">
           <button
             type="button"
             onClick={onClose}

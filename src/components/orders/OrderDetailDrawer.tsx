@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Order, OrderStatus } from '../../types';
 import { StatusBadge } from '../common/Badge';
 import {
@@ -53,8 +54,8 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
     setIsUpdatingTracking(false);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm modal-backdrop-enter">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] overflow-hidden bg-black/65 backdrop-blur-md modal-backdrop-enter">
       {/* Click outside to close backdrop */}
       <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
       <div className="absolute inset-y-0 right-0 w-full sm:max-w-xl flex pl-0 sm:pl-10 z-10 drawer-slide-in">
@@ -331,6 +332,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
