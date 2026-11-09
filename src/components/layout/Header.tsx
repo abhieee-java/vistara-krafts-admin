@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
-import { Menu, LogOut, Shield, Wifi, Rocket, Key, Sparkles } from 'lucide-react';
+import { Menu, LogOut, Wifi, Rocket, Key, HelpCircle } from 'lucide-react';
 import { ChangePasswordModal } from '../common/ChangePasswordModal';
 
 interface HeaderProps {
@@ -155,8 +155,8 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
         {/* Owner Info & Logout */}
         <div className="flex items-center gap-1 sm:gap-2 pl-2 border-l border-[#e6e2d8]">
           <div className="flex items-center gap-2 text-right">
-            <div className="w-8 h-8 rounded-full bg-[#1c1b18] text-[#cda851] flex items-center justify-center font-serif font-bold text-xs shadow-sm">
-              <Shield className="w-4 h-4 text-[#cda851]" />
+            <div className="w-8 h-8 rounded-full bg-[#1c1b18] text-[#cda851] flex items-center justify-center font-serif font-bold text-xs shadow-sm select-none">
+              {(user?.name || 'VK')[0].toUpperCase()}
             </div>
             <div className="hidden md:block">
               <div className="text-xs font-semibold text-[#1c1b18]">
@@ -166,15 +166,15 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
             </div>
           </div>
 
-          {/* Quick Tips / Coachmarks Button */}
+          {/* Quick How to Use Guide Button */}
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('vk_open_coachmarks'))}
-            title="Open Guided Admin Tips"
+            title="How to Use Vistāra Krafts Console"
             className="p-2 text-gray-600 hover:text-[#1c1b18] hover:bg-amber-100/60 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 text-xs font-medium cursor-pointer"
-            aria-label="Open guided admin tips"
+            aria-label="How to use the admin console"
           >
-            <Sparkles className="w-4 h-4 text-[#cda851]" />
-            <span className="hidden xl:inline text-[11px]">Coach Tips</span>
+            <HelpCircle className="w-4 h-4 text-[#8a7238]" />
+            <span className="hidden xl:inline text-[11px]">How to Use</span>
           </button>
 
           {/* Change Password Button */}
