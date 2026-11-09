@@ -3,6 +3,38 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { authService } from './authService';
 
 const ORDERS_STORAGE_KEY = 'vk_admin_orders_v1';
+const DELETED_ORDERS_KEY = 'vk_admin_deleted_orders_v1';
+
+function getDeletedOrderIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_ORDERS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr.map(String));
+    }
+  } catch (_e) {}
+  return new Set();
+}
+
+function isMockOrTestOrder(row: any): boolean {
+  if (!row) return true;
+  const num = String(row.orderNumber || row.order_number || row.orderId || row.id || '').toUpperCase();
+  const name = String(row.customerName || row.customer_name || '').toLowerCase();
+  const email = String(row.customerEmail || row.customer_email || '').toLowerCase();
+
+  return (
+    num.includes('TEST') ||
+    num.includes('MOCK') ||
+    num.includes('SAMPLE') ||
+    num.includes('DUMMY') ||
+    name.includes('test') ||
+    name.includes('mock') ||
+    name.includes('dummy') ||
+    name.includes('valued patron') ||
+    email.includes('test@') ||
+    email.includes('@example.com')
+  );
+}
 
 async function safeDbExec(action: () => PromiseLike<any>, desc: string) {
   try {
@@ -18,16 +50,56 @@ async function safeDbExec(action: () => PromiseLike<any>, desc: string) {
 export const orderService = {
   getOrders(): Order[] {
     try {
+      const deletedIds = getDeletedOrderIds();
       const data = localStorage.getItem(ORDERS_STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter(
+            (o) =>
+              !deletedIds.has(String(o.id)) &&
+              !deletedIds.has(String(o.orderNumber)) &&
+              !isMockOrTestOrder(o)
+          );
+        }
       }
     } catch (e) {
       console.error('Failed to load orders', e);
     }
     // Strictly zero mock orders
     return [];
+  },
+
+  deleteOrder(orderId: string): void {
+    const deletedIds = getDeletedOrderIds();
+    deletedIds.add(String(orderId));
+    try {
+      localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify(Array.from(deletedIds)));
+    } catch (_e) {}
+
+    const remaining = this.getOrders().filter(
+      (o) => o.id !== orderId && o.orderNumber !== orderId
+    );
+    this.saveOrders(remaining);
+  },
+
+  clearAllOrders(): void {
+    const current = this.getOrders();
+    const deletedIds = getDeletedOrderIds();
+    current.forEach((o) => {
+      deletedIds.add(String(o.id));
+      deletedIds.add(String(o.orderNumber));
+    });
+    try {
+      localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify(Array.from(deletedIds)));
+      localStorage.removeItem(ORDERS_STORAGE_KEY);
+      localStorage.removeItem('ram_vk_orders_v2');
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel.postMessage({ type: 'ORDERS_UPDATED', orders: [] });
+        channel.close();
+      }
+    } catch (_e) {}
   },
 
   async fetchFromSupabase(): Promise<Order[]> {
@@ -63,47 +135,55 @@ export const orderService = {
       }
 
       if (Array.isArray(orderRows)) {
-        const orders: Order[] = orderRows.map((row: any) => ({
-          id: String(row.id),
-          orderNumber: row.order_number || row.orderId || row.id,
-          customerName: row.customer_name || 'Valued Patron',
-          customerEmail: row.customer_email || '',
-          customerPhone: row.phone || row.customer_phone || '',
-          items: Array.isArray(row.items) ? row.items : [],
-          subtotal: Number(row.subtotal || 0),
-          discountAmount: Number(row.discount ?? row.discount_amount ?? 0),
-          couponCode: row.coupon_code || '',
-          shippingFee: Number(row.shipping_fee || 0),
-          totalAmount: Number(row.total ?? row.total_amount ?? 0),
-          orderStatus: (row.order_status || 'new') as OrderStatus,
-          paymentStatus: row.payment_status || 'pending',
-          paymentMethod: row.payment_method || 'razorpay',
-          shippingAddress: {
-            fullName: row.customer_name || 'Valued Patron',
-            phone: row.phone || row.customer_phone || '',
-            street: row.address || '',
-            city: row.city || '',
-            state: row.state || '',
-            pincode: row.pincode || ''
-          },
-          carrier: (row.courier || row.carrier || 'Delhivery') as any,
-          trackingNumber: row.tracking_number || '',
-          notes: row.notes || '',
-          timeline: [
-            {
-              status: (row.order_status || 'new') as OrderStatus,
-              timestamp: row.created_at || new Date().toISOString(),
-              note: 'Order placed by patron'
+        const deletedIds = getDeletedOrderIds();
+        const orders: Order[] = orderRows
+          .filter(
+            (row) =>
+              !deletedIds.has(String(row.id)) &&
+              !deletedIds.has(String(row.order_number || row.orderId)) &&
+              !isMockOrTestOrder(row)
+          )
+          .map((row: any) => ({
+            id: String(row.id),
+            orderNumber: row.order_number || row.orderId || row.id,
+            customerName: row.customer_name || 'Valued Patron',
+            customerEmail: row.customer_email || '',
+            customerPhone: row.phone || row.customer_phone || '',
+            items: Array.isArray(row.items) ? row.items : [],
+            subtotal: Number(row.subtotal || 0),
+            discountAmount: Number(row.discount ?? row.discount_amount ?? 0),
+            couponCode: row.coupon_code || '',
+            shippingFee: Number(row.shipping_fee || 0),
+            totalAmount: Number(row.total ?? row.total_amount ?? 0),
+            orderStatus: (row.order_status || 'new') as OrderStatus,
+            paymentStatus: row.payment_status || 'pending',
+            paymentMethod: row.payment_method || 'razorpay',
+            shippingAddress: {
+              fullName: row.customer_name || 'Valued Patron',
+              phone: row.phone || row.customer_phone || '',
+              street: row.address || '',
+              city: row.city || '',
+              state: row.state || '',
+              pincode: row.pincode || ''
             },
-            ...(row.tracking_number ? [{
-              status: 'shipped' as OrderStatus,
-              timestamp: row.updated_at || row.created_at || new Date().toISOString(),
-              note: `Dispatched via ${row.courier || row.carrier || 'courier'} (AWB: ${row.tracking_number})`
-            }] : [])
-          ],
-          createdAt: row.created_at || new Date().toISOString(),
-          updatedAt: row.updated_at || new Date().toISOString()
-        }));
+            carrier: (row.courier || row.carrier || 'Delhivery') as any,
+            trackingNumber: row.tracking_number || '',
+            notes: row.notes || '',
+            timeline: [
+              {
+                status: (row.order_status || 'new') as OrderStatus,
+                timestamp: row.created_at || new Date().toISOString(),
+                note: 'Order placed by patron'
+              },
+              ...(row.tracking_number ? [{
+                status: 'shipped' as OrderStatus,
+                timestamp: row.updated_at || row.created_at || new Date().toISOString(),
+                note: `Dispatched via ${row.courier || row.carrier || 'courier'} (AWB: ${row.tracking_number})`
+              }] : [])
+            ],
+            createdAt: row.created_at || new Date().toISOString(),
+            updatedAt: row.updated_at || new Date().toISOString()
+          }));
 
         this.saveOrders(orders);
         return orders;

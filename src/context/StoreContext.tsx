@@ -84,6 +84,8 @@ interface StoreContextType {
   updateOrderTracking: (orderId: string, carrier: 'Delhivery' | 'BlueDart' | 'DTDC', trackingNumber: string) => void;
   cancelOrder: (orderId: string, reason?: string) => void;
   refundOrder: (orderId: string) => void;
+  deleteOrder: (orderId: string) => void;
+  clearAllOrders: () => void;
   // Inventory
   adjustStock: (
     productId: string,
@@ -433,6 +435,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOrders(orderService.getOrders());
     logAudit('Order Refunded', updated.orderNumber, `Amount: ₹${updated.totalAmount}`);
     addToast(`Refund processed for ${updated.orderNumber}`, 'info');
+  };
+
+  const deleteOrder = (orderId: string) => {
+    orderService.deleteOrder(orderId);
+    setOrders(orderService.getOrders());
+    addToast('Order deleted', 'info');
+  };
+
+  const clearAllOrders = () => {
+    orderService.clearAllOrders();
+    setOrders([]);
+    addToast('All mock orders purged', 'info');
   };
 
   // Inventory Actions
@@ -890,6 +904,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateOrderTracking,
         cancelOrder,
         refundOrder,
+        deleteOrder,
+        clearAllOrders,
         adjustStock,
         toggleCustomerStatus,
         addCoupon,

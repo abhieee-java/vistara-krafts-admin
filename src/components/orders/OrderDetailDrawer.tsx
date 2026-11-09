@@ -13,6 +13,7 @@ import {
   Clock,
   RotateCcw,
   Ban,
+  Trash2,
   CheckCircle2
 } from 'lucide-react';
 
@@ -27,6 +28,7 @@ interface OrderDetailDrawerProps {
   ) => void;
   onCancelOrder: (orderId: string) => void;
   onRefundOrder: (orderId: string) => void;
+  onDeleteOrder?: (orderId: string) => void;
   onOpenInvoice: (order: Order) => void;
 }
 
@@ -37,6 +39,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   onUpdateTracking,
   onCancelOrder,
   onRefundOrder,
+  onDeleteOrder,
   onOpenInvoice
 }) => {
   const [carrier, setCarrier] = useState<'Delhivery' | 'BlueDart' | 'DTDC'>(
@@ -318,6 +321,20 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   Issue Refund
+                </button>
+              )}
+              {onDeleteOrder && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onDeleteOrder(order.id);
+                    onClose();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 border border-gray-200 transition-colors"
+                  title="Delete fake or mock order"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Order
                 </button>
               )}
             </div>

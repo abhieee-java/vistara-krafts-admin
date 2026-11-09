@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
-import { Menu, LogOut, Wifi, Rocket, Key, HelpCircle } from 'lucide-react';
+import { Menu, LogOut, Wifi, Rocket, Key } from 'lucide-react';
 import { ChangePasswordModal } from '../common/ChangePasswordModal';
 
 interface HeaderProps {
@@ -154,28 +154,12 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
 
         {/* Owner Info & Logout */}
         <div className="flex items-center gap-1 sm:gap-2 pl-2 border-l border-[#e6e2d8]">
-          <div className="flex items-center gap-2 text-right">
-            <div className="w-8 h-8 rounded-full bg-[#1c1b18] text-[#cda851] flex items-center justify-center font-serif font-bold text-xs shadow-sm select-none">
-              {(user?.name || 'VK')[0].toUpperCase()}
+          <div className="hidden md:block text-right">
+            <div className="text-xs font-semibold text-[#1c1b18]">
+              {user?.name || 'Store Owner'}
             </div>
-            <div className="hidden md:block">
-              <div className="text-xs font-semibold text-[#1c1b18]">
-                {user?.name || 'Store Owner'}
-              </div>
-              <div className="text-[10px] text-gray-500 font-medium">Single Owner</div>
-            </div>
+            <div className="text-[10px] text-gray-500 font-medium">Single Owner</div>
           </div>
-
-          {/* Quick How to Use Guide Button */}
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('vk_open_coachmarks'))}
-            title="How to Use Vistāra Krafts Console"
-            className="p-2 text-gray-600 hover:text-[#1c1b18] hover:bg-amber-100/60 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 text-xs font-medium cursor-pointer"
-            aria-label="How to use the admin console"
-          >
-            <HelpCircle className="w-4 h-4 text-[#8a7238]" />
-            <span className="hidden xl:inline text-[11px]">How to Use</span>
-          </button>
 
           {/* Change Password Button */}
           <button

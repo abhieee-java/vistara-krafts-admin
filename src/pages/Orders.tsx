@@ -7,7 +7,7 @@ import { InvoiceModal } from '../components/orders/InvoiceModal';
 import { ConfirmationDialog } from '../components/common/ConfirmationDialog';
 import { EmptyState } from '../components/common/EmptyState';
 import { TableSkeleton, MobileCardSkeleton } from '../components/common/Skeleton';
-import { Search, Filter, FileText, Truck, Eye, Package, RefreshCw, Clock } from 'lucide-react';
+import { Search, Filter, FileText, Truck, Eye, Package, RefreshCw, Clock, Trash2 } from 'lucide-react';
 
 const formatOrderTimestamp = (dateStr: string) => {
   const d = new Date(dateStr);
@@ -37,6 +37,8 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
     updateOrderTracking,
     cancelOrder,
     refundOrder,
+    deleteOrder,
+    clearAllOrders,
     refreshFromDb,
     isLoadingDb
   } = useStore();
@@ -87,7 +89,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
           />
         </div>
 
-        {/* Filter Pills */}
+        {/* Filter Pills & Purge Action */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {statuses.map((s) => (
             <button
@@ -102,6 +104,21 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
               {s.label}
             </button>
           ))}
+
+          {orders.length > 0 && (
+            <button
+              onClick={() => {
+                if (window.confirm('Purge all mock/test orders from this device?')) {
+                  clearAllOrders();
+                }
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-all cursor-pointer flex items-center gap-1 shrink-0 ml-1"
+              title="Delete all mock orders"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Purge Mock Orders</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -238,6 +255,17 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                 <FileText className="w-3.5 h-3.5" />
                 <span>Invoice</span>
               </button>
+              <button
+                onClick={() => {
+                  if (window.confirm(`Delete order #${ord.orderNumber}?`)) {
+                    deleteOrder(ord.id);
+                  }
+                }}
+                className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition-colors flex items-center justify-center cursor-pointer"
+                title="Delete Order"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         ))}
@@ -329,7 +357,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
 
                     {/* Actions - Canonical Entry Point */}
                     <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -339,6 +367,18 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                         >
                           <Eye className="w-3.5 h-3.5" />
                           <span>Manage</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Delete order #${ord.orderNumber}?`)) {
+                              deleteOrder(ord.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer"
+                          title="Delete Order"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -370,6 +410,10 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
             refundOrder(id);
             const fresh = orders.find((o) => o.id === id);
             if (fresh) setSelectedOrder(fresh);
+          }}
+          onDeleteOrder={(id) => {
+            deleteOrder(id);
+            setSelectedOrder(null);
           }}
           onOpenInvoice={(ord) => setInvoiceOrder(ord)}
         />
