@@ -39,10 +39,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     }
   };
 
-  const handleRemove = (url: string) => {
+  const handleRemove = async (url: string) => {
     const updated = images.filter((img) => img !== url);
     const newMain = mainImage === url ? (updated[0] || '') : mainImage;
     onImagesChange(updated, newMain);
+    await storageService.deleteFile(url).catch(() => {});
   };
 
   const handleSetMain = (url: string) => {
@@ -52,14 +53,14 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   return (
     <div className="space-y-3">
       <label className="block text-xs font-semibold text-[#1c1b18]">
-        Product Photography (Cloudinary Ready)
+        Product Photography (Supabase Storage • Auto-WebP)
       </label>
 
       {/* Upload Box */}
       <div className="relative border-2 border-dashed border-[#dcd6c8] hover:border-[#cda851] rounded-xl p-5 text-center bg-[#faf8f5] transition-colors">
         <input
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept="image/*,.heic,.heif,.tiff,.bmp,.svg,.avif,.webp,.jpg,.jpeg,.png"
           onChange={handleFileSelect}
           disabled={isUploading}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
@@ -68,10 +69,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         <div className="flex flex-col items-center justify-center gap-1.5 pointer-events-none">
           <UploadCloud className="w-7 h-7 text-[#cda851]" />
           <p className="text-xs font-semibold text-[#1c1b18]">
-            Click to upload or drag & drop image
+            Click to upload or drag &amp; drop image
           </p>
           <p className="text-[10px] text-gray-500">
-            JPG, PNG, WEBP (Max 10MB) • Scaled for mobile & zoom loupe
+            JPG, PNG, HEIC, WEBP, AVIF (Auto-transcoded to high-efficiency WebP, max 20MB)
           </p>
         </div>
       </div>
@@ -80,7 +81,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       {isUploading && (
         <div className="space-y-1">
           <div className="flex justify-between text-[10px] font-semibold text-gray-600">
-            <span>Uploading to Cloudinary CDN...</span>
+            <span>Transcoding to WebP &amp; Uploading to Supabase Storage...</span>
             <span>{uploadProgress}%</span>
           </div>
           <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -102,8 +103,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             return (
               <div
                 key={idx}
-                className={`group relative aspect-square rounded-lg overflow-hidden border-2 bg-gray-100 ${
-                  isMain ? 'border-[#cda851] ring-2 ring-[#cda851]/30' : 'border-[#e6e2d8]'
+                className={`relative group aspect-square rounded-lg overflow-hidden border bg-white ${
+                  isMain ? 'border-[#cda851] ring-2 ring-[#cda851]/30' : 'border-gray-200'
                 }`}
               >
                 <img
@@ -111,35 +112,31 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                   alt={`Product view ${idx + 1}`}
                   className="w-full h-full object-cover"
                 />
-
-                {/* Main badge */}
-                {isMain && (
-                  <span className="absolute bottom-1 left-1 bg-[#1c1b18]/90 text-[#cda851] text-[8px] font-bold px-1.5 py-0.5 rounded shadow">
-                    MAIN
-                  </span>
-                )}
-
-                {/* Hover overlay actions */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
-                  {!isMain && (
-                    <button
-                      type="button"
-                      onClick={() => handleSetMain(url)}
-                      title="Set as Main Image"
-                      className="p-1 rounded bg-white text-[#1c1b18] hover:bg-[#cda851] transition-colors"
-                    >
-                      <Star className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSetMain(url)}
+                    className={`p-1.5 rounded-full ${
+                      isMain ? 'bg-[#cda851] text-white' : 'bg-white/90 text-gray-700 hover:text-[#cda851]'
+                    }`}
+                    title={isMain ? 'Primary Image' : 'Set as Primary'}
+                  >
+                    <Star className="w-3.5 h-3.5" fill={isMain ? 'currentColor' : 'none'} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleRemove(url)}
+                    className="p-1.5 rounded-full bg-white/90 text-gray-700 hover:text-red-600"
                     title="Remove image"
-                    className="p-1 rounded bg-white text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
+                {isMain && (
+                  <span className="absolute bottom-1 left-1 bg-[#cda851] text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs">
+                    Primary
+                  </span>
+                )}
               </div>
             );
           })}
