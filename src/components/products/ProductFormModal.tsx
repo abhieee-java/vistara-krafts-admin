@@ -60,6 +60,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   // Target audience
   const [gender, setGender] = useState<ProductGender>('all');
+  const isResinKit = category === 'casting' || (category as string) === 'deep_pour';
 
   // Progressive disclosure: Advanced Settings accordion (collapsed by default)
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -248,9 +249,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       sku,
       price: Number(price),
       regularPrice: Number(regularPrice),
-      ratio,
-      viscosity,
-      cureTime,
+      ratio: isResinKit ? ratio : '',
+      viscosity: isResinKit ? viscosity : 'low',
+      cureTime: isResinKit ? cureTime : '',
       stockQuantity: Number(stockQuantity),
       lowStockThreshold: Number(lowStockThreshold),
       inStock: stockQuantity > 0 ? inStock : false,
@@ -261,7 +262,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       colors: parsedColors,
       shapes: parsedShapes,
       sizes: parsedSizes,
-      gender,
+      gender: isResinKit ? 'all' : gender,
       genderAffinity,
       rating: product ? product.rating : 5.0,
       reviewsCount: product ? product.reviewsCount : 0
@@ -450,8 +451,14 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       <Layers className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="font-serif font-bold text-sm text-[#1c1b18]">Variants & Audience</h4>
-                      <p className="text-[11px] text-gray-500">Color swatches, shapes, size packs, and gender targeting</p>
+                      <h4 className="font-serif font-bold text-sm text-[#1c1b18]">
+                        {isResinKit ? 'Product Variants & Sizes' : 'Variants & Audience'}
+                      </h4>
+                      <p className="text-[11px] text-gray-500">
+                        {isResinKit
+                          ? 'Color swatches, shapes, and size pack options'
+                          : 'Color swatches, shapes, size packs, and gender targeting'}
+                      </p>
                     </div>
                   </div>
 
@@ -464,13 +471,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     <span>Add Size Pack</span>
                   </button>
                 </div>
-
-                {/* Target Audience Selector */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#1c1b18] mb-1.5">
-                    Target Audience / Style
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
+                {/* Target Audience Selector (Hidden for Resin & Hardener Kits) */}
+                {!isResinKit && (
+                  <div>
+                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1.5">
+                      Target Audience / Style
+                    </label><div className="grid grid-cols-3 gap-2">
                     <label
                       className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                         gender === 'all'
@@ -526,6 +532,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                     </label>
                   </div>
                 </div>
+              )}
 
                 {/* Supplementary Varieties (Colors, Shapes, Sizes) */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
@@ -826,9 +833,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Card 3: Resin Specifications */}
-              <div className="bg-white rounded-2xl border border-[#e6e2d8] p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-[#f0ece3]">
+              {/* Card 3: Resin Specifications (Shown only for Resin & Hardener Kits) */}
+              {isResinKit && (
+                <div className="bg-white rounded-2xl border border-[#e6e2d8] p-5 sm:p-6 shadow-xs space-y-4"><div className="flex items-center gap-2 pb-3 border-b border-[#f0ece3]">
                   <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0">
                     <Sliders className="w-4 h-4" />
                   </div>
@@ -892,6 +899,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                   </div>
                 </div>
               </div>
+              )}
 
             </div>
 
