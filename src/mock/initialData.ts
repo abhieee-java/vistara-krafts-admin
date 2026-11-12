@@ -76,7 +76,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   storeName: 'Vistāra Krafts',
   brandTagline: 'Curated Resin Art & Museum-Grade Preservation',
   instagramHandle: '@vistarakrafts',
-  contactEmail: 'studio@vistarakrafts.com',
+  contactEmail: 'contact@vistarakrafts.com',
   contactPhone: '+91 98765 43210',
   currency: 'INR',
   freeShippingThreshold: 999,

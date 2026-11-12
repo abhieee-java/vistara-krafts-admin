@@ -197,7 +197,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="lg:col-span-2 p-6 rounded-2xl bg-white border border-[#e6e2d8] shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-serif font-bold text-base text-[#1c1b18]">Recent Studio Orders</h3>
+              <h3 className="font-serif font-bold text-base text-[#1c1b18]">Recent Orders</h3>
               <p className="text-xs text-gray-500">Latest customer orders and garland bookings</p>
             </div>
             <button
@@ -213,7 +213,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="py-4">
               <EmptyState
                 icon={ShoppingBag}
-                title="No Studio Orders Recorded"
+                title="No Orders Recorded"
                 description="Live customer orders placed on the storefront will stream here automatically for verification and fulfillment."
                 compact
               />

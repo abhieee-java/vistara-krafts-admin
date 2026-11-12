@@ -38,7 +38,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
               </div>
               <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-[#cda851]" />
-                Resin Art Memories Studio • Pan-India Atelier
+                Resin Art Memories • Pan-India Atelier
               </p>
               <p className="text-[11px] text-gray-400">GSTIN: 29AABCV1234F1Z5 • Bengaluru, KA</p>
             </div>

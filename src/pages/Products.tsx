@@ -88,7 +88,7 @@ export const Products: React.FC<ProductsProps> = ({
               <option value="deep_pour">2:1 Deep Pour River</option>
               <option value="pigments">Mica Pigments</option>
               <option value="molds">Silicone Molds</option>
-              <option value="accessories">Studio Tools & Accessories</option>
+              <option value="accessories">Craft Tools & Accessories</option>
             </select>
           </div>
         </div>

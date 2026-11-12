@@ -389,7 +389,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 <div className="space-y-2 pt-1">
                   <div className="flex items-center justify-between">
                     <label htmlFor="artisan-notes-textarea" className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
-                      Artisan Studio Lab Notes
+                      Artisan Lab Notes
                     </label>
                     <button
                       type="button"
