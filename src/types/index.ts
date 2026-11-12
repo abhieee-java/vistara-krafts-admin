@@ -85,6 +85,34 @@ export interface ShippingAddress {
   pincode: string;
 }
 
+export type PreservationStage =
+  | 'Floral Awaiting Pickup'
+  | 'Cryo-Silica Dehydration'
+  | 'Botanical Prep & Color Lock'
+  | 'Base Layer Optical Pour'
+  | 'Deep Pour & Pressure Curing'
+  | 'Diamond Milling & Lapping'
+  | 'Ceramic Coating & QA Inspection'
+  | 'Dispatched in Velvet Vault';
+
+export interface CustomPreservationDetails {
+  shape: string;
+  occasion?: string;
+  flowerSource: string;
+  metallic?: string;
+  secondaryKeepsake?: string;
+  engraving?: string;
+  fontStyle?: string;
+  eventDate?: string;
+  pickupSlot?: string;
+  ledBase?: boolean;
+  photoUrl?: string;
+  photoName?: string;
+  preservationStage?: PreservationStage;
+  stageHistory?: { stage: PreservationStage; timestamp: string; note?: string }[];
+  artisanNotes?: string;
+}
+
 export interface Order {
   id: string;
   orderNumber: string;
@@ -104,6 +132,9 @@ export interface Order {
   carrier?: 'Delhivery' | 'BlueDart' | 'DTDC';
   trackingNumber?: string;
   notes?: string;
+  isCustomPreservation?: boolean;
+  preservationStage?: PreservationStage;
+  customDetails?: CustomPreservationDetails;
   createdAt: string;
   updatedAt: string;
   timeline: {

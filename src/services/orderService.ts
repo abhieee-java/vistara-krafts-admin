@@ -1,4 +1,4 @@
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, PreservationStage, CustomPreservationDetails } from '../types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { authService } from './authService';
 
@@ -143,47 +143,60 @@ export const orderService = {
               !deletedIds.has(String(row.order_number || row.orderId)) &&
               !isMockOrTestOrder(row)
           )
-          .map((row: any) => ({
-            id: String(row.id),
-            orderNumber: row.order_number || row.orderId || row.id,
-            customerName: row.customer_name || 'Valued Patron',
-            customerEmail: row.customer_email || '',
-            customerPhone: row.phone || row.customer_phone || '',
-            items: Array.isArray(row.items) ? row.items : [],
-            subtotal: Number(row.subtotal || 0),
-            discountAmount: Number(row.discount ?? row.discount_amount ?? 0),
-            couponCode: row.coupon_code || '',
-            shippingFee: Number(row.shipping_fee || 0),
-            totalAmount: Number(row.total ?? row.total_amount ?? 0),
-            orderStatus: (row.order_status || 'new') as OrderStatus,
-            paymentStatus: row.payment_status || 'pending',
-            paymentMethod: row.payment_method || 'razorpay',
-            shippingAddress: {
-              fullName: row.customer_name || 'Valued Patron',
-              phone: row.phone || row.customer_phone || '',
-              street: row.address || '',
-              city: row.city || '',
-              state: row.state || '',
-              pincode: row.pincode || ''
-            },
-            carrier: (row.courier || row.carrier || 'Delhivery') as any,
-            trackingNumber: row.tracking_number || '',
-            notes: row.notes || '',
-            timeline: [
-              {
-                status: (row.order_status || 'new') as OrderStatus,
-                timestamp: row.created_at || new Date().toISOString(),
-                note: 'Order placed by patron'
+          .map((row: any) => {
+            const isCustom = Boolean(
+              row.is_custom_preservation ||
+              row.isCustomPreservation ||
+              (Array.isArray(row.items) && row.items.some((i: any) => i.sku === 'RAM-CUSTOM-KEEP' || i.isCustomPreservation || i.customDetails))
+            );
+            const customDetails = row.custom_details || row.customDetails || (Array.isArray(row.items) ? (row.items.find((i: any) => i.customDetails)?.customDetails || null) : null);
+            const preservationStage = row.preservation_stage || row.preservationStage || (isCustom ? 'Floral Awaiting Pickup' : undefined);
+
+            return {
+              id: String(row.id),
+              orderNumber: row.order_number || row.orderId || row.id,
+              customerName: row.customer_name || 'Valued Patron',
+              customerEmail: row.customer_email || '',
+              customerPhone: row.phone || row.customer_phone || '',
+              items: Array.isArray(row.items) ? row.items : [],
+              subtotal: Number(row.subtotal || 0),
+              discountAmount: Number(row.discount ?? row.discount_amount ?? 0),
+              couponCode: row.coupon_code || '',
+              shippingFee: Number(row.shipping_fee || 0),
+              totalAmount: Number(row.total ?? row.total_amount ?? 0),
+              orderStatus: (row.order_status || 'new') as OrderStatus,
+              paymentStatus: row.payment_status || 'pending',
+              paymentMethod: row.payment_method || 'razorpay',
+              shippingAddress: {
+                fullName: row.customer_name || 'Valued Patron',
+                phone: row.phone || row.customer_phone || '',
+                street: row.address || '',
+                city: row.city || '',
+                state: row.state || '',
+                pincode: row.pincode || ''
               },
-              ...(row.tracking_number ? [{
-                status: 'shipped' as OrderStatus,
-                timestamp: row.updated_at || row.created_at || new Date().toISOString(),
-                note: `Dispatched via ${row.courier || row.carrier || 'courier'} (AWB: ${row.tracking_number})`
-              }] : [])
-            ],
-            createdAt: row.created_at || new Date().toISOString(),
-            updatedAt: row.updated_at || new Date().toISOString()
-          }));
+              carrier: (row.courier || row.carrier || 'Delhivery') as any,
+              trackingNumber: row.tracking_number || '',
+              notes: row.notes || '',
+              isCustomPreservation: isCustom,
+              preservationStage: preservationStage as PreservationStage | undefined,
+              customDetails: customDetails as CustomPreservationDetails | undefined,
+              timeline: [
+                {
+                  status: (row.order_status || 'new') as OrderStatus,
+                  timestamp: row.created_at || new Date().toISOString(),
+                  note: isCustom ? 'Custom Keepsake Commission booked' : 'Order placed by patron'
+                },
+                ...(row.tracking_number ? [{
+                  status: 'shipped' as OrderStatus,
+                  timestamp: row.updated_at || row.created_at || new Date().toISOString(),
+                  note: `Dispatched via ${row.courier || row.carrier || 'courier'} (AWB: ${row.tracking_number})`
+                }] : [])
+              ],
+              createdAt: row.created_at || new Date().toISOString(),
+              updatedAt: row.updated_at || new Date().toISOString()
+            };
+          });
 
         this.saveOrders(orders);
         return orders;
@@ -408,6 +421,123 @@ export const orderService = {
           return { error: null };
         },
         'refund order'
+      );
+    }
+
+    return updated;
+  },
+
+  updatePreservationStage(orderId: string, stage: PreservationStage, note?: string): Order {
+    const orders = this.getOrders();
+    const idx = orders.findIndex((o) => o.id === orderId || o.orderNumber === orderId);
+    if (idx === -1) throw new Error('Order not found');
+
+    const order = orders[idx];
+    const prevDetails = order.customDetails || {
+      shape: 'Heirloom Keepsake Block',
+      flowerSource: 'Fresh Flowers'
+    };
+    const prevHistory = prevDetails.stageHistory || [];
+
+    const updatedDetails: CustomPreservationDetails = {
+      ...prevDetails,
+      preservationStage: stage,
+      stageHistory: [
+        ...prevHistory,
+        {
+          stage,
+          timestamp: new Date().toISOString(),
+          note: note || `Preservation stage advanced to ${stage}`
+        }
+      ]
+    };
+
+    const updated: Order = {
+      ...order,
+      isCustomPreservation: true,
+      preservationStage: stage,
+      customDetails: updatedDetails,
+      updatedAt: new Date().toISOString(),
+      timeline: [
+        ...(order.timeline || []),
+        {
+          status: order.orderStatus,
+          timestamp: new Date().toISOString(),
+          note: `Floral Preservation: ${stage}${note ? ' - ' + note : ''}`
+        }
+      ]
+    };
+
+    orders[idx] = updated;
+    this.saveOrders(orders);
+
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel.postMessage({
+          type: 'ORDER_PRESERVATION_STAGE_CHANGED',
+          order: updated,
+          orderId: updated.orderNumber || updated.id,
+          stage
+        });
+        channel.close();
+      }
+    } catch (e) {}
+
+    if (isSupabaseConfigured) {
+      safeDbExec(
+        () =>
+          supabase
+            .from('orders')
+            .update({
+              preservation_stage: stage,
+              custom_details: updatedDetails,
+              updated_at: new Date().toISOString()
+            })
+            .or(`id.eq.${orderId},order_number.eq.${orderId}`),
+        'update preservation stage'
+      );
+    }
+
+    return updated;
+  },
+
+  updateCustomArtisanNotes(orderId: string, notes: string): Order {
+    const orders = this.getOrders();
+    const idx = orders.findIndex((o) => o.id === orderId || o.orderNumber === orderId);
+    if (idx === -1) throw new Error('Order not found');
+
+    const order = orders[idx];
+    const prevDetails = order.customDetails || {
+      shape: 'Heirloom Keepsake Block',
+      flowerSource: 'Fresh Flowers'
+    };
+
+    const updatedDetails: CustomPreservationDetails = {
+      ...prevDetails,
+      artisanNotes: notes
+    };
+
+    const updated: Order = {
+      ...order,
+      customDetails: updatedDetails,
+      updatedAt: new Date().toISOString()
+    };
+
+    orders[idx] = updated;
+    this.saveOrders(orders);
+
+    if (isSupabaseConfigured) {
+      safeDbExec(
+        () =>
+          supabase
+            .from('orders')
+            .update({
+              custom_details: updatedDetails,
+              updated_at: new Date().toISOString()
+            })
+            .or(`id.eq.${orderId},order_number.eq.${orderId}`),
+        'update artisan notes'
       );
     }
 

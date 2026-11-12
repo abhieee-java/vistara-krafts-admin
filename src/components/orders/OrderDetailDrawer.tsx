@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Order, OrderStatus } from '../../types';
+import { Order, OrderStatus, PreservationStage } from '../../types';
+import { useStore } from '../../context/StoreContext';
 import { StatusBadge } from '../common/Badge';
 import {
   X,
@@ -14,7 +15,13 @@ import {
   RotateCcw,
   Ban,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Sparkles,
+  Camera,
+  Calendar,
+  Layers,
+  Save,
+  Maximize2
 } from 'lucide-react';
 
 interface OrderDetailDrawerProps {
@@ -42,19 +49,47 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   onDeleteOrder,
   onOpenInvoice
 }) => {
+  const { updatePreservationStage, updateCustomArtisanNotes } = useStore();
   const [carrier, setCarrier] = useState<'Delhivery' | 'BlueDart' | 'DTDC'>(
     order?.carrier || 'Delhivery'
   );
   const [trackingNumber, setTrackingNumber] = useState(order?.trackingNumber || '');
   const [isUpdatingTracking, setIsUpdatingTracking] = useState(false);
+  const [artisanNotes, setArtisanNotes] = useState(order?.customDetails?.artisanNotes || '');
+  const [isPhotoZoomed, setIsPhotoZoomed] = useState(false);
 
   if (!order) return null;
+
+  const isCustom = Boolean(
+    order.isCustomPreservation ||
+    order.customDetails ||
+    (order.items && order.items.some((i) => i.sku === 'RAM-CUSTOM-KEEP' || (i as any).isCustomPreservation || (i as any).customDetails))
+  );
+  const custom = order.customDetails;
+
+  const preservationStages: PreservationStage[] = [
+    'Floral Awaiting Pickup',
+    'Cryo-Silica Dehydration',
+    'Botanical Prep & Color Lock',
+    'Base Layer Optical Pour',
+    'Deep Pour & Pressure Curing',
+    'Diamond Milling & Lapping',
+    'Ceramic Coating & QA Inspection',
+    'Dispatched in Velvet Vault'
+  ];
+
+  const currentStage = order.preservationStage || custom?.preservationStage || 'Floral Awaiting Pickup';
+  const currentStageIndex = Math.max(0, preservationStages.indexOf(currentStage));
 
   const handleSaveTracking = (e: React.FormEvent) => {
     e.preventDefault();
     if (!trackingNumber.trim()) return;
     onUpdateTracking(order.id, carrier, trackingNumber.trim());
     setIsUpdatingTracking(false);
+  };
+
+  const handleSaveArtisanNotes = () => {
+    updateCustomArtisanNotes(order.id, artisanNotes);
   };
 
   return createPortal(
@@ -173,6 +208,209 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 )}
               </div>
             </div>
+
+            {/* ARTISAN FLORAL PRESERVATION CONTROL CENTER (When Custom Commission) */}
+            {isCustom && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#fdfbf7] to-[#fff6f3] border-2 border-[#b08d57]/35 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-[#e6e2d8] pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🌸</span>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#1c1b18] uppercase tracking-wider flex items-center gap-1.5">
+                        <span>Artisan Floral Preservation Control Center</span>
+                        <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold">
+                          Custom Keepsake
+                        </span>
+                      </h4>
+                      <p className="text-[11px] text-gray-500">
+                        Manage cryo-dehydration chemistry, 50mm diamond cast layers, and patron communications.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#aa771c] font-mono">
+                    Stage {currentStageIndex + 1}/8
+                  </span>
+                </div>
+
+                {/* 1. Attached Floral Reference Photo */}
+                <div className="p-3 rounded-xl bg-white border border-[#e6e2d8] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
+                      <Camera className="w-3.5 h-3.5 text-[#cda851]" />
+                      <span>Patron Flower Reference Photo</span>
+                    </div>
+                    {custom?.photoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setIsPhotoZoomed(true)}
+                        className="text-[11px] text-[#cda851] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Maximize2 className="w-3 h-3" />
+                        <span>Enlarge Photo</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {custom?.photoUrl ? (
+                    <div className="flex items-center gap-3">
+                      <div
+                        onClick={() => setIsPhotoZoomed(true)}
+                        className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#cda851]/40 shadow-xs cursor-pointer group shrink-0"
+                      >
+                        <img
+                          src={custom.photoUrl}
+                          alt="Patron's Uploaded Flower Reference"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                          <Maximize2 className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div className="text-xs space-y-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">
+                          {custom.photoName || 'Client Flower Photo Reference'}
+                        </p>
+                        <p className="text-[11px] text-gray-500">
+                          Verify flower variety (roses, marigolds, orchids) before pre-treatment.
+                        </p>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-semibold">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Image Verified</span>
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-[#faf8f5] border border-dashed border-[#e6e2d8] text-center text-xs text-gray-500">
+                      <span>No digital flower photo attached by patron. Proceed with physical garland inspection upon doorstep pickup.</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Interactive Preservation Lifecycle Stepper */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#1c1b18] uppercase tracking-wider text-[11px]">
+                      Advance Preservation Stage:
+                    </span>
+                    <span className="text-[11px] text-rose-800 font-bold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                      Active: {currentStage}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    {preservationStages.map((st, i) => {
+                      const isCurrent = st === currentStage;
+                      const isPast = i < currentStageIndex;
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => updatePreservationStage(order.id, st)}
+                          className={`p-2 rounded-xl text-left transition-all text-xs font-semibold flex flex-col justify-between min-h-[58px] cursor-pointer active:scale-95 ${
+                            isCurrent
+                              ? 'bg-[#1c1b18] text-[#cda851] ring-2 ring-[#cda851] shadow-xs'
+                              : isPast
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                              : 'bg-white text-gray-600 border border-[#e6e2d8] hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-[10px] font-mono opacity-70">0{i + 1}</span>
+                            {isPast && <span className="text-emerald-600 text-xs">✓</span>}
+                          </div>
+                          <span className="text-[10.5px] leading-tight font-bold mt-1 line-clamp-2">
+                            {st}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Bespoke Specifications Matrix */}
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e6e2d8]">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Occasion</span>
+                    <span className="font-bold text-gray-900">{custom?.occasion || 'Wedding Varmala'}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e6e2d8]">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Keepsake Architecture</span>
+                    <span className="font-bold text-gray-900">{custom?.shape || '12" Royal Heirloom Block'}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e6e2d8]">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Floral Source</span>
+                    <span className="font-semibold text-gray-900 truncate block">{custom?.flowerSource || 'Fresh Garlands'}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e6e2d8]">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Luxury Inclusions</span>
+                    <span className="font-semibold text-gray-900">{custom?.metallic || '24K Gold Leaf'}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e6e2d8]">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Secondary Add-On</span>
+                    <span className="font-semibold text-gray-900">{custom?.secondaryKeepsake || 'None'}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white border border-[#e6e2d8]">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Teak LED Stand</span>
+                    <span className="font-bold text-gray-900">{custom?.ledBase ? 'Included (+₹499)' : 'No'}</span>
+                  </div>
+                </div>
+
+                {/* Calligraphy Inscription */}
+                {custom?.engraving && (
+                  <div className="p-3 rounded-xl bg-white border border-[#e6e2d8] space-y-1 text-xs">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 block">Calligraphy Inscription</span>
+                    <div className="flex items-baseline justify-between">
+                      <p className="font-serif italic text-sm text-[#1c1b18] font-bold">
+                        “{custom.engraving}”
+                      </p>
+                      <span className="text-[10px] text-gray-500 font-mono">
+                        Font: {custom.fontStyle || 'Royal Italic Serif'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Event Schedule & Pickup */}
+                <div className="p-3 rounded-xl bg-white border border-[#e6e2d8] flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#cda851]" />
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block">Event &amp; Pickup Window</span>
+                      <span className="font-bold text-gray-900">
+                        {custom?.eventDate || 'Scheduled'} • {custom?.pickupSlot || 'Morning Slot'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Insured Pickup
+                  </span>
+                </div>
+
+                {/* 4. Artisan Lab Notes */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="artisan-notes-textarea" className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                      Artisan Studio Lab Notes
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleSaveArtisanNotes}
+                      className="px-3 py-1 rounded-lg bg-[#1c1b18] text-[#cda851] text-xs font-bold hover:bg-[#2c2924] transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                    >
+                      <Save className="w-3 h-3" />
+                      <span>Save Notes</span>
+                    </button>
+                  </div>
+                  <textarea
+                    id="artisan-notes-textarea"
+                    rows={2}
+                    value={artisanNotes}
+                    onChange={(e) => setArtisanNotes(e.target.value)}
+                    placeholder="Enter resin batch, moisture reading (e.g. 0.2%), silica weight, or layer pour timestamps..."
+                    className="w-full p-2.5 rounded-xl border border-[#e6e2d8] text-xs bg-white text-gray-900 focus:ring-2 focus:ring-[#cda851] outline-none"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Customer & Delivery Address */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -349,6 +587,38 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Photo Zoom Modal */}
+      {isPhotoZoomed && custom?.photoUrl && createPortal(
+        <div className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-[#cda851]/40">
+            <div className="p-3 bg-[#faf8f5] border-b border-[#e6e2d8] flex items-center justify-between">
+              <span className="text-xs font-bold text-[#1c1b18] flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-[#cda851]" />
+                <span>Patron Flower Reference: {custom.photoName || 'Garland Photo'}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsPhotoZoomed(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex items-center justify-center overflow-auto max-h-[75vh]">
+              <img
+                src={custom.photoUrl}
+                alt="Enlarged Flower Reference"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm"
+              />
+            </div>
+            <div className="p-3 bg-[#faf8f5] border-t border-[#e6e2d8] text-center text-xs text-gray-500">
+              Verify flower colors, petal count, and stem thickness for moisture extraction planning.
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>,
     document.body
   );

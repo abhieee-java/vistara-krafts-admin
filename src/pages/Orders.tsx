@@ -50,6 +50,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
 
   const statuses: { label: string; value: string }[] = [
     { label: 'All Orders', value: 'all' },
+    { label: '🌸 Custom Floral Preservation', value: 'custom_preservation' },
     { label: 'Processing / Garland Pickup', value: 'processing' },
     { label: 'Shipped (In Transit)', value: 'shipped' },
     { label: 'Delivered', value: 'delivered' },
@@ -62,11 +63,20 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
       o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
       o.customerName.toLowerCase().includes(search.toLowerCase()) ||
       o.shippingAddress.pincode.includes(search) ||
-      o.shippingAddress.city.toLowerCase().includes(search.toLowerCase());
+      o.shippingAddress.city.toLowerCase().includes(search.toLowerCase()) ||
+      (o.customDetails?.engraving && o.customDetails.engraving.toLowerCase().includes(search.toLowerCase()));
+
+    const isCustomOrder = Boolean(
+      o.isCustomPreservation ||
+      o.customDetails ||
+      (o.items && o.items.some((i) => i.sku === 'RAM-CUSTOM-KEEP' || (i as any).isCustomPreservation || (i as any).customDetails))
+    );
 
     const matchesStatus =
       statusFilter === 'all'
         ? true
+        : statusFilter === 'custom_preservation'
+        ? isCustomOrder
         : statusFilter === 'cancelled'
         ? o.orderStatus === 'cancelled' || o.orderStatus === 'refunded'
         : o.orderStatus === statusFilter;
@@ -188,6 +198,14 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                   <Clock className="w-3 h-3 text-[#cda851] shrink-0" />
                   <span>{formatOrderTimestamp(ord.createdAt)}</span>
                 </div>
+                {Boolean(ord.isCustomPreservation || ord.customDetails) && (
+                  <div className="mt-1">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-[10px] font-bold">
+                      <span>🌸 Preservation:</span>
+                      <span className="text-gray-600 font-semibold">{ord.preservationStage || 'Awaiting Pickup'}</span>
+                    </span>
+                  </div>
+                )}
               </div>
               <StatusBadge status={ord.orderStatus} />
             </div>
@@ -304,6 +322,14 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                         <Clock className="w-3.5 h-3.5 text-[#cda851] shrink-0" />
                         <span>{formatOrderTimestamp(ord.createdAt)}</span>
                       </div>
+                      {Boolean(ord.isCustomPreservation || ord.customDetails) && (
+                        <div className="mt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-[10px] font-bold">
+                            <span>🌸 Preservation:</span>
+                            <span className="text-gray-600 font-semibold">{ord.preservationStage || 'Awaiting Pickup'}</span>
+                          </span>
+                        </div>
+                      )}
                     </td>
 
                     {/* Customer & Location */}

@@ -7,7 +7,8 @@ import {
   InventoryMovement,
   AuditLog,
   StoreSettings,
-  OrderStatus
+  OrderStatus,
+  PreservationStage
 } from '../types';
 import { productService } from '../services/productService';
 import { orderService } from '../services/orderService';
@@ -82,6 +83,8 @@ interface StoreContextType {
   // Orders
   updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => void;
   updateOrderTracking: (orderId: string, carrier: 'Delhivery' | 'BlueDart' | 'DTDC', trackingNumber: string) => void;
+  updatePreservationStage: (orderId: string, stage: PreservationStage, note?: string) => void;
+  updateCustomArtisanNotes: (orderId: string, notes: string) => void;
   cancelOrder: (orderId: string, reason?: string) => void;
   refundOrder: (orderId: string) => void;
   deleteOrder: (orderId: string) => void;
@@ -441,6 +444,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     orderService.deleteOrder(orderId);
     setOrders(orderService.getOrders());
     addToast('Order deleted', 'info');
+  };
+
+  const updatePreservationStage = (orderId: string, stage: PreservationStage, note?: string) => {
+    const updated = orderService.updatePreservationStage(orderId, stage, note);
+    setOrders(orderService.getOrders());
+    logAudit(
+      'Floral Preservation Stage Advanced',
+      updated.orderNumber,
+      `Advanced to: ${stage}${note ? ' (' + note + ')' : ''}`
+    );
+    addToast(`Commission ${updated.orderNumber} advanced to ${stage}`);
+  };
+
+  const updateCustomArtisanNotes = (orderId: string, notes: string) => {
+    const updated = orderService.updateCustomArtisanNotes(orderId, notes);
+    setOrders(orderService.getOrders());
+    logAudit('Artisan Lab Notes Saved', updated.orderNumber, 'Notes updated');
+    addToast(`Artisan notes saved for ${updated.orderNumber}`);
   };
 
   const clearAllOrders = () => {
@@ -902,6 +923,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleStock,
         updateOrderStatus,
         updateOrderTracking,
+        updatePreservationStage,
+        updateCustomArtisanNotes,
         cancelOrder,
         refundOrder,
         deleteOrder,
