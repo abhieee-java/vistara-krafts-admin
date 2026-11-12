@@ -191,10 +191,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const refreshFromDb = useCallback(async () => {
     setIsLoadingDb(true);
     try {
-      const [liveProds, liveOrders, liveCust, supaCouponsRes, supaSettingsRes, supaCatSettingsRes] = await Promise.allSettled([
+      const [liveProds, liveOrders, liveCust, liveMovements, supaCouponsRes, supaSettingsRes, supaCatSettingsRes] = await Promise.allSettled([
         productService.fetchFromSupabase(),
         orderService.fetchFromSupabase(),
         customerService.fetchFromSupabase(),
+        inventoryService.fetchFromSupabase(),
         isSupabaseConfigured ? supabase.from('coupons').select('*').order('created_at', { ascending: false }) : Promise.resolve({ data: null, error: null }),
         isSupabaseConfigured ? supabase.from('settings').select('*') : Promise.resolve({ data: null, error: null }),
         isSupabaseConfigured ? supabase.from('categories').select('*').eq('id', 'store_settings_payload').maybeSingle() : Promise.resolve({ data: null, error: null })
@@ -203,7 +204,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (liveProds.status === 'fulfilled') setProducts(liveProds.value);
       if (liveOrders.status === 'fulfilled') setOrders(liveOrders.value);
       if (liveCust.status === 'fulfilled') setCustomers(liveCust.value);
-      setMovements(inventoryService.getMovements());
+      if (liveMovements.status === 'fulfilled') {
+        setMovements(liveMovements.value);
+      } else {
+        setMovements(inventoryService.getMovements());
+      }
 
       // Sync Coupons from live Supabase
       if (supaCouponsRes.status === 'fulfilled' && (supaCouponsRes.value as any)?.data && Array.isArray((supaCouponsRes.value as any).data) && (supaCouponsRes.value as any).data.length > 0) {

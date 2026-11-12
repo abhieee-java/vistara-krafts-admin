@@ -60,7 +60,15 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
   // Target audience
   const [gender, setGender] = useState<ProductGender>('all');
-  const isResinKit = category === 'casting' || (category as string) === 'deep_pour';
+  const isResinKit =
+    category === 'casting' ||
+    category === 'deep_pour' ||
+    (typeof category === 'string' && (
+      category.toLowerCase().includes('resin') ||
+      category.toLowerCase().includes('hardener') ||
+      category.toLowerCase().includes('casting') ||
+      category.toLowerCase().includes('pour')
+    ));
 
   // Progressive disclosure: Advanced Settings accordion (collapsed by default)
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -385,11 +393,12 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                       onChange={(e) => setCategory(e.target.value as ProductCategory)}
                       className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all cursor-pointer"
                     >
-                      <option value="casting">Resin & Hardener Kits (Casting / Deep Pour)</option>
-                      <option value="molds">Silicone Molds & Frames</option>
-                      <option value="pigments">Pigments, Pastes & Metallic Inks</option>
-                      <option value="tools">Tools, Torches & Safety Gear</option>
-                      <option value="keepsakes">Artisan Keepsakes & Preservation Blocks</option>
+                      <option value="casting">Resin &amp; Hardener Kits (3:1 Optical Casting)</option>
+                      <option value="deep_pour">Resin &amp; Hardener Kits (2:1 Deep Pour River)</option>
+                      <option value="keepsakes">Artisan Keepsakes &amp; Preservation Blocks</option>
+                      <option value="molds">Silicone Molds &amp; Frames</option>
+                      <option value="pigments">Pigments, Pastes &amp; Metallic Inks</option>
+                      <option value="accessories">Tools, Torches &amp; Safety Gear</option>
                     </select>
                   </div>
 
