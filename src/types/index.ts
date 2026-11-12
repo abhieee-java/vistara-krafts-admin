@@ -74,6 +74,8 @@ export interface OrderItem {
   totalPrice: number;
   image?: string;
   customNote?: string;
+  isCustomPreservation?: boolean;
+  customDetails?: CustomPreservationDetails;
 }
 
 export interface ShippingAddress {
@@ -96,18 +98,35 @@ export type PreservationStage =
   | 'Dispatched in Velvet Vault';
 
 export interface CustomPreservationDetails {
+  customId?: string;
+  productType?: string;
+  productName?: string;
   shape: string;
+  size?: string;
+  sizeDimensions?: string;
+  dimensions?: string;
   occasion?: string;
+  itemToPreserve?: string;
   flowerSource: string;
   metallic?: string;
+  accent?: string;
   secondaryKeepsake?: string;
   engraving?: string;
+  hasEngraving?: boolean;
   fontStyle?: string;
   eventDate?: string;
+  weddingDate?: string;
   pickupSlot?: string;
   ledBase?: boolean;
   photoUrl?: string;
   photoName?: string;
+  photoSizeKb?: number;
+  itemPhotoUrl?: string;
+  itemPhotoName?: string;
+  itemPhotoSizeKb?: number;
+  referencePhotoUrl?: string;
+  referencePhotoName?: string;
+  referencePhotoSizeKb?: number;
   preservationStage?: PreservationStage;
   stageHistory?: { stage: PreservationStage; timestamp: string; note?: string }[];
   artisanNotes?: string;

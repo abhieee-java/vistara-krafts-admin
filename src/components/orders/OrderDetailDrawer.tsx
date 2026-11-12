@@ -56,7 +56,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   const [trackingNumber, setTrackingNumber] = useState(order?.trackingNumber || '');
   const [isUpdatingTracking, setIsUpdatingTracking] = useState(false);
   const [artisanNotes, setArtisanNotes] = useState(order?.customDetails?.artisanNotes || '');
-  const [isPhotoZoomed, setIsPhotoZoomed] = useState(false);
+  const [zoomedPhoto, setZoomedPhoto] = useState<{ url: string; title: string; subtitle?: string } | null>(null);
 
   if (!order) return null;
 
@@ -232,58 +232,131 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                   </span>
                 </div>
 
-                {/* 1. Attached Floral Reference Photo */}
-                <div className="p-3 rounded-xl bg-white border border-[#e6e2d8] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
-                      <Camera className="w-3.5 h-3.5 text-[#cda851]" />
-                      <span>Patron Flower Reference Photo</span>
+                {/* 1. Attached Floral Reference Photos (Item Photo & Requested Style Reference) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Photo A: Customer's Item */}
+                  <div className="p-3 rounded-xl bg-white border border-[#e6e2d8] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
+                        <Camera className="w-3.5 h-3.5 text-[#cda851]" />
+                        <span>Customer's Item to Preserve</span>
+                      </div>
+                      {(custom?.itemPhotoUrl || custom?.photoUrl) && (
+                        <button
+                          type="button"
+                          onClick={() => setZoomedPhoto({
+                            url: (custom?.itemPhotoUrl || custom?.photoUrl)!,
+                            title: `Customer's Item: ${custom?.itemPhotoName || custom?.photoName || 'Item Photo'}`,
+                            subtitle: 'Actual flowers or sentimental memento sent by patron for preservation'
+                          })}
+                          className="text-[11px] text-[#cda851] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Maximize2 className="w-3 h-3" />
+                          <span>Enlarge</span>
+                        </button>
+                      )}
                     </div>
-                    {custom?.photoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setIsPhotoZoomed(true)}
-                        className="text-[11px] text-[#cda851] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Maximize2 className="w-3 h-3" />
-                        <span>Enlarge Photo</span>
-                      </button>
+
+                    {(custom?.itemPhotoUrl || custom?.photoUrl) ? (
+                      <div className="flex items-center gap-3">
+                        <div
+                          onClick={() => setZoomedPhoto({
+                            url: (custom?.itemPhotoUrl || custom?.photoUrl)!,
+                            title: `Customer's Item: ${custom?.itemPhotoName || custom?.photoName || 'Item Photo'}`,
+                            subtitle: 'Actual flowers or sentimental memento sent by patron for preservation'
+                          })}
+                          className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-[#cda851]/40 shadow-xs cursor-pointer group shrink-0"
+                        >
+                          <img
+                            src={custom?.itemPhotoUrl || custom?.photoUrl}
+                            alt="Customer's Item"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                            <Maximize2 className="w-4 h-4" />
+                          </div>
+                        </div>
+                        <div className="text-xs space-y-0.5 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">
+                            {custom.itemPhotoName || custom.photoName || 'Customer Item Photo'}
+                          </p>
+                          <p className="text-[11px] text-gray-500">
+                            Actual item to preserve
+                          </p>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[9.5px] font-semibold">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Item Attached</span>
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-[#faf8f5] border border-dashed border-[#e6e2d8] text-center text-[11px] text-gray-500">
+                        <span>No item photo attached. Inspect upon doorstep courier pickup.</span>
+                      </div>
                     )}
                   </div>
 
-                  {custom?.photoUrl ? (
-                    <div className="flex items-center gap-3">
-                      <div
-                        onClick={() => setIsPhotoZoomed(true)}
-                        className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-[#cda851]/40 shadow-xs cursor-pointer group shrink-0"
-                      >
-                        <img
-                          src={custom.photoUrl}
-                          alt="Patron's Uploaded Flower Reference"
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
-                          <Maximize2 className="w-4 h-4" />
+                  {/* Photo B: Requested Design Reference */}
+                  <div className="p-3 rounded-xl bg-white border border-[#e6e2d8] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
+                        <Camera className="w-3.5 h-3.5 text-[#b08d57]" />
+                        <span>Requested Style Reference</span>
+                      </div>
+                      {custom?.referencePhotoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setZoomedPhoto({
+                            url: custom.referencePhotoUrl!,
+                            title: `Design Reference: ${custom.referencePhotoName || 'Style Photo'}`,
+                            subtitle: 'Patron requested color palette, layout, or inspiration photo'
+                          })}
+                          className="text-[11px] text-[#cda851] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Maximize2 className="w-3 h-3" />
+                          <span>Enlarge</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {custom?.referencePhotoUrl ? (
+                      <div className="flex items-center gap-3">
+                        <div
+                          onClick={() => setZoomedPhoto({
+                            url: custom.referencePhotoUrl!,
+                            title: `Design Reference: ${custom.referencePhotoName || 'Style Photo'}`,
+                            subtitle: 'Patron requested color palette, layout, or inspiration photo'
+                          })}
+                          className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-indigo-200 shadow-xs cursor-pointer group shrink-0"
+                        >
+                          <img
+                            src={custom.referencePhotoUrl}
+                            alt="Requested Style Reference"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                            <Maximize2 className="w-4 h-4" />
+                          </div>
+                        </div>
+                        <div className="text-xs space-y-0.5 min-w-0">
+                          <p className="font-semibold text-gray-900 truncate">
+                            {custom.referencePhotoName || 'Design Reference Photo'}
+                          </p>
+                          <p className="text-[11px] text-gray-500">
+                            Requested design &amp; style
+                          </p>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[9.5px] font-semibold">
+                            <CheckCircle2 className="w-3 h-3" />
+                            <span>Style Reference</span>
+                          </span>
                         </div>
                       </div>
-                      <div className="text-xs space-y-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">
-                          {custom.photoName || 'Client Flower Photo Reference'}
-                        </p>
-                        <p className="text-[11px] text-gray-500">
-                          Verify flower variety (roses, marigolds, orchids) before pre-treatment.
-                        </p>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-semibold">
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>Image Verified</span>
-                        </span>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-[#faf8f5] border border-dashed border-[#e6e2d8] text-center text-[11px] text-gray-500">
+                        <span>No design reference provided (optional). Standard atelier layout applied.</span>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="p-3 rounded-xl bg-[#faf8f5] border border-dashed border-[#e6e2d8] text-center text-xs text-gray-500">
-                      <span>No digital flower photo attached by patron. Proceed with physical garland inspection upon doorstep pickup.</span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
                 {/* 2. Interactive Preservation Lifecycle Stepper */}
@@ -457,37 +530,107 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 Order Items ({order.items.length})
               </h4>
               <div className="divide-y divide-[#e6e2d8] border border-[#e6e2d8] rounded-xl bg-white overflow-hidden">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="p-3.5 flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 border border-[#e6e2d8] flex items-center justify-center font-serif text-sm font-bold text-[#cda851] shrink-0">
-                      VK
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-[#1c1b18] truncate">
-                        {item.productName}
-                      </p>
-                      {item.variantLabel && (
-                        <p className="text-[11px] text-[#cda851] font-medium">
-                          Edition: {item.variantLabel}
-                        </p>
+                {order.items.map((item, idx) => {
+                  const itCustom = item.customDetails || (item.isCustomPreservation ? custom : null);
+                  const itemPhoto = itCustom?.itemPhotoUrl || itCustom?.photoUrl;
+                  const refPhoto = itCustom?.referencePhotoUrl;
+
+                  return (
+                    <div key={idx} className="p-3.5 flex flex-col gap-2.5">
+                      <div className="flex items-start gap-3">
+                        <div className="w-12 h-12 rounded-lg bg-gray-100 border border-[#e6e2d8] flex items-center justify-center font-serif text-sm font-bold text-[#cda851] shrink-0 overflow-hidden">
+                          {itemPhoto ? (
+                            <img src={itemPhoto} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span>VK</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-[#1c1b18] truncate">
+                            {item.productName}
+                          </p>
+                          {item.variantLabel && (
+                            <p className="text-[11px] text-[#cda851] font-medium">
+                              Edition: {item.variantLabel}
+                            </p>
+                          )}
+                          <p className="text-[10px] text-gray-400 font-mono">SKU: {item.sku}</p>
+                          {item.customNote && (
+                            <p className="text-[11px] text-amber-800 bg-amber-50 p-1.5 rounded mt-1 border border-amber-200">
+                              <strong>Note:</strong> {item.customNote}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-bold text-[#1c1b18]">
+                            ₹{item.totalPrice.toLocaleString()}
+                          </p>
+                          <p className="text-[10px] text-gray-500">
+                            {item.quantity} × ₹{item.unitPrice.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Item-Specific Custom Keepsake Photos & Details (Crucial when 2+ keepsakes in 1 order) */}
+                      {itCustom && (
+                        <div className="ml-15 p-2.5 rounded-lg bg-[#faf8f5] border border-[#e6e2d8] space-y-2 text-xs">
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-[#855d14]">
+                            <span className="flex items-center gap-1">
+                              <span>🌸 Keepsake Item #{idx + 1}:</span>
+                              <span className="font-bold text-[#1c1b18]">{itCustom.shape || 'Custom Block'}</span>
+                            </span>
+                            {itCustom.occasion && (
+                              <span className="text-gray-500">{itCustom.occasion}</span>
+                            )}
+                          </div>
+
+                          {/* Photos Row */}
+                          <div className="flex items-center gap-3 pt-1">
+                            {itemPhoto ? (
+                              <button
+                                type="button"
+                                onClick={() => setZoomedPhoto({
+                                  url: itemPhoto,
+                                  title: `Item #${idx + 1} Customer's Item: ${itCustom.itemPhotoName || itCustom.photoName || 'Item Photo'}`,
+                                  subtitle: `Keepsake: ${itCustom.shape} • ${itCustom.occasion || 'Preservation'}`
+                                })}
+                                className="flex items-center gap-2 p-1.5 rounded-lg bg-white border border-emerald-200 hover:border-emerald-400 text-left cursor-pointer transition-all group"
+                              >
+                                <img src={itemPhoto} alt="" className="w-10 h-10 rounded object-cover border border-emerald-100 group-hover:scale-105 transition-transform" />
+                                <div className="text-[10px] leading-tight">
+                                  <span className="font-bold text-emerald-800 block">Customer's Item</span>
+                                  <span className="text-gray-400">Click to enlarge</span>
+                                </div>
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-gray-400 italic">No item photo attached</span>
+                            )}
+
+                            {refPhoto ? (
+                              <button
+                                type="button"
+                                onClick={() => setZoomedPhoto({
+                                  url: refPhoto,
+                                  title: `Item #${idx + 1} Style Reference: ${itCustom.referencePhotoName || 'Style Photo'}`,
+                                  subtitle: `Keepsake: ${itCustom.shape} • Design Inspiration`
+                                })}
+                                className="flex items-center gap-2 p-1.5 rounded-lg bg-white border border-indigo-200 hover:border-indigo-400 text-left cursor-pointer transition-all group"
+                              >
+                                <img src={refPhoto} alt="" className="w-10 h-10 rounded object-cover border border-indigo-100 group-hover:scale-105 transition-transform" />
+                                <div className="text-[10px] leading-tight">
+                                  <span className="font-bold text-indigo-800 block">Style Reference</span>
+                                  <span className="text-gray-400">Click to enlarge</span>
+                                </div>
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-gray-400 italic">No design ref</span>
+                            )}
+                          </div>
+                        </div>
                       )}
-                      <p className="text-[10px] text-gray-400 font-mono">SKU: {item.sku}</p>
-                      {item.customNote && (
-                        <p className="text-[11px] text-amber-800 bg-amber-50 p-1.5 rounded mt-1 border border-amber-200">
-                          <strong>Note:</strong> {item.customNote}
-                        </p>
-                      )}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs font-bold text-[#1c1b18]">
-                        ₹{item.totalPrice.toLocaleString()}
-                      </p>
-                      <p className="text-[10px] text-gray-500">
-                        {item.quantity} × ₹{item.unitPrice.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -589,31 +732,31 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
       </div>
 
       {/* Photo Zoom Modal */}
-      {isPhotoZoomed && custom?.photoUrl && createPortal(
+      {zoomedPhoto && createPortal(
         <div className="fixed inset-0 z-[200] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-[#cda851]/40">
             <div className="p-3 bg-[#faf8f5] border-b border-[#e6e2d8] flex items-center justify-between">
-              <span className="text-xs font-bold text-[#1c1b18] flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-[#cda851]" />
-                <span>Patron Flower Reference: {custom.photoName || 'Garland Photo'}</span>
+              <span className="text-xs font-bold text-[#1c1b18] flex items-center gap-1.5 truncate pr-2">
+                <Camera className="w-4 h-4 text-[#cda851] shrink-0" />
+                <span className="truncate">{zoomedPhoto.title}</span>
               </span>
               <button
                 type="button"
-                onClick={() => setIsPhotoZoomed(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer"
+                onClick={() => setZoomedPhoto(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-4 flex items-center justify-center overflow-auto max-h-[75vh]">
               <img
-                src={custom.photoUrl}
-                alt="Enlarged Flower Reference"
+                src={zoomedPhoto.url}
+                alt={zoomedPhoto.title}
                 className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-sm"
               />
             </div>
-            <div className="p-3 bg-[#faf8f5] border-t border-[#e6e2d8] text-center text-xs text-gray-500">
-              Verify flower colors, petal count, and stem thickness for moisture extraction planning.
+            <div className="p-3 bg-[#faf8f5] border-t border-[#e6e2d8] text-center text-xs text-gray-600">
+              {zoomedPhoto.subtitle || 'High-resolution photo for artisan preparation and keepsake cast alignment.'}
             </div>
           </div>
         </div>,
