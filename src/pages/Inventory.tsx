@@ -29,8 +29,10 @@ export const Inventory: React.FC = () => {
 
   const filteredProducts = products.filter(
     (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase())
+      p.isActive !== false &&
+      p.status !== 'archived' &&
+      (p.name.toLowerCase().includes(search.toLowerCase()) ||
+       p.sku.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (

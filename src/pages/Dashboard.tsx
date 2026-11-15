@@ -40,11 +40,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     ['new', 'pending', 'processing'].includes(o.orderStatus)
   ).length;
 
-  const lowStockProducts = products.filter(
+  const activeProducts = products.filter((p) => p.isActive !== false && p.status !== 'archived');
+
+  const lowStockProducts = activeProducts.filter(
     (p) => p.stockQuantity > 0 && p.stockQuantity <= (p.lowStockThreshold || 5)
   );
 
-  const outOfStockProducts = products.filter((p) => p.stockQuantity === 0 || !p.inStock);
+  const outOfStockProducts = activeProducts.filter((p) => p.stockQuantity === 0 || !p.inStock);
 
   const recentOrders = [...orders].slice(0, 5);
 
@@ -165,9 +167,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             </div>
             <div>
-              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#b08d57] transition-colors">{products.length}</div>
+              <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#b08d57] transition-colors">{activeProducts.length}</div>
               <div className="text-[11px] text-gray-500 font-medium mt-1">
-                {products.filter((p) => p.inStock).length} active for purchase
+                {activeProducts.filter((p) => p.inStock).length} active for purchase
               </div>
             </div>
           </div>

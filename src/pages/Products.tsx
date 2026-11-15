@@ -45,8 +45,10 @@ export const Products: React.FC<ProductsProps> = ({
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
 
-  // Filter products
+  // Filter products (strictly excludes deleted/archived items)
   const filteredProducts = products.filter((p) => {
+    if (p.isActive === false || p.status === 'archived') return false;
+
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.sku.toLowerCase().includes(search.toLowerCase()) ||

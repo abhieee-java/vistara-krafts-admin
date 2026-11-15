@@ -3,6 +3,18 @@ import { supabase, mapRowToProduct, mapProductToRow, isSupabaseConfigured } from
 
 const PRODUCTS_STORAGE_KEY = 'vk_admin_products_v1';
 const STOREFRONT_STORAGE_KEY = 'ram_vk_products_v2';
+const DELETED_PRODUCTS_KEY = 'vk_admin_deleted_products_v1';
+
+export function getDeletedProductIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_PRODUCTS_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr.map(String));
+    }
+  } catch (_e) {}
+  return new Set();
+}
 
 async function safeDbExec(action: () => PromiseLike<any>, desc: string) {
   try {
@@ -19,21 +31,32 @@ export const productService = {
   /**
    * Synchronous getter from local storage cache.
    * Strictly returns [] if no products have been added yet (Zero Mock Data).
+   * Automatically filters out permanently deleted and archived products.
    */
   getProducts(): Product[] {
+    const deletedIds = getDeletedProductIds();
+    const filterValid = (arr: Product[]) =>
+      arr.filter(
+        (p) =>
+          !deletedIds.has(String(p.id)) &&
+          p.isActive !== false &&
+          p.status !== 'archived'
+      );
+
     try {
       const data = localStorage.getItem(PRODUCTS_STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return filterValid(parsed);
       }
       // Check if storefront has already synchronized real products
       const storefrontData = localStorage.getItem(STOREFRONT_STORAGE_KEY);
       if (storefrontData) {
         const parsed = JSON.parse(storefrontData);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(parsed));
-          return parsed;
+          const valid = filterValid(parsed);
+          localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(valid));
+          return valid;
         }
       }
     } catch (e) {
@@ -46,16 +69,20 @@ export const productService = {
   /**
    * Fetches real products directly from Supabase PostgreSQL database.
    * Caches results locally and triggers real-time broadcast.
+   * Enforces strict filtering against deleted and archived products.
    */
   async fetchFromSupabase(): Promise<Product[]> {
     if (!isSupabaseConfigured) {
       return this.getProducts();
     }
 
+    const deletedIds = getDeletedProductIds();
+
     try {
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .neq('status', 'archived')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -64,7 +91,14 @@ export const productService = {
       }
 
       if (Array.isArray(data)) {
-        const products = data.map(mapRowToProduct);
+        const products = data
+          .map(mapRowToProduct)
+          .filter(
+            (p) =>
+              !deletedIds.has(String(p.id)) &&
+              p.isActive !== false &&
+              p.status !== 'archived'
+          );
         this.saveProducts(products, false);
         return products;
       }
@@ -75,15 +109,26 @@ export const productService = {
     return this.getProducts();
   },
 
-  saveProducts(products: Product[], pushToSupabase: boolean = true): void {
-    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
-    localStorage.setItem(STOREFRONT_STORAGE_KEY, JSON.stringify(products));
+  saveProducts(products: Product[], pushToSupabase: boolean = true, deletedId?: string): void {
+    const deletedIds = getDeletedProductIds();
+    const cleanProducts = products.filter(
+      (p) =>
+        !deletedIds.has(String(p.id)) &&
+        p.isActive !== false &&
+        p.status !== 'archived'
+    );
+    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(cleanProducts));
+    localStorage.setItem(STOREFRONT_STORAGE_KEY, JSON.stringify(cleanProducts));
 
     // Broadcast across browser tabs and live storefront
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
-        channel.postMessage({ type: 'PRODUCTS_UPDATED', products });
+        channel.postMessage({
+          type: 'PRODUCTS_UPDATED',
+          products: cleanProducts,
+          deletedId
+        });
         channel.close();
       }
     } catch (e) {}
@@ -139,21 +184,43 @@ export const productService = {
   },
 
   deleteProduct(id: string): void {
-    const products = this.getProducts();
-    const itemToDelete = products.find((p) => p.id === id);
-    const filtered = products.filter((p) => p.id !== id);
-    this.saveProducts(filtered);
+    const deletedIds = getDeletedProductIds();
+    deletedIds.add(String(id));
+    try {
+      localStorage.setItem(DELETED_PRODUCTS_KEY, JSON.stringify(Array.from(deletedIds)));
+    } catch (_e) {}
 
-    // Safely mark inactive / archive in Supabase without deleting records or corrupting fields
-    if (isSupabaseConfigured && itemToDelete) {
+    const products = this.getProducts();
+    const filtered = products.filter((p) => p.id !== id && !deletedIds.has(String(p.id)));
+    this.saveProducts(filtered, false, id);
+
+    // 1. Permanently delete from Supabase PostgreSQL database
+    if (isSupabaseConfigured) {
+      safeDbExec(
+        () => supabase.from('products').delete().eq('id', id),
+        'delete product direct'
+      );
+      // 2. Fallback archive in case hard delete encounters a constraint
       safeDbExec(
         () => supabase.from('products').update({
           is_active: false,
           status: 'archived',
           updated_at: new Date().toISOString()
         }).eq('id', id),
-        'archive product direct'
+        'fallback archive product direct'
       );
+    }
+  },
+
+  async purgeArchivedProducts(): Promise<void> {
+    if (!isSupabaseConfigured) return;
+    try {
+      await supabase
+        .from('products')
+        .delete()
+        .or('is_active.eq.false,status.eq.archived');
+    } catch (e) {
+      console.warn('Purge archived products error:', e);
     }
   },
 

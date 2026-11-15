@@ -10,7 +10,7 @@ import {
   OrderStatus,
   PreservationStage
 } from '../types';
-import { productService } from '../services/productService';
+import { productService, getDeletedProductIds } from '../services/productService';
 import { orderService } from '../services/orderService';
 import { inventoryService } from '../services/inventoryService';
 import { customerService } from '../services/customerService';
@@ -339,14 +339,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 2. Refresh immediately from live Supabase
     refreshFromDb();
 
-    // 3. Listen to cross-tab BroadcastChannel
+    // 3. Purge any legacy archived or orphaned products in background
+    productService.purgeArchivedProducts().catch(() => {});
+
+    // 4. Listen to cross-tab BroadcastChannel
     try {
       if (typeof BroadcastChannel !== 'undefined') {
         const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.onmessage = (ev) => {
           if (!ev || !ev.data) return;
           if (ev.data.type === 'PRODUCTS_UPDATED' && Array.isArray(ev.data.products)) {
-            setProducts(ev.data.products);
+            const deletedIds = getDeletedProductIds();
+            const clean = ev.data.products.filter(
+              (p: Product) =>
+                !deletedIds.has(String(p.id)) &&
+                p.isActive !== false &&
+                p.status !== 'archived'
+            );
+            setProducts(clean);
           } else if (ev.data.type === 'ORDERS_UPDATED' && Array.isArray(ev.data.orders)) {
             setOrders(ev.data.orders);
           } else if (ev.data.type === 'COUPONS_UPDATED' && Array.isArray(ev.data.coupons)) {
