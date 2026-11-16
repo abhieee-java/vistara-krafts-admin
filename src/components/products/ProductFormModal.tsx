@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Product, ProductCategory, ProductVariant, ProductGender } from '../../types';
 import { Modal } from '../common/Modal';
+import { ConfirmationDialog } from '../common/ConfirmationDialog';
 import { ImageUploader } from './ImageUploader';
 import {
   Plus,
@@ -9,12 +10,13 @@ import {
   ChevronUp,
   Sparkles,
   Layers,
-  Package,
   IndianRupee,
-  Camera,
-  Sliders,
   SlidersHorizontal,
-  Info
+  Tag,
+  Palette,
+  FlaskConical,
+  Settings2,
+  Loader2
 } from 'lucide-react';
 
 interface ProductFormModalProps {
@@ -30,65 +32,123 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
   onSubmit,
   product
 }) => {
+  // Section A: Essential Product Details
   const [name, setName] = useState('');
-  const [shortName, setShortName] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [brand, setBrand] = useState('Vistāra Krafts');
-  const [badge, setBadge] = useState('');
-  const [subCategory, setSubCategory] = useState('');
   const [category, setCategory] = useState<ProductCategory>('casting');
-  const [sku, setSku] = useState('');
+  const [description, setDescription] = useState('');
+
+  // Section B: Product Photos
+  const [image, setImage] = useState('');
+  const [gallery, setGallery] = useState<string[]>([]);
+
+  // Section C: Pricing & Inventory
   const [price, setPrice] = useState<number>(1299);
   const [regularPrice, setRegularPrice] = useState<number>(1499);
-  const [ratio, setRatio] = useState('3:1');
-  const [viscosity, setViscosity] = useState<'low' | 'medium' | 'high'>('low');
-  const [cureTime, setCureTime] = useState('24h');
-  const [extraSpecsText, setExtraSpecsText] = useState('');
   const [stockQuantity, setStockQuantity] = useState<number>(20);
   const [lowStockThreshold, setLowStockThreshold] = useState<number>(5);
   const [inStock, setInStock] = useState(true);
-  const [isCustomizable, setIsCustomizable] = useState(false);
-  const [image, setImage] = useState('');
-  const [gallery, setGallery] = useState<string[]>([]);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
 
-  // Supplementary varieties
+  // Section D: More Product Options (Collapsed by Default)
+  const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState(false);
+
+  // D1. Product Identification
+  const [sku, setSku] = useState('');
+  const [brand, setBrand] = useState('Vistāra Krafts');
+  const [shortName, setShortName] = useState('');
+  const [subCategory, setSubCategory] = useState('');
+
+  // D2. Product Variants & Audience
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [colorsText, setColorsText] = useState('');
   const [shapesText, setShapesText] = useState('');
   const [sizesText, setSizesText] = useState('');
-
-  // Target audience
   const [gender, setGender] = useState<ProductGender>('all');
-  const isResinKit =
-    category === 'casting' ||
-    category === 'deep_pour' ||
-    (typeof category === 'string' && (
-      category.toLowerCase().includes('resin') ||
-      category.toLowerCase().includes('hardener') ||
-      category.toLowerCase().includes('casting') ||
-      category.toLowerCase().includes('pour')
-    ));
 
-  // Progressive disclosure: Advanced Settings accordion (collapsed by default)
-  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  // D3. Customizations & Badges
+  const [subtitle, setSubtitle] = useState('');
+  const [badge, setBadge] = useState('');
+  const [isCustomizable, setIsCustomizable] = useState(false);
+
+  // D4. Resin Specifications
+  const [ratio, setRatio] = useState('3:1');
+  const [viscosity, setViscosity] = useState<'low' | 'medium' | 'high'>('low');
+  const [cureTime, setCureTime] = useState('24h');
+
+  // D5. Advanced Technical Controls
+  const [extraSpecsText, setExtraSpecsText] = useState('');
+
+  // UI / State helpers
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [initialStateHash, setInitialStateHash] = useState('');
+
+  const isResinKit = useMemo(() => {
+    return (
+      category === 'casting' ||
+      category === 'deep_pour' ||
+      (typeof category === 'string' && (
+        category.toLowerCase().includes('resin') ||
+        category.toLowerCase().includes('hardener') ||
+        category.toLowerCase().includes('casting') ||
+        category.toLowerCase().includes('pour')
+      ))
+    );
+  }, [category]);
+
+  const discountPercent = useMemo(() => {
+    return regularPrice > price && regularPrice > 0
+      ? Math.round(((regularPrice - price) / regularPrice) * 100)
+      : 0;
+  }, [price, regularPrice]);
+
+  // Compute a snapshot hash to detect unsaved changes
+  const computeStateHash = () => {
+    return JSON.stringify({
+      name,
+      category,
+      description,
+      image,
+      gallery,
+      price,
+      regularPrice,
+      stockQuantity,
+      lowStockThreshold,
+      inStock,
+      sku,
+      brand,
+      shortName,
+      subCategory,
+      variants,
+      colorsText,
+      shapesText,
+      sizesText,
+      gender,
+      subtitle,
+      badge,
+      isCustomizable,
+      ratio,
+      viscosity,
+      cureTime,
+      extraSpecsText
+    });
+  };
 
   useEffect(() => {
     if (product) {
-      setName(product.name);
-      setShortName(product.shortName);
+      setName(product.name || '');
+      setShortName(product.shortName || '');
       setSubtitle(product.subtitle || '');
       setDescription(product.description || product.subtitle || '');
       setBrand(product.brand || 'Vistāra Krafts');
       setBadge(product.badge || '');
       setSubCategory(product.subCategory || '');
       setCategory(product.category);
-      setSku(product.sku);
-      setPrice(product.price);
-      setRegularPrice(product.regularPrice);
-      setRatio(product.ratio || '');
+      setSku(product.sku || '');
+      setPrice(product.price ?? 1299);
+      setRegularPrice(product.regularPrice ?? 1499);
+      setRatio(product.ratio || '3:1');
       setViscosity(product.viscosity || 'low');
-      setCureTime(product.cureTime || '');
+      setCureTime(product.cureTime || '24h');
 
       const nonStandardSpecs: Record<string, any> = {};
       if (product.specs && typeof product.specs === 'object') {
@@ -100,11 +160,11 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       }
       setExtraSpecsText(Object.keys(nonStandardSpecs).length > 0 ? JSON.stringify(nonStandardSpecs, null, 2) : '');
 
-      setStockQuantity(product.stockQuantity);
+      setStockQuantity(product.stockQuantity ?? 20);
       setLowStockThreshold(product.lowStockThreshold || 5);
-      setInStock(product.inStock);
-      setIsCustomizable(product.isCustomizable);
-      setImage(product.image);
+      setInStock(product.inStock !== false);
+      setIsCustomizable(Boolean(product.isCustomizable));
+      setImage(product.image || '');
       setGallery(product.gallery || (product.image ? [product.image] : []));
       setVariants(product.variants || []);
 
@@ -124,8 +184,9 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setSizesText(szList.join(', '));
 
       setGender(product.gender || 'all');
+      setIsMoreOptionsOpen(false);
     } else {
-      // Clean defaults for new product
+      // Default initial values for new product
       setName('');
       setShortName('');
       setSubtitle('');
@@ -152,9 +213,25 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       setShapesText('');
       setSizesText('');
       setGender('all');
-      setIsAdvancedOpen(false);
+      setIsMoreOptionsOpen(false);
     }
   }, [product, isOpen]);
+
+  // Set initial hash once loaded
+  useEffect(() => {
+    if (isOpen) {
+      setInitialStateHash(computeStateHash());
+    }
+  }, [isOpen]);
+
+  const handleSafeClose = () => {
+    const isDirty = computeStateHash() !== initialStateHash;
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      onClose();
+    }
+  };
 
   const handleAddVariant = () => {
     const newVariant: ProductVariant = {
@@ -176,8 +253,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     setVariants(variants.filter((v) => v.id !== id));
   };
 
+  const handleAutoGenerateSku = () => {
+    const prefix = category ? category.slice(0, 3).toUpperCase() : 'RES';
+    const rand = Math.floor(100 + Math.random() * 900);
+    setSku(`VK-${prefix}-${rand}`);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) return;
+
+    setIsSubmitting(true);
 
     const parsedColors = colorsText.trim()
       ? colorsText
@@ -236,703 +322,659 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     const finalSpecs: Record<string, any> = {
       ...(product?.specs || {}),
       ...extraSpecs,
-      ...(ratio ? { ratio } : {}),
-      ...(viscosity ? { viscosity } : {}),
-      ...(cureTime ? { cureTime } : {})
+      ...(isResinKit && ratio ? { ratio } : {}),
+      ...(isResinKit && viscosity ? { viscosity } : {}),
+      ...(isResinKit && cureTime ? { cureTime } : {})
     };
 
     const finalGallery = gallery.length > 0 ? gallery : (image ? [image] : []);
     const finalMainImage = image || (finalGallery && finalGallery[0]) || '';
 
-    onSubmit({
-      name,
-      shortName: shortName || name,
-      subtitle,
-      description,
-      brand,
-      badge,
-      subCategory,
-      specs: finalSpecs,
-      category,
-      sku,
-      price: Number(price),
-      regularPrice: Number(regularPrice),
-      ratio: isResinKit ? ratio : '',
-      viscosity: isResinKit ? viscosity : 'low',
-      cureTime: isResinKit ? cureTime : '',
-      stockQuantity: Number(stockQuantity),
-      lowStockThreshold: Number(lowStockThreshold),
-      inStock: stockQuantity > 0 ? inStock : false,
-      isCustomizable,
-      image: finalMainImage,
-      gallery: finalGallery,
-      variants,
-      colors: parsedColors,
-      shapes: parsedShapes,
-      sizes: parsedSizes,
-      gender: isResinKit ? 'all' : gender,
-      genderAffinity,
-      rating: product ? product.rating : 5.0,
-      reviewsCount: product ? product.reviewsCount : 0
-    });
-    onClose();
+    try {
+      onSubmit({
+        name: name.trim(),
+        shortName: (shortName || name).trim(),
+        subtitle: subtitle.trim(),
+        description: description.trim(),
+        brand: brand.trim() || 'Vistāra Krafts',
+        badge: badge.trim(),
+        subCategory: subCategory.trim(),
+        specs: finalSpecs,
+        category,
+        sku: sku.trim() || `VK-RES-${Math.floor(100 + Math.random() * 900)}`,
+        price: Number(price),
+        regularPrice: Number(regularPrice),
+        ratio: isResinKit ? ratio : '',
+        viscosity: isResinKit ? viscosity : 'low',
+        cureTime: isResinKit ? cureTime : '',
+        stockQuantity: Number(stockQuantity),
+        lowStockThreshold: Number(lowStockThreshold),
+        inStock: stockQuantity > 0 ? inStock : false,
+        isCustomizable,
+        image: finalMainImage,
+        gallery: finalGallery,
+        variants,
+        colors: parsedColors,
+        shapes: parsedShapes,
+        sizes: parsedSizes,
+        gender: isResinKit ? 'all' : gender,
+        genderAffinity,
+        rating: product ? product.rating : 5.0,
+        reviewsCount: product ? product.reviewsCount : 0
+      });
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  const handleAutoGenerateSku = () => {
-    const prefix = category ? category.slice(0, 3).toUpperCase() : 'RES';
-    const rand = Math.floor(100 + Math.random() * 900);
-    setSku(`VK-${prefix}-${rand}`);
-  };
-
-  const discountPercent = regularPrice > price && regularPrice > 0
-    ? Math.round(((regularPrice - price) / regularPrice) * 100)
-    : 0;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={product ? 'Edit Product' : 'Add New Product'}
-      subtitle="Publish updates directly to the live customer storefront"
-      maxWidth="6xl"
-    >
-      <form
-        id="product-form"
-        onSubmit={handleSubmit}
-        className="relative flex flex-col bg-[#f8f7f4] -m-4 sm:-m-6 text-[#1c1b18]"
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={handleSafeClose}
+        title={product ? 'Edit Product' : 'Add New Product'}
+        maxWidth="2xl"
+        noBodyPadding
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={handleSafeClose}
+              disabled={isSubmitting}
+              className="px-4 py-2 rounded-xl border border-[#e6e2d8] text-xs font-semibold text-gray-700 bg-white hover:bg-gray-100 transition-colors cursor-pointer active:scale-95"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              form="product-form"
+              disabled={isSubmitting || !name.trim()}
+              className="h-9 px-6 rounded-xl text-xs font-bold text-[#1c1b18] bg-[#cda851] hover:bg-[#dfc27d] transition-all cursor-pointer shadow-xs active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <span>{product ? 'Save Changes' : 'Create Product'}</span>
+              )}
+            </button>
+          </>
+        }
       >
-        <div className="p-4 sm:p-6 lg:p-7 space-y-6">
-          {/* Responsive 12-Column Grid Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            
-            {/* Left / Main Column (col-span-8: ~70% on Desktop) */}
-            <div className="lg:col-span-8 space-y-6">
-              
-              {/* Card 1: Basic Details */}
-              <div className="bg-white rounded-2xl border border-[#e6e2d8] p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-[#f0ece3]">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-[#8a7238] border border-amber-200 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-serif font-bold text-sm text-[#1c1b18]">Basic Details</h4>
-                    <p className="text-[11px] text-gray-500">Core product identity, title, SKU, and catalog categorization</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Full Product Title <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. UltraClear 3:1 Optical Casting Resin Kit"
-                      className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Short Display Name
-                    </label>
-                    <input
-                      type="text"
-                      value={shortName}
-                      onChange={(e) => setShortName(e.target.value)}
-                      placeholder="e.g. UltraClear 3:1 Casting"
-                      className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-semibold text-[#1c1b18]">
-                        SKU Identifier <span className="text-red-500">*</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={handleAutoGenerateSku}
-                        className="text-[10px] text-[#8a7238] hover:text-[#cda851] font-semibold cursor-pointer underline"
-                      >
-                        Auto-Gen
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      value={sku}
-                      onChange={(e) => setSku(e.target.value)}
-                      placeholder="e.g. VK-EPX-301-12K"
-                      className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs font-mono focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Brand
-                    </label>
-                    <input
-                      type="text"
-                      value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
-                      placeholder="e.g. Vistāra Krafts"
-                      className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Primary Category <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value as ProductCategory)}
-                      className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all cursor-pointer"
-                    >
-                      <option value="casting">Resin &amp; Hardener Kits (3:1 Optical Casting)</option>
-                      <option value="deep_pour">Resin &amp; Hardener Kits (2:1 Deep Pour River)</option>
-                      <option value="keepsakes">Artisan Keepsakes &amp; Preservation Blocks</option>
-                      <option value="molds">Silicone Molds &amp; Frames</option>
-                      <option value="pigments">Pigments, Pastes &amp; Metallic Inks</option>
-                      <option value="accessories">Tools, Torches &amp; Safety Gear</option>
-                    </select>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Subcategory / Collection Tag
-                    </label>
-                    <input
-                      type="text"
-                      value={subCategory}
-                      onChange={(e) => setSubCategory(e.target.value)}
-                      placeholder="e.g. Optical Casting, Deep Pour, Floral Preservation, Jewelry"
-                      className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Product Description
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Highlight optical clarity, scratch resistance, UV stabilizers, and recommended crafts..."
-                      className="w-full p-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 5: Media (Product Photography Uploads) */}
-              <div className="bg-white rounded-2xl border border-[#e6e2d8] p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-[#f0ece3]">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-700 border border-blue-200 flex items-center justify-center shrink-0">
-                    <Camera className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-serif font-bold text-sm text-[#1c1b18]">Product Photography & Media</h4>
-                    <p className="text-[11px] text-gray-500">Upload multiple images with automatic WebP conversion and primary star selection</p>
-                  </div>
-                </div>
-
-                <ImageUploader
-                  images={gallery}
-                  mainImage={image}
-                  onImagesChange={(imgs, main) => {
-                    setGallery(imgs);
-                    setImage(main);
-                  }}
+        <form
+          id="product-form"
+          onSubmit={handleSubmit}
+          className="p-4 sm:p-6 space-y-5 text-[#1c1b18] bg-white"
+        >
+          {/* =========================================================================
+              SECTION A: ESSENTIAL PRODUCT DETAILS
+             ========================================================================= */}
+            <div className="space-y-3.5">
+              {/* Product Name (Most Prominent Input) */}
+              <div>
+                <label className="block text-xs font-bold text-[#1c1b18] mb-1">
+                  Product Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. UltraClear 3:1 Optical Casting Resin Kit"
+                  className="w-full h-11 px-3.5 rounded-xl border border-[#dcd6c8] bg-white text-sm font-semibold text-[#1c1b18] placeholder:text-gray-400 placeholder:font-normal focus:ring-2 focus:ring-[#cda851] focus:border-[#cda851] outline-none shadow-2xs transition-all"
                 />
               </div>
 
-              {/* Card 4: Variants & Options */}
-              <div className="bg-white rounded-2xl border border-[#e6e2d8] p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#f0ece3]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-700 border border-purple-200 flex items-center justify-center shrink-0">
-                      <Layers className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="font-serif font-bold text-sm text-[#1c1b18]">
-                        {isResinKit ? 'Product Variants & Sizes' : 'Variants & Audience'}
-                      </h4>
-                      <p className="text-[11px] text-gray-500">
-                        {isResinKit
-                          ? 'Color swatches, shapes, and size pack options'
-                          : 'Color swatches, shapes, size packs, and gender targeting'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddVariant}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1c1b18] text-[#cda851] text-xs font-semibold hover:bg-[#2d2a24] transition-all cursor-pointer active:scale-95 shadow-2xs shrink-0"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Size Pack</span>
-                  </button>
-                </div>
-                {/* Target Audience Selector (Hidden for Resin & Hardener Kits) */}
-                {!isResinKit && (
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1.5">
-                      Target Audience / Style
-                    </label><div className="grid grid-cols-3 gap-2">
-                    <label
-                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                        gender === 'all'
-                          ? 'border-[#cda851] bg-[#faf6ec] text-[#1c1b18] shadow-xs'
-                          : 'border-[#e6e2d8] bg-[#faf8f5] text-gray-600 hover:bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="all"
-                        checked={gender === 'all'}
-                        onChange={() => setGender('all')}
-                        className="sr-only"
-                      />
-                      <span>✨ Universal / All</span>
-                    </label>
-
-                    <label
-                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                        gender === 'women'
-                          ? 'border-[#cda851] bg-[#faf6ec] text-[#1c1b18] shadow-xs'
-                          : 'border-[#e6e2d8] bg-[#faf8f5] text-gray-600 hover:bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="women"
-                        checked={gender === 'women'}
-                        onChange={() => setGender('women')}
-                        className="sr-only"
-                      />
-                      <span>🌸 Female / Women</span>
-                    </label>
-
-                    <label
-                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                        gender === 'men'
-                          ? 'border-[#cda851] bg-[#faf6ec] text-[#1c1b18] shadow-xs'
-                          : 'border-[#e6e2d8] bg-[#faf8f5] text-gray-600 hover:bg-white'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="men"
-                        checked={gender === 'men'}
-                        onChange={() => setGender('men')}
-                        className="sr-only"
-                      />
-                      <span>👔 Male / Men</span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-                {/* Supplementary Varieties (Colors, Shapes, Sizes) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                      🎨 Colors (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={colorsText}
-                      onChange={(e) => setColorsText(e.target.value)}
-                      placeholder="e.g. Royal Gold, Champagne"
-                      className="w-full h-9 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none"
-                    />
-                    <span className="text-[10px] text-gray-400 mt-1 block">Blank = No color pills</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                      📐 Shapes (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={shapesText}
-                      onChange={(e) => setShapesText(e.target.value)}
-                      placeholder="e.g. Arch, Hexagon"
-                      className="w-full h-9 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none"
-                    />
-                    <span className="text-[10px] text-gray-400 mt-1 block">Blank = No shape pills</span>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                      📏 Sizes (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={sizesText}
-                      onChange={(e) => setSizesText(e.target.value)}
-                      placeholder="e.g. 6-inch, 12-inch"
-                      className="w-full h-9 px-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none"
-                    />
-                    <span className="text-[10px] text-gray-400 mt-1 block">Blank = No size pills</span>
-                  </div>
-                </div>
-
-                {/* Size Packs Table */}
-                {variants.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-[#f0ece3]">
-                    <div className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">
-                      Active Size Packs &amp; Pricing ({variants.length})
-                    </div>
-                    {variants.map((v) => (
-                      <div
-                        key={v.id}
-                        className="p-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] grid grid-cols-1 sm:grid-cols-6 gap-2 items-center"
-                      >
-                        <input
-                          type="text"
-                          value={v.label}
-                          onChange={(e) => handleUpdateVariant(v.id, { label: e.target.value })}
-                          placeholder="Pack Label (e.g. 1.2kg Kit)"
-                          className="sm:col-span-2 h-8 px-2.5 rounded-lg border border-[#e6e2d8] text-xs bg-white"
-                        />
-                        <input
-                          type="text"
-                          value={v.sku || ''}
-                          onChange={(e) => handleUpdateVariant(v.id, { sku: e.target.value })}
-                          placeholder="Variant SKU"
-                          className="h-8 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white font-mono"
-                        />
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-400">₹</span>
-                          <input
-                            type="number"
-                            value={v.price}
-                            onChange={(e) => handleUpdateVariant(v.id, { price: Number(e.target.value) })}
-                            placeholder="Price"
-                            className="w-full h-8 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white font-semibold"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-gray-400">MRP:₹</span>
-                          <input
-                            type="number"
-                            value={v.regularPrice || v.price}
-                            onChange={(e) => handleUpdateVariant(v.id, { regularPrice: Number(e.target.value) })}
-                            placeholder="MRP"
-                            className="w-full h-8 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1 flex-1">
-                            <span className="text-[10px] text-gray-500">Qty:</span>
-                            <input
-                              type="number"
-                              value={v.stock}
-                              onChange={(e) => handleUpdateVariant(v.id, { stock: Number(e.target.value) })}
-                              placeholder="Stock"
-                              className="w-full h-8 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white font-mono"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveVariant(v.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0 cursor-pointer"
-                            title="Delete Variant"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Progressive Disclosure: Collapsible Advanced Settings Accordion */}
-              <div className="bg-white rounded-2xl border border-[#e6e2d8] overflow-hidden shadow-xs transition-all">
-                <button
-                  type="button"
-                  onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                  className="w-full p-4 sm:p-5 flex items-center justify-between text-left hover:bg-gray-50/70 transition-colors cursor-pointer"
-                  aria-expanded={isAdvancedOpen}
+              {/* Product Category Selector */}
+              <div>
+                <label className="block text-xs font-bold text-[#1c1b18] mb-1">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                  className="w-full h-10 px-3.5 rounded-xl border border-[#dcd6c8] bg-[#faf8f5] text-xs font-medium text-[#1c1b18] focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all cursor-pointer"
                 >
-                  <div className="flex items-center gap-2">
-                    <SlidersHorizontal className="w-4 h-4 text-gray-500" />
-                    <div>
-                      <span className="text-xs font-bold text-[#1c1b18] block">Advanced Settings &amp; Customizations</span>
-                      <span className="text-[11px] text-gray-500">Ribbons, subtitles, custom engraving, and technical JSON specs</span>
-                    </div>
-                  </div>
-                  <div className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 bg-gray-100">
-                    {isAdvancedOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </div>
-                </button>
-
-                {isAdvancedOpen && (
-                  <div className="p-5 sm:p-6 border-t border-[#f0ece3] space-y-4 bg-[#faf8f5]/40">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                          Product Subtitle
-                        </label>
-                        <input
-                          type="text"
-                          value={subtitle}
-                          onChange={(e) => setSubtitle(e.target.value)}
-                          placeholder="e.g. Museum-Grade UV Resistant Resin"
-                          className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                          Ribbon / Promotional Badge
-                        </label>
-                        <input
-                          type="text"
-                          value={badge}
-                          onChange={(e) => setBadge(e.target.value)}
-                          placeholder="e.g. Bestseller, 20% Off, New Launch"
-                          className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
-                        />
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <label className="flex items-center gap-3 p-3.5 rounded-xl border border-[#e6e2d8] bg-white cursor-pointer hover:bg-amber-50/40 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={isCustomizable}
-                            onChange={(e) => setIsCustomizable(e.target.checked)}
-                            className="w-4 h-4 text-[#cda851] rounded focus:ring-[#cda851] accent-[#cda851] cursor-pointer"
-                          />
-                          <div>
-                            <span className="text-xs font-bold text-[#1c1b18] block">Allows Custom Engraving &amp; Keepsake Personalization</span>
-                            <span className="text-[11px] text-gray-500">Enables patron name engraving, wedding dates, or custom floral notes at checkout</span>
-                          </div>
-                        </label>
-                      </div>
-
-                      <div className="sm:col-span-2">
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#1c1b18]">
-                            Additional Technical Specifications (JSON / Key:Value)
-                          </label>
-                          <span className="text-[10px] text-gray-400 font-mono">Optional</span>
-                        </div>
-                        <textarea
-                          rows={3}
-                          value={extraSpecsText}
-                          onChange={(e) => setExtraSpecsText(e.target.value)}
-                          placeholder={'Heat Resistance: 95°C\nShore Hardness: 85D\nPot Life: 45 min'}
-                          className="w-full p-3 rounded-xl border border-[#e6e2d8] bg-white text-xs font-mono focus:ring-2 focus:ring-[#cda851] outline-none"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                  <option value="casting">Resin &amp; Hardener Kits (3:1 Optical Casting)</option>
+                  <option value="deep_pour">Resin &amp; Hardener Kits (2:1 Deep Pour River)</option>
+                  <option value="keepsakes">Artisan Keepsakes &amp; Preservation Blocks</option>
+                  <option value="molds">Silicone Molds &amp; Frames</option>
+                  <option value="pigments">Pigments, Pastes &amp; Metallic Inks</option>
+                  <option value="accessories">Tools, Torches &amp; Safety Gear</option>
+                </select>
               </div>
 
+              {/* Product Description */}
+              <div>
+                <label className="block text-xs font-bold text-[#1c1b18] mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optical clarity, scratch resistance, UV stabilizers, and recommended crafts..."
+                  className="w-full p-3 rounded-xl border border-[#dcd6c8] bg-white text-xs leading-relaxed placeholder:text-gray-400 focus:ring-2 focus:ring-[#cda851] focus:border-[#cda851] outline-none shadow-2xs transition-all resize-none"
+                />
+              </div>
             </div>
 
-            {/* Right Sidebar Column (col-span-4: ~30% on Desktop, Sticky) */}
-            <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-4">
-              
-              {/* Card 2: Pricing & Stock */}
-              <div className="bg-white rounded-2xl border border-[#e6e2d8] p-5 sm:p-6 shadow-xs space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-[#f0ece3]">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-700 border border-emerald-200 flex items-center justify-center shrink-0">
-                    <IndianRupee className="w-4 h-4" />
+            {/* =========================================================================
+                SECTION B: PRODUCT PHOTOS (Compact Horizontal Strip)
+               ========================================================================= */}
+            <div className="pt-2 border-t border-[#f0ece3]">
+              <ImageUploader
+                images={gallery}
+                mainImage={image}
+                onImagesChange={(imgs, main) => {
+                  setGallery(imgs);
+                  setImage(main);
+                }}
+              />
+            </div>
+
+            {/* =========================================================================
+                SECTION C: PRICING & INVENTORY (Compact 2-Column Layout)
+               ========================================================================= */}
+            <div className="pt-2 border-t border-[#f0ece3] space-y-3">
+              <label className="block text-xs font-bold text-[#1c1b18]">
+                Pricing &amp; Inventory
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                {/* Selling Price */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-semibold text-gray-700">
+                      Selling Price <span className="text-red-500">*</span>
+                    </span>
                   </div>
-                  <div>
-                    <h4 className="font-serif font-bold text-sm text-[#1c1b18]">Pricing &amp; Inventory</h4>
-                    <p className="text-[11px] text-gray-500">Live price, MRP, and stock alert levels</p>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-gray-500 font-bold">₹</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      required
+                      min="0"
+                      value={price}
+                      onChange={(e) => setPrice(Number(e.target.value))}
+                      className="w-full h-9 pl-7 pr-3 rounded-xl border border-[#dcd6c8] bg-white text-xs font-bold text-[#1c1b18] focus:ring-2 focus:ring-[#cda851] outline-none shadow-2xs"
+                    />
                   </div>
                 </div>
 
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Selling Price (₹) <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-2.5 text-xs text-gray-400 font-semibold">₹</span>
-                      <input
-                        type="number"
-                        required
-                        min="0"
-                        value={price}
-                        onChange={(e) => setPrice(Number(e.target.value))}
-                        className="w-full h-10 pl-8 pr-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs font-bold text-[#1c1b18] focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Regular / MRP Price (₹)
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3.5 top-2.5 text-xs text-gray-400 font-semibold">₹</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={regularPrice}
-                        onChange={(e) => setRegularPrice(Number(e.target.value))}
-                        className="w-full h-10 pl-8 pr-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs text-gray-700 focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none"
-                      />
-                    </div>
+                {/* Regular Price / MRP */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-semibold text-gray-700">Regular / MRP</span>
                     {discountPercent > 0 && (
-                      <span className="text-[10px] text-emerald-700 font-semibold mt-1 inline-block">
-                        🏷️ {discountPercent}% discount active for patrons
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                        {discountPercent}% OFF
                       </span>
                     )}
                   </div>
-
-                  <div className="pt-2 border-t border-[#f0ece3] grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                        Current Stock
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={stockQuantity}
-                        onChange={(e) => setStockQuantity(Number(e.target.value))}
-                        className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs font-mono font-bold focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                        Low Stock Alert
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={lowStockThreshold}
-                        onChange={(e) => setLowStockThreshold(Number(e.target.value))}
-                        className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs font-mono focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <label className="flex items-center gap-3 p-3 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] cursor-pointer hover:bg-white transition-colors">
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-gray-400 font-bold">₹</span>
                     <input
-                      type="checkbox"
-                      checked={inStock}
-                      onChange={(e) => setInStock(e.target.checked)}
-                      className="w-4 h-4 text-[#cda851] rounded focus:ring-[#cda851] accent-[#cda851] cursor-pointer"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-[#1c1b18] block">In Stock on Storefront</span>
-                      <span className="text-[10px] text-gray-500">Controls instant buy button availability</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Card 3: Resin Specifications (Shown only for Resin & Hardener Kits) */}
-              {isResinKit && (
-                <div className="bg-white rounded-2xl border border-[#e6e2d8] p-5 sm:p-6 shadow-xs space-y-4"><div className="flex items-center gap-2 pb-3 border-b border-[#f0ece3]">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0">
-                    <Sliders className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-serif font-bold text-sm text-[#1c1b18]">Resin Specifications</h4>
-                    <p className="text-[11px] text-gray-500">Mix ratios and curing chemistry</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Mix Ratio (By Weight)
-                    </label>
-                    <select
-                      value={ratio}
-                      onChange={(e) => setRatio(e.target.value)}
-                      className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none cursor-pointer"
-                    >
-                      <option value="3:1">3:1 (Deep Pour / Thick Casting)</option>
-                      <option value="2:1">2:1 (High Gloss / Art &amp; Jewelry)</option>
-                      <option value="1:1">1:1 (Doming / Fast Cure Coasters)</option>
-                      <option value="UV">100% UV Curable (Single Part)</option>
-                      <option value="">N/A (Mold / Pigment / Accessory)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Viscosity Level
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['low', 'medium', 'high'] as const).map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => setViscosity(v)}
-                          className={`py-2 rounded-xl text-xs font-semibold capitalize transition-all cursor-pointer ${
-                            viscosity === v
-                              ? 'bg-[#1c1b18] text-[#cda851] shadow-xs'
-                              : 'bg-[#faf8f5] text-gray-600 border border-[#e6e2d8] hover:bg-white'
-                          }`}
-                        >
-                          {v}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#1c1b18] mb-1">
-                      Cure Time
-                    </label>
-                    <input
-                      type="text"
-                      value={cureTime}
-                      onChange={(e) => setCureTime(e.target.value)}
-                      placeholder="e.g. 24h, 12h-16h, 2-4 mins (UV)"
-                      className="w-full h-10 px-3.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none"
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      value={regularPrice}
+                      onChange={(e) => setRegularPrice(Number(e.target.value))}
+                      className="w-full h-9 pl-7 pr-3 rounded-xl border border-[#dcd6c8] bg-white text-xs text-gray-700 focus:ring-2 focus:ring-[#cda851] outline-none shadow-2xs"
                     />
                   </div>
                 </div>
-              </div>
-              )}
 
+                {/* Current Stock */}
+                <div>
+                  <span className="block text-[11px] font-semibold text-gray-700 mb-1">Current Stock</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(Number(e.target.value))}
+                    className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs font-mono font-bold focus:ring-2 focus:ring-[#cda851] outline-none shadow-2xs"
+                  />
+                </div>
+
+                {/* Low Stock Alert */}
+                <div>
+                  <span className="block text-[11px] font-semibold text-gray-700 mb-1">Low Stock Alert</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="1"
+                    value={lowStockThreshold}
+                    onChange={(e) => setLowStockThreshold(Number(e.target.value))}
+                    className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs font-mono focus:ring-2 focus:ring-[#cda851] outline-none shadow-2xs"
+                  />
+                </div>
+              </div>
+
+              {/* Storefront In-Stock Availability Switch */}
+              <label className="flex items-center justify-between p-2.5 rounded-xl border border-[#e6e2d8] bg-[#faf8f5] cursor-pointer hover:bg-amber-50/30 transition-colors">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[#1c1b18]">Storefront Availability</span>
+                  <span className="text-[11px] text-gray-500 hidden sm:inline">• Immediate buy button active</span>
+                </div>
+                <div className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={inStock}
+                    onChange={(e) => setInStock(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#cda851]" />
+                </div>
+              </label>
             </div>
 
-          </div>
-        </div>
+            {/* =========================================================================
+                SECTION D: MORE PRODUCT OPTIONS (Single Collapsible Accordion)
+               ========================================================================= */}
+            <div className="pt-2 border-t border-[#f0ece3]">
+              <div className="rounded-2xl border border-[#e6e2d8] overflow-hidden bg-white shadow-2xs transition-all">
+                <button
+                  type="button"
+                  onClick={() => setIsMoreOptionsOpen(!isMoreOptionsOpen)}
+                  className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50/80 transition-colors cursor-pointer bg-[#faf8f5]"
+                  aria-expanded={isMoreOptionsOpen}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <SlidersHorizontal className="w-4 h-4 text-[#8a7238] shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-[#1c1b18] block leading-tight truncate">
+                        More Product Options
+                      </span>
+                      <span className="text-[10px] text-gray-500 block leading-tight truncate">
+                        SKU, brand, variants, size packs, resin chemistry &amp; customizations
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-6 h-6 rounded-lg text-gray-500 bg-white border border-[#e6e2d8] flex items-center justify-center shrink-0">
+                    {isMoreOptionsOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </div>
+                </button>
 
-        {/* Sticky Bottom Actions Container: Accessible at all times without scrolling */}
-        <div className="sticky bottom-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#e6e2d8] px-4 sm:px-6 lg:px-7 py-3.5 flex items-center justify-between gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-[#e6e2d8] text-xs font-semibold text-gray-700 bg-white hover:bg-gray-100 transition-colors cursor-pointer active:scale-95"
-          >
-            Cancel
-          </button>
+                {isMoreOptionsOpen && (
+                  <div className="p-4 sm:p-5 border-t border-[#f0ece3] space-y-5 bg-[#faf8f5]/40">
 
-          <button
-            type="submit"
-            className="h-10 px-7 rounded-xl text-xs font-bold text-[#1c1b18] bg-[#cda851] hover:bg-[#dfc27d] transition-all cursor-pointer shadow-md active:scale-95 flex items-center gap-2"
-          >
-            <span>{product ? 'Save Changes' : 'Create Product'}</span>
-          </button>
-        </div>
-      </form>
-    </Modal>
+                    {/* D1. Product Identification */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
+                        <Tag className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Product Identification</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* SKU */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[11px] font-semibold text-gray-700">SKU Identifier</label>
+                            <button
+                              type="button"
+                              onClick={handleAutoGenerateSku}
+                              className="text-[10px] text-[#8a7238] hover:text-[#cda851] font-bold cursor-pointer underline"
+                            >
+                              Auto-Gen
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            value={sku}
+                            onChange={(e) => setSku(e.target.value)}
+                            placeholder="e.g. VK-RES-301"
+                            className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs font-mono focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+
+                        {/* Brand */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Brand</label>
+                          <input
+                            type="text"
+                            value={brand}
+                            onChange={(e) => setBrand(e.target.value)}
+                            placeholder="Vistāra Krafts"
+                            className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+
+                        {/* Short Display Name */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Short Display Name</label>
+                          <input
+                            type="text"
+                            value={shortName}
+                            onChange={(e) => setShortName(e.target.value)}
+                            placeholder="e.g. UltraClear 3:1"
+                            className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+
+                        {/* Subcategory / Tags */}
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Subcategory / Collection Tag</label>
+                          <input
+                            type="text"
+                            value={subCategory}
+                            onChange={(e) => setSubCategory(e.target.value)}
+                            placeholder="e.g. Optical Casting, Deep Pour"
+                            className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* D2. Product Variants & Audience */}
+                    <div className="space-y-3 pt-3 border-t border-[#f0ece3]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
+                          <Layers className="w-3.5 h-3.5 text-purple-700" />
+                          <span>Product Variants &amp; Size Packs</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddVariant}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1c1b18] text-[#cda851] text-[11px] font-bold hover:bg-[#2d2a24] transition-all cursor-pointer active:scale-95 shadow-2xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Size Pack</span>
+                        </button>
+                      </div>
+
+                      {/* Target Audience / Style (Hidden for Resin Kits) */}
+                      {!isResinKit && (
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-700 mb-1.5">
+                            Target Audience
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {(['all', 'women', 'men'] as const).map((g) => (
+                              <button
+                                key={g}
+                                type="button"
+                                onClick={() => setGender(g)}
+                                className={`py-1.5 px-2 rounded-xl text-xs font-semibold capitalize border transition-all cursor-pointer ${
+                                  gender === g
+                                    ? 'border-[#cda851] bg-[#faf6ec] text-[#1c1b18] shadow-xs'
+                                    : 'border-[#e6e2d8] bg-white text-gray-600 hover:bg-gray-50'
+                                }`}
+                              >
+                                {g === 'all' ? '✨ Universal' : g === 'women' ? '🌸 Female' : '👔 Male'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Supplementary Swatches (Colors, Shapes, Sizes) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <div>
+                          <label className="block text-[10.5px] font-semibold text-gray-700 mb-1">
+                            🎨 Colors (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={colorsText}
+                            onChange={(e) => setColorsText(e.target.value)}
+                            placeholder="Royal Gold, Clear"
+                            className="w-full h-8 px-2.5 rounded-lg border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10.5px] font-semibold text-gray-700 mb-1">
+                            📐 Shapes (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={shapesText}
+                            onChange={(e) => setShapesText(e.target.value)}
+                            placeholder="Arch, Hexagon"
+                            className="w-full h-8 px-2.5 rounded-lg border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10.5px] font-semibold text-gray-700 mb-1">
+                            📏 Sizes (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={sizesText}
+                            onChange={(e) => setSizesText(e.target.value)}
+                            placeholder="6-inch, 12-inch"
+                            className="w-full h-8 px-2.5 rounded-lg border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Size Packs Table */}
+                      {variants.length > 0 && (
+                        <div className="space-y-2 pt-1">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">
+                            Active Size Packs ({variants.length})
+                          </span>
+                          {variants.map((v) => (
+                            <div
+                              key={v.id}
+                              className="p-2.5 rounded-xl border border-[#e6e2d8] bg-white grid grid-cols-1 sm:grid-cols-6 gap-2 items-center shadow-2xs"
+                            >
+                              <input
+                                type="text"
+                                value={v.label}
+                                onChange={(e) => handleUpdateVariant(v.id, { label: e.target.value })}
+                                placeholder="Label (e.g. 1.2kg Kit)"
+                                className="sm:col-span-2 h-7 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-[#faf8f5]"
+                              />
+                              <input
+                                type="text"
+                                value={v.sku || ''}
+                                onChange={(e) => handleUpdateVariant(v.id, { sku: e.target.value })}
+                                placeholder="Variant SKU"
+                                className="h-7 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-[#faf8f5] font-mono"
+                              />
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs text-gray-400">₹</span>
+                                <input
+                                  type="number"
+                                  value={v.price}
+                                  onChange={(e) => handleUpdateVariant(v.id, { price: Number(e.target.value) })}
+                                  placeholder="Price"
+                                  className="w-full h-7 px-1.5 rounded-lg border border-[#e6e2d8] text-xs bg-[#faf8f5] font-semibold"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-gray-400">MRP:</span>
+                                <input
+                                  type="number"
+                                  value={v.regularPrice || v.price}
+                                  onChange={(e) => handleUpdateVariant(v.id, { regularPrice: Number(e.target.value) })}
+                                  placeholder="MRP"
+                                  className="w-full h-7 px-1.5 rounded-lg border border-[#e6e2d8] text-xs bg-[#faf8f5]"
+                                />
+                              </div>
+                              <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center gap-1 flex-1">
+                                  <span className="text-[10px] text-gray-400">Qty:</span>
+                                  <input
+                                    type="number"
+                                    value={v.stock}
+                                    onChange={(e) => handleUpdateVariant(v.id, { stock: Number(e.target.value) })}
+                                    placeholder="Stock"
+                                    className="w-full h-7 px-1.5 rounded-lg border border-[#e6e2d8] text-xs bg-[#faf8f5] font-mono"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveVariant(v.id)}
+                                  className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete variant"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* D3. Customizations & Badges */}
+                    <div className="space-y-3 pt-3 border-t border-[#f0ece3]">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Customizations &amp; Highlights</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Product Subtitle</label>
+                          <input
+                            type="text"
+                            value={subtitle}
+                            onChange={(e) => setSubtitle(e.target.value)}
+                            placeholder="e.g. Museum-Grade UV Resistant Resin"
+                            className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-gray-700 mb-1">Ribbon / Promo Badge</label>
+                          <input
+                            type="text"
+                            value={badge}
+                            onChange={(e) => setBadge(e.target.value)}
+                            placeholder="e.g. Bestseller, 20% Off"
+                            className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <label className="flex items-center gap-2.5 p-2.5 rounded-xl border border-[#e6e2d8] bg-white cursor-pointer hover:bg-amber-50/30 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={isCustomizable}
+                              onChange={(e) => setIsCustomizable(e.target.checked)}
+                              className="w-4 h-4 text-[#cda851] rounded focus:ring-[#cda851] accent-[#cda851] cursor-pointer"
+                            />
+                            <div>
+                              <span className="text-xs font-bold text-[#1c1b18] block leading-tight">
+                                Allows Custom Engraving &amp; Keepsake Personalization
+                              </span>
+                              <span className="text-[10px] text-gray-500 block leading-tight">
+                                Enables patron name engraving, wedding dates, or custom notes at checkout
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* D4. Resin Specifications (Contextually relevant) */}
+                    {isResinKit && (
+                      <div className="space-y-3 pt-3 border-t border-[#f0ece3]">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
+                          <FlaskConical className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Resin Specifications</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-gray-700 mb-1">Mix Ratio</label>
+                            <select
+                              value={ratio}
+                              onChange={(e) => setRatio(e.target.value)}
+                              className="w-full h-9 px-2.5 rounded-xl border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none cursor-pointer"
+                            >
+                              <option value="3:1">3:1 (Thick Casting)</option>
+                              <option value="2:1">2:1 (Deep Pour)</option>
+                              <option value="1:1">1:1 (Doming / Fast)</option>
+                              <option value="UV">UV Curable</option>
+                              <option value="">N/A</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-gray-700 mb-1">Viscosity</label>
+                            <div className="grid grid-cols-3 gap-1">
+                              {(['low', 'medium', 'high'] as const).map((v) => (
+                                <button
+                                  key={v}
+                                  type="button"
+                                  onClick={() => setViscosity(v)}
+                                  className={`py-1.5 rounded-lg text-[11px] font-semibold capitalize border transition-all cursor-pointer ${
+                                    viscosity === v
+                                      ? 'bg-[#1c1b18] text-[#cda851] border-[#1c1b18]'
+                                      : 'bg-white text-gray-600 border-[#e6e2d8] hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {v}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-semibold text-gray-700 mb-1">Cure Time</label>
+                            <input
+                              type="text"
+                              value={cureTime}
+                              onChange={(e) => setCureTime(e.target.value)}
+                              placeholder="e.g. 24h, 12h-16h"
+                              className="w-full h-9 px-3 rounded-xl border border-[#dcd6c8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* D5. Advanced Settings */}
+                    <div className="space-y-2 pt-3 border-t border-[#f0ece3]">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-[#1c1b18]">
+                          <Settings2 className="w-3.5 h-3.5 text-gray-600" />
+                          <span>Technical Specifications (JSON / Key:Value)</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-mono">Optional</span>
+                      </div>
+                      <textarea
+                        rows={2}
+                        value={extraSpecsText}
+                        onChange={(e) => setExtraSpecsText(e.target.value)}
+                        placeholder={'Heat Resistance: 95°C\nShore Hardness: 85D'}
+                        className="w-full p-2.5 rounded-xl border border-[#dcd6c8] bg-white text-xs font-mono focus:ring-2 focus:ring-[#cda851] outline-none"
+                      />
+                    </div>
+
+                  </div>
+                )}
+              </div>
+            </div>
+        </form>
+      </Modal>
+
+      {/* Discard Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showDiscardConfirm}
+        onClose={() => setShowDiscardConfirm(false)}
+        onConfirm={() => {
+          setShowDiscardConfirm(false);
+          onClose();
+        }}
+        title="Discard Unsaved Changes?"
+        message="You have unsaved changes in this product form. If you close now, your edits will be discarded."
+        confirmLabel="Discard Edits"
+        confirmVariant="danger"
+      />
+    </>
   );
 };

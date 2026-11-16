@@ -10,6 +10,8 @@ interface ModalProps {
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl' | '5xl' | '6xl';
   headerActions?: React.ReactNode;
+  footer?: React.ReactNode;
+  noBodyPadding?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -19,7 +21,9 @@ export const Modal: React.FC<ModalProps> = ({
   subtitle,
   children,
   maxWidth = 'lg',
-  headerActions
+  headerActions,
+  footer,
+  noBodyPadding = false
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -82,7 +86,16 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Scrollable Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
+        <div className={`${noBodyPadding ? '' : 'p-4 sm:p-6'} overflow-y-auto flex-1 overscroll-contain`}>
+          {children}
+        </div>
+
+        {/* Pinned Sticky Footer */}
+        {footer && (
+          <div className="px-4 sm:px-6 py-3 border-t border-[#e6e2d8] bg-white/95 backdrop-blur-md shrink-0 flex items-center justify-end gap-2.5 shadow-[0_-4px_16px_rgba(0,0,0,0.03)]">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
