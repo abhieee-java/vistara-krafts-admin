@@ -24,7 +24,7 @@ export const Security: React.FC = () => {
               Single-Owner Protected Console
             </h3>
             <p className="text-xs text-gray-500">
-              Authenticated Owner: <strong>{user?.email || 'ad4064773@gmail.com'}</strong> • Mode: Isolated Master Admin Auth
+              Authenticated Owner: <strong>{user?.email || 'owner@vistarakrafts.com'}</strong> • Mode: Isolated Master Admin Auth
             </p>
           </div>
         </div>
@@ -97,8 +97,8 @@ export const Security: React.FC = () => {
               <Lock className="w-4 h-4 text-blue-600" />
               <span>Resend Transactional API</span>
             </div>
-            <div className="text-gray-500 text-[11px] font-mono truncate" title="ad4064773@gmail.com">
-              Target: ad4064773@gmail.com
+            <div className="text-gray-500 text-[11px] font-mono truncate" title="owner@vistarakrafts.com">
+              Target: owner@vistarakrafts.com
             </div>
           </div>
         </div>

@@ -84,7 +84,7 @@ export const authService = {
     }
 
     const user: OwnerAuthUser = {
-      email: data.user?.email || 'ad4064773@gmail.com',
+      email: data.user?.email || 'owner@vistarakrafts.com',
       name: data.user?.name || 'Kakoli Borah (Owner)',
       role: 'Owner',
       lastLogin: data.user?.lastLogin || new Date().toISOString(),
@@ -146,7 +146,7 @@ export const authService = {
     }
 
     const user: OwnerAuthUser = {
-      email: 'ad4064773@gmail.com',
+      email: 'owner@vistarakrafts.com',
       name: 'Kakoli Borah (Owner)',
       role: 'Owner',
       lastLogin: new Date().toISOString()
