@@ -18,21 +18,13 @@ function getDeletedOrderIds(): Set<string> {
 
 function isMockOrTestOrder(row: any): boolean {
   if (!row) return true;
+  // Real orders from Supabase (VK- prefix or valid IDs) must always be visible to admin
   const num = String(row.orderNumber || row.order_number || row.orderId || row.id || '').toUpperCase();
-  const name = String(row.customerName || row.customer_name || '').toLowerCase();
-  const email = String(row.customerEmail || row.customer_email || '').toLowerCase();
+  if (num.startsWith('VK-')) return false;
 
   return (
-    num.includes('TEST') ||
-    num.includes('MOCK') ||
-    num.includes('SAMPLE') ||
-    num.includes('DUMMY') ||
-    name.includes('test') ||
-    name.includes('mock') ||
-    name.includes('dummy') ||
-    name.includes('valued patron') ||
-    email.includes('test@') ||
-    email.includes('@example.com')
+    num.includes('SAMPLE-DUMMY') ||
+    num.includes('MOCK-SEED-999')
   );
 }
 
