@@ -136,7 +136,16 @@ export function mapRowToProduct(row: any): Product {
     isCustomizable: Boolean(row.is_customizable),
     image: String(row.image || ''),
     gallery: Array.isArray(gallery) ? gallery : [],
-    variants: Array.isArray(variants) ? variants : [],
+    variants: Array.isArray(variants) ? variants.map((v: any, idx: number) => {
+      if (idx === 0) {
+        return {
+          ...v,
+          price: Number(row.price || v.price || 0),
+          regularPrice: Number(row.compare_at_price || v.regularPrice || row.price || 0)
+        };
+      }
+      return v;
+    }) : [],
     colors: Array.isArray(colors) ? colors : [],
     shapes: Array.isArray(shapes) ? shapes : [],
     sizes: Array.isArray(sizes) ? sizes : [],
@@ -176,7 +185,16 @@ export function mapProductToRow(product: Product): any {
     reviews_count: product.reviewsCount ?? 0,
     image: product.image || (Array.isArray(product.gallery) && product.gallery[0]) || '',
     gallery: Array.isArray(product.gallery) && product.gallery.length > 0 ? product.gallery : (product.image ? [product.image] : []),
-    variants: product.variants || [],
+    variants: (product.variants || []).map((v: any, idx: number) => {
+      if (idx === 0) {
+        return {
+          ...v,
+          price: product.price,
+          regularPrice: product.regularPrice || product.price
+        };
+      }
+      return v;
+    }),
     colors: product.colors || [],
     shapes: product.shapes || [],
     sizes: product.sizes || [],

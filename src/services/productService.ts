@@ -137,8 +137,24 @@ export const productService = {
   addProduct(newProduct: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Product {
     const products = this.getProducts();
     const id = 'prod_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+    const newPrice = Number(newProduct.price || 0);
+    const newRegularPrice = Number(newProduct.regularPrice || Math.round(newPrice * 1.25));
+
+    let variantsToSave = newProduct.variants || [];
+    if (Array.isArray(variantsToSave) && variantsToSave.length > 0) {
+      variantsToSave = variantsToSave.map((v, i) => {
+        if (i === 0) {
+          return { ...v, price: newPrice, regularPrice: newRegularPrice };
+        }
+        return v;
+      });
+    }
+
     const product: Product = {
       ...newProduct,
+      price: newPrice,
+      regularPrice: newRegularPrice,
+      variants: variantsToSave,
       id,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -163,9 +179,30 @@ export const productService = {
     const idx = products.findIndex((p) => p.id === id);
     if (idx === -1) throw new Error('Product not found');
 
+    const oldProduct = products[idx];
+    const oldBasePrice = oldProduct.price;
+    const newPrice = updates.price !== undefined ? Number(updates.price) : oldProduct.price;
+    const newRegularPrice = updates.regularPrice !== undefined
+      ? Number(updates.regularPrice)
+      : (oldProduct.regularPrice || Math.round(newPrice * 1.25));
+
+    let variantsToSave = updates.variants !== undefined ? updates.variants : (oldProduct.variants || []);
+    if (Array.isArray(variantsToSave) && variantsToSave.length > 0) {
+      variantsToSave = variantsToSave.map((v, i) => {
+        // Base variant (index 0) or variants that matched old base price are synced to new price
+        if (i === 0 || (oldBasePrice !== undefined && Number(v.price) === Number(oldBasePrice))) {
+          return { ...v, price: newPrice, regularPrice: Math.max(newPrice, newRegularPrice) };
+        }
+        return v;
+      });
+    }
+
     const updatedProduct: Product = {
-      ...products[idx],
+      ...oldProduct,
       ...updates,
+      price: newPrice,
+      regularPrice: newRegularPrice,
+      variants: variantsToSave,
       updatedAt: new Date().toISOString()
     };
     products[idx] = updatedProduct;

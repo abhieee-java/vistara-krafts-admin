@@ -330,6 +330,27 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
     const finalGallery = gallery.length > 0 ? gallery : (image ? [image] : []);
     const finalMainImage = image || (finalGallery && finalGallery[0]) || '';
 
+    const finalBasePrice = Number(price);
+    const finalRegularPrice = Number(regularPrice);
+    const oldBasePrice = product ? Number(product.price) : null;
+    const syncedVariants = (variants || []).map((v, idx) => {
+      if (idx === 0) {
+        return {
+          ...v,
+          price: finalBasePrice,
+          regularPrice: finalRegularPrice
+        };
+      }
+      if (oldBasePrice !== null && Number(v.price) === oldBasePrice) {
+        return {
+          ...v,
+          price: finalBasePrice,
+          regularPrice: Math.max(finalRegularPrice, v.regularPrice || finalRegularPrice)
+        };
+      }
+      return v;
+    });
+
     try {
       onSubmit({
         name: name.trim(),
@@ -342,8 +363,8 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         specs: finalSpecs,
         category,
         sku: sku.trim() || `VK-RES-${Math.floor(100 + Math.random() * 900)}`,
-        price: Number(price),
-        regularPrice: Number(regularPrice),
+        price: finalBasePrice,
+        regularPrice: finalRegularPrice,
         ratio: isResinKit ? ratio : '',
         viscosity: isResinKit ? viscosity : 'low',
         cureTime: isResinKit ? cureTime : '',
@@ -353,7 +374,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         isCustomizable,
         image: finalMainImage,
         gallery: finalGallery,
-        variants,
+        variants: syncedVariants,
         colors: parsedColors,
         shapes: parsedShapes,
         sizes: parsedSizes,
