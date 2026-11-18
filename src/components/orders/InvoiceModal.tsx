@@ -47,6 +47,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
                 TAX INVOICE
               </span>
               <p className="text-xs font-mono font-bold mt-2 whitespace-nowrap">{order.orderNumber}</p>
+              {order.id && order.id !== order.orderNumber && (
+                <p className="text-[10px] font-mono text-gray-500 whitespace-nowrap">ID: {order.id}</p>
+              )}
               <p className="text-[11px] text-gray-500">
                 Date: {new Date(order.createdAt).toLocaleDateString()}
               </p>
@@ -92,7 +95,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({ order, isOpen, onClo
               {order.items.map((it, i) => (
                 <tr key={i} className="py-3">
                   <td className="py-3 pr-2">
-                    <p className="font-bold text-[#1c1b18]">{it.productName}</p>
+                    <p className="font-bold text-[#1c1b18]">{it.productName || (it as any).name || 'Artisan Craft Material'}</p>
                     {it.variantLabel && (
                       <p className="text-[11px] text-gray-500">Edition: {it.variantLabel}</p>
                     )}

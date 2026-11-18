@@ -21,7 +21,8 @@ import {
   Calendar,
   Layers,
   Save,
-  Maximize2
+  Maximize2,
+  Copy
 } from 'lucide-react';
 
 interface OrderDetailDrawerProps {
@@ -49,7 +50,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   onDeleteOrder,
   onOpenInvoice
 }) => {
-  const { updatePreservationStage, updateCustomArtisanNotes } = useStore();
+  const { updatePreservationStage, updateCustomArtisanNotes, addToast } = useStore();
   const [carrier, setCarrier] = useState<'Delhivery' | 'BlueDart' | 'DTDC'>(
     order?.carrier || 'Delhivery'
   );
@@ -105,8 +106,35 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                 <h3 className="font-serif font-bold text-lg text-[#1c1b18] whitespace-nowrap">
                   {order.orderNumber}
                 </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(order.orderNumber);
+                    addToast(`Copied Order #${order.orderNumber}`, 'success');
+                  }}
+                  className="p-1 text-gray-400 hover:text-[#cda851] rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                  title="Copy Order Number"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
                 <StatusBadge status={order.orderStatus} />
               </div>
+              {order.id && order.id !== order.orderNumber && (
+                <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[11px]">
+                  <span className="text-[10px] uppercase font-bold text-gray-400">Order ID:</span>
+                  <span
+                    className="px-1.5 py-0.5 rounded bg-white text-gray-700 border border-[#e6e2d8] font-semibold cursor-pointer select-all flex items-center gap-1 hover:border-[#cda851] hover:text-[#cda851] transition-colors"
+                    onClick={() => {
+                      navigator.clipboard.writeText(order.id);
+                      addToast(`Copied Order ID: ${order.id}`, 'success');
+                    }}
+                    title="Click to copy Order ID"
+                  >
+                    <span>{order.id}</span>
+                    <Copy className="w-2.5 h-2.5 text-[#cda851]" />
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1 font-medium flex-wrap">
                 <Clock className="w-3.5 h-3.5 text-[#cda851] shrink-0" />
                 <span>Placed: <strong className="text-gray-900">{new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</strong></span>
@@ -547,7 +575,7 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-[#1c1b18] truncate">
-                            {item.productName}
+                            {item.productName || (item as any).name || 'Artisan Craft Material'}
                           </p>
                           {item.variantLabel && (
                             <p className="text-[11px] text-[#cda851] font-medium">

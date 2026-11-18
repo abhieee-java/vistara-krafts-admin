@@ -231,7 +231,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     className="p-3.5 rounded-xl border border-[#e6e2d8] hover:border-[#cda851] bg-[#faf8f5]/50 active:bg-[#faf8f5] transition-all space-y-2 text-xs cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-xs text-[#1c1b18] whitespace-nowrap">{ord.orderNumber}</span>
+                      <div>
+                        <span className="font-mono font-bold text-xs text-[#1c1b18] whitespace-nowrap">{ord.orderNumber}</span>
+                        {ord.id && ord.id !== ord.orderNumber && (
+                          <span className="font-mono text-[10px] text-gray-500 block">ID: {ord.id}</span>
+                        )}
+                      </div>
                       <StatusBadge status={ord.orderStatus} />
                     </div>
                     <div className="flex items-center justify-between text-gray-700">
@@ -245,7 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100">
                       <span className="truncate max-w-[200px]">
-                        {ord.items.map((i) => i.productName).join(', ')}
+                        {ord.items.map((i) => i.productName || (i as any).name || 'Artisan Craft Material').join(', ')}
                       </span>
                       <span className="text-[#cda851] font-bold">Details →</span>
                     </div>
@@ -269,15 +274,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <tbody className="divide-y divide-gray-100">
                     {recentOrders.map((ord) => (
                       <tr key={ord.id} className="interactive-row cursor-pointer" onClick={() => onOpenOrder(ord)}>
-                        <td className="py-3 font-mono font-bold text-[#1c1b18] whitespace-nowrap">
-                          {ord.orderNumber}
+                        <td className="py-3">
+                          <p className="font-mono font-bold text-[#1c1b18] whitespace-nowrap">{ord.orderNumber}</p>
+                          {ord.id && ord.id !== ord.orderNumber && (
+                            <p className="font-mono text-[10px] text-gray-400 whitespace-nowrap">ID: {ord.id}</p>
+                          )}
                         </td>
                         <td className="py-3">
                           <p className="font-semibold text-gray-800">{ord.customerName}</p>
                           <p className="text-[10px] text-gray-400">{ord.shippingAddress.city}</p>
                         </td>
                         <td className="py-3 text-gray-600 max-w-[180px] truncate">
-                          {ord.items.map((i) => i.productName).join(', ')}
+                          {ord.items.map((i) => i.productName || (i as any).name || 'Artisan Craft Material').join(', ')}
                         </td>
                         <td className="py-3 text-right font-bold text-[#1c1b18]">
                           ₹{ord.totalAmount.toLocaleString()}

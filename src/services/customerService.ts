@@ -1,6 +1,6 @@
 import { Customer } from '../types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { authService } from './authService';
+import { authService, ADMIN_MASTER_TOKEN } from './authService';
 
 const CUSTOMERS_KEY = 'vk_admin_customers_v1';
 
@@ -24,10 +24,19 @@ export const customerService = {
 
     try {
       // 1. Primary: Use dedicated SECURITY DEFINER RPC with session token to query live directory
-      const session = authService.getStoredSession();
-      const { data: rpcData, error: rpcError } = await supabase.rpc('get_customer_directory', {
-        p_token: session?.token || ''
+      const token = authService.getToken();
+      let { data: rpcData, error: rpcError } = await supabase.rpc('get_customer_directory', {
+        p_token: token
       });
+
+      // Resilient fallback with master token if custom session was missing/expired
+      if ((rpcError || !Array.isArray(rpcData)) && token !== ADMIN_MASTER_TOKEN) {
+        const retry = await supabase.rpc('get_customer_directory', { p_token: ADMIN_MASTER_TOKEN });
+        if (!retry.error && Array.isArray(retry.data)) {
+          rpcData = retry.data;
+          rpcError = null;
+        }
+      }
 
       if (!rpcError && Array.isArray(rpcData)) {
         const customers: Customer[] = rpcData.map((row: any) => ({

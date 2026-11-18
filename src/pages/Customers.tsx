@@ -22,7 +22,8 @@ import {
   Clock,
   TrendingUp,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Copy
 } from 'lucide-react';
 
 export const Customers: React.FC = () => {
@@ -41,6 +42,7 @@ export const Customers: React.FC = () => {
   // Filter logic
   const filteredCustomers = customers.filter((c) => {
     const matchesSearch =
+      c.id.toLowerCase().includes(search.toLowerCase()) ||
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.email.toLowerCase().includes(search.toLowerCase()) ||
       c.phone.includes(search) ||
@@ -308,6 +310,26 @@ export const Customers: React.FC = () => {
                 <StatusBadge status={c.status} />
               </div>
 
+              {/* Mobile User ID Display */}
+              <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl bg-gray-50 border border-gray-100 font-mono text-[10.5px]">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[9.5px] uppercase font-bold text-gray-400 shrink-0">User ID:</span>
+                  <span className="text-gray-800 font-semibold truncate select-all">{c.id}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(c.id);
+                    addToast(`Copied User ID: ${c.id.slice(0, 8)}...`, 'success');
+                  }}
+                  className="p-1 px-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-[#cda851] text-[10px] font-bold shrink-0 flex items-center gap-1 active:scale-95 transition-all cursor-pointer"
+                  title="Copy User ID"
+                >
+                  <Copy className="w-2.5 h-2.5 text-[#cda851]" />
+                  <span>Copy</span>
+                </button>
+              </div>
+
               <div className="pt-2 border-t border-gray-100 space-y-1.5 text-gray-600 text-[11px]">
                 <div className="flex items-center gap-2">
                   <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
@@ -380,7 +402,7 @@ export const Customers: React.FC = () => {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-[#faf8f5] border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
-                  <th className="py-3 px-4 text-left">Patron Name &amp; SSO</th>
+                  <th className="py-3 px-4 text-left">Patron Name &amp; User ID</th>
                   <th className="py-3 px-3 text-left">Contact Info</th>
                   <th className="py-3 px-3 text-left">Last Login / Active</th>
                   <th className="py-3 px-3 text-left">Registered Date</th>
@@ -393,21 +415,37 @@ export const Customers: React.FC = () => {
               <tbody className="divide-y divide-gray-100">
                 {filteredCustomers.map((c) => (
                   <tr key={c.id} className="hover:bg-[#faf8f5]/80 transition-colors">
-                    {/* Patron Name & SSO Badge */}
+                    {/* Patron Name & User ID */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1c1b18] to-[#3a3731] text-[#cda851] font-bold text-xs flex items-center justify-center shadow-sm shrink-0">
                           {c.name.slice(0, 1).toUpperCase()}
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="font-bold text-[#1c1b18] flex items-center gap-1.5">
-                            <span>{c.name}</span>
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            <span className="truncate">{c.name}</span>
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200 shrink-0">
                               {c.provider === 'google' ? 'Google' : 'SSO'}
                             </span>
                           </div>
                           <div className="text-[10px] text-gray-400">
                             {c.memberTier || 'Verified Patron'}
+                          </div>
+                          {/* Desktop User ID Badge */}
+                          <div className="flex items-center gap-1.5 mt-1 font-mono text-[10.5px]">
+                            <span className="text-[9px] uppercase font-bold text-gray-400 shrink-0">UID:</span>
+                            <span
+                              className="px-1.5 py-0.5 rounded bg-gray-100 hover:bg-amber-50 text-gray-700 hover:text-amber-900 border border-gray-200 hover:border-amber-300 font-semibold cursor-pointer transition-all select-all flex items-center gap-1 group/uid truncate max-w-[210px]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(c.id);
+                                addToast(`Copied User ID: ${c.id.slice(0, 8)}...`, 'success');
+                              }}
+                              title={`Click to copy User ID: ${c.id}`}
+                            >
+                              <span className="truncate">{c.id}</span>
+                              <Copy className="w-2.5 h-2.5 opacity-60 group-hover/uid:opacity-100 text-[#cda851] shrink-0" />
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -528,6 +566,30 @@ export const Customers: React.FC = () => {
                 </span>
               </div>
 
+              {/* Full User ID Card */}
+              <div className="p-3 rounded-xl bg-white border border-[#e6e2d8] flex items-center justify-between gap-3 shadow-2xs">
+                <div className="min-w-0">
+                  <span className="text-[10px] text-gray-400 block font-semibold uppercase tracking-wider">
+                    Customer / User ID (Supabase Auth UID)
+                  </span>
+                  <code className="font-mono text-xs font-bold text-[#1c1b18] select-all break-all mt-0.5 block">
+                    {selectedCustomer.id}
+                  </code>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedCustomer.id);
+                    addToast(`Copied User ID: ${selectedCustomer.id}`, 'success');
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                  title="Copy Full User ID"
+                >
+                  <Copy className="w-3.5 h-3.5 text-[#cda851]" />
+                  <span>Copy UID</span>
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <span className="text-[10px] text-gray-400 block font-semibold uppercase">Email Address</span>
@@ -583,10 +645,40 @@ export const Customers: React.FC = () => {
                   {customerOrders.map((ord) => (
                     <div key={ord.id} className="p-3 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors">
                       <div>
-                        <span className="font-mono font-bold text-[#1c1b18]">
-                          {ord.orderNumber}
-                        </span>
-                        <div className="text-[11px] text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-[#1c1b18]">
+                            {ord.orderNumber}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(ord.orderNumber);
+                              addToast(`Copied Order #${ord.orderNumber}`, 'success');
+                            }}
+                            className="p-1 text-gray-400 hover:text-[#cda851] rounded"
+                            title="Copy Order Number"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                        {ord.id && ord.id !== ord.orderNumber && (
+                          <div className="flex items-center gap-1.5 text-[10.5px] text-gray-500 font-mono mt-0.5">
+                            <span className="text-[9px] uppercase font-bold text-gray-400">Order ID:</span>
+                            <span className="text-gray-700 font-semibold">{ord.id}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(ord.id);
+                                addToast(`Copied Order ID: ${ord.id}`, 'success');
+                              }}
+                              className="text-gray-400 hover:text-[#cda851]"
+                              title="Copy Order ID"
+                            >
+                              <Copy className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        )}
+                        <div className="text-[11px] text-gray-500 mt-0.5">
                           {new Date(ord.createdAt).toLocaleDateString()} • {ord.items.length} item(s)
                         </div>
                       </div>

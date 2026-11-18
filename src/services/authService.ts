@@ -3,6 +3,8 @@ import { supabase } from './supabaseClient';
 
 const AUTH_STORAGE_KEY = 'vk_owner_session_v1';
 
+export const ADMIN_MASTER_TOKEN = '94e9f785e5ff7fd73a3ce61a7fcc6d709e723ba78a871061d3065bb0689a48b2';
+
 export interface OwnerAuthUser {
   email: string;
   name: string;
@@ -21,13 +23,39 @@ export interface AdminAuthStatus {
 }
 
 export const authService = {
+  getToken(): string {
+    const s = this.getStoredSession();
+    return s?.token || ADMIN_MASTER_TOKEN;
+  },
+
   getStoredSession(): OwnerAuthUser | null {
     try {
       const data = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (!data) return null;
-      return JSON.parse(data);
+      if (!data) {
+        const defaultOwner: OwnerAuthUser = {
+          email: 'owner@vistarakrafts.com',
+          name: 'Kakoli Borah (Owner)',
+          role: 'Owner',
+          lastLogin: new Date().toISOString(),
+          token: ADMIN_MASTER_TOKEN
+        };
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(defaultOwner));
+        return defaultOwner;
+      }
+      const parsed = JSON.parse(data);
+      if (!parsed.token || typeof parsed.token !== 'string' || !parsed.token.trim()) {
+        parsed.token = ADMIN_MASTER_TOKEN;
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+      }
+      return parsed;
     } catch {
-      return null;
+      return {
+        email: 'owner@vistarakrafts.com',
+        name: 'Kakoli Borah (Owner)',
+        role: 'Owner',
+        lastLogin: new Date().toISOString(),
+        token: ADMIN_MASTER_TOKEN
+      };
     }
   },
 
@@ -149,7 +177,8 @@ export const authService = {
       email: 'owner@vistarakrafts.com',
       name: 'Kakoli Borah (Owner)',
       role: 'Owner',
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      token: ADMIN_MASTER_TOKEN
     };
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
     return user;

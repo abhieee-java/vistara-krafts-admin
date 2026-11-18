@@ -7,7 +7,7 @@ import { InvoiceModal } from '../components/orders/InvoiceModal';
 import { ConfirmationDialog } from '../components/common/ConfirmationDialog';
 import { EmptyState } from '../components/common/EmptyState';
 import { TableSkeleton, MobileCardSkeleton } from '../components/common/Skeleton';
-import { Search, Filter, FileText, Truck, Eye, Package, RefreshCw, Clock, Trash2 } from 'lucide-react';
+import { Search, Filter, FileText, Truck, Eye, Package, RefreshCw, Clock, Trash2, Copy } from 'lucide-react';
 
 const formatOrderTimestamp = (dateStr: string) => {
   const d = new Date(dateStr);
@@ -40,7 +40,8 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
     deleteOrder,
     clearAllOrders,
     refreshFromDb,
-    isLoadingDb
+    isLoadingDb,
+    addToast
   } = useStore();
 
   const [search, setSearch] = useState('');
@@ -60,8 +61,12 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
 
   const filteredOrders = orders.filter((o) => {
     const matchesSearch =
+      o.id.toLowerCase().includes(search.toLowerCase()) ||
       o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
       o.customerName.toLowerCase().includes(search.toLowerCase()) ||
+      (o.customerEmail && o.customerEmail.toLowerCase().includes(search.toLowerCase())) ||
+      (o.customerPhone && o.customerPhone.includes(search)) ||
+      (o.trackingNumber && o.trackingNumber.toLowerCase().includes(search.toLowerCase())) ||
       o.shippingAddress.pincode.includes(search) ||
       o.shippingAddress.city.toLowerCase().includes(search.toLowerCase()) ||
       (o.customDetails?.engraving && o.customDetails.engraving.toLowerCase().includes(search.toLowerCase()));
@@ -94,7 +99,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by Order #, Customer, City, or 6-digit PIN..."
+            placeholder="Search by Order ID, Order #, Customer, AWB, or PIN..."
             className="w-full h-10 pl-10 pr-4 rounded-xl border border-[#e6e2d8] bg-white text-xs focus:ring-2 focus:ring-[#cda851] outline-none"
           />
         </div>
@@ -188,13 +193,44 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
             key={ord.id}
             className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3"
           >
-            {/* Header: Order #, Date, Status */}
-            <div className="flex items-center justify-between">
+            {/* Header: Order #, Order ID, Date, Status */}
+            <div className="flex items-start justify-between gap-2">
               <div>
-                <span className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
-                  {ord.orderNumber}
-                </span>
-                <div className="flex items-center gap-1 text-[10.5px] text-gray-500 font-medium mt-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
+                    {ord.orderNumber}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(ord.orderNumber);
+                      addToast(`Copied Order #${ord.orderNumber}`, 'success');
+                    }}
+                    className="p-1 text-gray-400 hover:text-[#cda851] rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                    title="Copy Order Number"
+                  >
+                    <Copy className="w-3 h-3" />
+                  </button>
+                </div>
+                {ord.id && ord.id !== ord.orderNumber && (
+                  <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[10.5px]">
+                    <span className="text-[9.5px] uppercase font-bold text-gray-400 shrink-0">Order ID:</span>
+                    <span
+                      className="px-1.5 py-0.2 rounded bg-gray-100 text-gray-700 border border-gray-200 font-semibold cursor-pointer select-all flex items-center gap-1 hover:bg-amber-50 hover:text-amber-900 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(ord.id);
+                        addToast(`Copied Order ID: ${ord.id}`, 'success');
+                      }}
+                      title="Click to copy Order ID"
+                    >
+                      <span className="truncate max-w-[180px]">{ord.id}</span>
+                      <Copy className="w-2.5 h-2.5 text-[#cda851]" />
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1 text-[10.5px] text-gray-500 font-medium mt-1">
                   <Clock className="w-3 h-3 text-[#cda851] shrink-0" />
                   <span>{formatOrderTimestamp(ord.createdAt)}</span>
                 </div>
@@ -234,7 +270,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
               {ord.items.map((it, idx) => (
                 <div key={idx} className="flex items-center justify-between text-gray-700">
                   <span className="truncate max-w-[200px]">
-                    {it.quantity}x {it.productName}
+                    {it.quantity}x {it.productName || (it as any).name || 'Artisan Craft Item'}
                   </span>
                   <span className="font-mono text-[11px]">₹{it.totalPrice.toLocaleString()}</span>
                 </div>
@@ -313,11 +349,42 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                     onClick={() => setSelectedOrder(ord)}
                     className="interactive-row cursor-pointer group"
                   >
-                    {/* Order Number & Timestamp */}
+                    {/* Order Number, Order ID & Timestamp */}
                     <td className="py-3.5 px-4">
-                      <div className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
-                        {ord.orderNumber}
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-sm text-[#1c1b18] whitespace-nowrap">
+                          {ord.orderNumber}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(ord.orderNumber);
+                            addToast(`Copied Order #${ord.orderNumber}`, 'success');
+                          }}
+                          className="p-1 text-gray-400 hover:text-[#cda851] rounded hover:bg-gray-100 transition-colors cursor-pointer"
+                          title="Copy Order Number"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
                       </div>
+                      {ord.id && ord.id !== ord.orderNumber && (
+                        <div className="flex items-center gap-1.5 mt-0.5 font-mono text-[10.5px]">
+                          <span className="text-[9.5px] uppercase font-bold text-gray-400 shrink-0">Order ID:</span>
+                          <span
+                            className="px-1.5 py-0.2 rounded bg-gray-100 text-gray-700 border border-gray-200 font-semibold cursor-pointer select-all flex items-center gap-1 hover:bg-amber-50 hover:text-amber-900 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(ord.id);
+                              addToast(`Copied Order ID: ${ord.id}`, 'success');
+                            }}
+                            title="Click to copy Order ID"
+                          >
+                            <span className="truncate max-w-[170px]">{ord.id}</span>
+                            <Copy className="w-2.5 h-2.5 text-[#cda851]" />
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium mt-1 whitespace-nowrap">
                         <Clock className="w-3.5 h-3.5 text-[#cda851] shrink-0" />
                         <span>{formatOrderTimestamp(ord.createdAt)}</span>
@@ -343,7 +410,7 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
                     {/* Items */}
                     <td className="py-3.5 px-3 max-w-xs">
                       <div className="truncate font-medium text-gray-700">
-                        {ord.items.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
+                        {ord.items.map((i) => `${i.quantity}x ${i.productName || (i as any).name || 'Artisan Craft Item'}`).join(', ')}
                       </div>
                       {ord.items.some((i) => i.customNote) && (
                         <span className="inline-block mt-0.5 text-[9px] font-bold text-amber-800 bg-amber-50 px-1 rounded border border-amber-200">

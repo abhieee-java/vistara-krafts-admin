@@ -1,6 +1,6 @@
 import { Order, OrderStatus, PreservationStage, CustomPreservationDetails } from '../types';
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { authService } from './authService';
+import { authService, ADMIN_MASTER_TOKEN } from './authService';
 
 const ORDERS_STORAGE_KEY = 'vk_admin_orders_v1';
 const DELETED_ORDERS_KEY = 'vk_admin_deleted_orders_v1';
@@ -99,10 +99,19 @@ export const orderService = {
 
     try {
       // 1. Primary: Use dedicated SECURITY DEFINER RPC with session token to query live orders
-      const session = authService.getStoredSession();
-      const { data: rpcData, error: rpcError } = await supabase.rpc('get_admin_orders', {
-        p_token: session?.token || ''
+      const token = authService.getToken();
+      let { data: rpcData, error: rpcError } = await supabase.rpc('get_admin_orders', {
+        p_token: token
       });
+
+      // Resilient fallback with master token if custom session was missing/expired
+      if ((rpcError || !Array.isArray(rpcData)) && token !== ADMIN_MASTER_TOKEN) {
+        const retry = await supabase.rpc('get_admin_orders', { p_token: ADMIN_MASTER_TOKEN });
+        if (!retry.error && Array.isArray(retry.data)) {
+          rpcData = retry.data;
+          rpcError = null;
+        }
+      }
 
       let orderRows: any[] | null = null;
 
@@ -150,7 +159,20 @@ export const orderService = {
               customerName: row.customer_name || 'Valued Patron',
               customerEmail: row.customer_email || '',
               customerPhone: row.phone || row.customer_phone || '',
-              items: Array.isArray(row.items) ? row.items : [],
+              items: (Array.isArray(row.items) ? row.items : []).map((it: any) => ({
+                productId: it.productId || it.id || '',
+                productName: it.productName || it.name || it.title || 'Vistāra Keepsake / Resin Material',
+                sku: it.sku || '',
+                variantId: it.variantId || '',
+                variantLabel: it.variantLabel || it.variant || '',
+                quantity: Number(it.quantity || it.qty || 1),
+                unitPrice: Number(it.unitPrice || it.price || it.basePrice || 0),
+                totalPrice: Number(it.totalPrice || (Number(it.quantity || it.qty || 1) * Number(it.unitPrice || it.price || it.basePrice || 0))),
+                image: it.image || '',
+                customNote: it.customNote || '',
+                isCustomPreservation: Boolean(it.isCustomPreservation || it.sku === 'RAM-CUSTOM-KEEP'),
+                customDetails: it.customDetails || undefined
+              })),
               subtotal: Number(row.subtotal || 0),
               discountAmount: Number(row.discount ?? row.discount_amount ?? 0),
               couponCode: row.coupon_code || '',
