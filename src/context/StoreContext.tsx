@@ -8,12 +8,14 @@ import {
   AuditLog,
   StoreSettings,
   OrderStatus,
-  PreservationStage
+  PreservationStage,
+  DpdpTicket
 } from '../types';
 import { productService, getDeletedProductIds } from '../services/productService';
 import { orderService } from '../services/orderService';
 import { inventoryService } from '../services/inventoryService';
 import { customerService } from '../services/customerService';
+import { dpdpService } from '../services/dpdpService';
 import { INITIAL_COUPONS, INITIAL_SETTINGS, INITIAL_AUDIT_LOGS } from '../mock/initialData';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
@@ -82,7 +84,7 @@ interface StoreContextType {
   toggleStock: (id: string) => void;
   // Orders
   updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => void;
-  updateOrderTracking: (orderId: string, carrier: 'Delhivery' | 'BlueDart' | 'DTDC', trackingNumber: string) => void;
+  updateOrderTracking: (orderId: string, carrier: string, trackingNumber: string) => void;
   updatePreservationStage: (orderId: string, stage: PreservationStage, note?: string) => void;
   updateCustomArtisanNotes: (orderId: string, notes: string) => void;
   cancelOrder: (orderId: string, reason?: string) => void;
@@ -97,6 +99,10 @@ interface StoreContextType {
   ) => void;
   // Customers
   toggleCustomerStatus: (customerId: string) => Promise<void> | void;
+  // DPDP Statutory Grievances & Rights
+  dpdpTickets: DpdpTicket[];
+  updateDpdpTicketStatus: (ticketId: string, status: string, notes?: string) => Promise<void>;
+  refreshDpdpTickets: () => Promise<void>;
   // Coupons
   addCoupon: (coupon: Omit<Coupon, 'id' | 'usageCount'>) => Promise<void> | void;
   editCoupon: (id: string, updates: Partial<Coupon>) => Promise<void> | void;
@@ -142,6 +148,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return INITIAL_SETTINGS;
     }
   });
+  const [dpdpTickets, setDpdpTickets] = useState<DpdpTicket[]>(() => dpdpService.getTickets());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
@@ -191,11 +198,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const refreshFromDb = useCallback(async () => {
     setIsLoadingDb(true);
     try {
-      const [liveProds, liveOrders, liveCust, liveMovements, supaCouponsRes, supaSettingsRes, supaCatSettingsRes] = await Promise.allSettled([
+      const [liveProds, liveOrders, liveCust, liveMovements, liveDpdp, supaCouponsRes, supaSettingsRes, supaCatSettingsRes] = await Promise.allSettled([
         productService.fetchFromSupabase(),
         orderService.fetchFromSupabase(),
         customerService.fetchFromSupabase(),
         inventoryService.fetchFromSupabase(),
+        dpdpService.fetchFromSupabase(),
         isSupabaseConfigured ? supabase.from('coupons').select('*').order('created_at', { ascending: false }) : Promise.resolve({ data: null, error: null }),
         isSupabaseConfigured ? supabase.from('settings').select('*') : Promise.resolve({ data: null, error: null }),
         isSupabaseConfigured ? supabase.from('categories').select('*').eq('id', 'store_settings_payload').maybeSingle() : Promise.resolve({ data: null, error: null })
@@ -204,6 +212,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (liveProds.status === 'fulfilled') setProducts(liveProds.value);
       if (liveOrders.status === 'fulfilled') setOrders(liveOrders.value);
       if (liveCust.status === 'fulfilled') setCustomers(liveCust.value);
+      if (liveDpdp.status === 'fulfilled') setDpdpTickets(liveDpdp.value);
       if (liveMovements.status === 'fulfilled') {
         setMovements(liveMovements.value);
       } else {
@@ -335,6 +344,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOrders(orderService.getOrders());
     setCustomers(customerService.getCustomers());
     setMovements(inventoryService.getMovements());
+    setDpdpTickets(dpdpService.getTickets());
 
     // 2. Refresh immediately from live Supabase
     refreshFromDb();
@@ -343,9 +353,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     productService.purgeArchivedProducts().catch(() => {});
 
     // 4. Listen to cross-tab BroadcastChannel
+    let channel: BroadcastChannel | null = null;
     try {
       if (typeof BroadcastChannel !== 'undefined') {
-        const channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
+        channel = new BroadcastChannel('RAM_STUDIO_LIVE_DROP_CHANNEL');
         channel.onmessage = (ev) => {
           if (!ev || !ev.data) return;
           if (ev.data.type === 'PRODUCTS_UPDATED' && Array.isArray(ev.data.products)) {
@@ -364,13 +375,41 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           } else if (ev.data.type === 'ORDER_PLACED') {
             addToast('New patron order placed on storefront!', 'info');
             orderService.fetchFromSupabase().then(setOrders);
+          } else if (ev.data.type === 'DPDP_TICKET_SUBMITTED') {
+            addToast('New statutory DPDP Grievance Ticket received!', 'info');
+            dpdpService.fetchFromSupabase().then(setDpdpTickets);
+          } else if (ev.data.type === 'DPDP_TICKET_UPDATED') {
+            dpdpService.fetchFromSupabase().then(setDpdpTickets);
           } else if (ev.data.type === 'SETTINGS_UPDATED' && ev.data.settings) {
             setSettings(ev.data.settings);
           }
         };
-        return () => channel.close();
       }
     } catch (e) {}
+
+    // 5. Supabase Realtime channel for live statutory DPDP grievances
+    let dpdpSub: any = null;
+    if (isSupabaseConfigured && supabase) {
+      try {
+        dpdpSub = supabase
+          .channel('public:dpdp_grievances:realtime')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'dpdp_grievances' },
+            () => {
+              dpdpService.fetchFromSupabase().then(setDpdpTickets);
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('[StoreContext] Realtime subscription notice:', err);
+      }
+    }
+
+    return () => {
+      if (channel) channel.close();
+      if (dpdpSub && supabase) supabase.removeChannel(dpdpSub);
+    };
   }, [refreshFromDb, addToast]);
 
   // Product Actions
@@ -428,7 +467,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateOrderTracking = (
     orderId: string,
-    carrier: 'Delhivery' | 'BlueDart' | 'DTDC',
+    carrier: string,
     trackingNumber: string
   ) => {
     const updated = orderService.updateTracking(orderId, carrier, trackingNumber);
@@ -505,6 +544,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCustomers(customerService.getCustomers());
     logAudit('Customer Status Changed', updated.name, `New status: ${updated.status}`);
     addToast(`Customer ${updated.name} is now ${updated.status}`);
+  };
+
+  // DPDP Statutory Grievance Actions
+  const updateDpdpTicketStatus = async (ticketId: string, status: string, notes?: string) => {
+    const updated = await dpdpService.updateTicketStatus(ticketId, status, notes);
+    if (updated) {
+      setDpdpTickets(dpdpService.getTickets());
+      logAudit(
+        'DPDP Grievance Updated',
+        ticketId,
+        `Status set to ${status}${notes ? ` | Notes: ${notes}` : ''}`
+      );
+      addToast(`DPDP Ticket ${ticketId} updated to ${status}.`);
+    }
+  };
+
+  const refreshDpdpTickets = async () => {
+    const fresh = await dpdpService.fetchFromSupabase();
+    setDpdpTickets(fresh);
   };
 
   // Coupon Actions
@@ -946,6 +1004,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         clearAllOrders,
         adjustStock,
         toggleCustomerStatus,
+        dpdpTickets,
+        updateDpdpTicketStatus,
+        refreshDpdpTickets,
         addCoupon,
         editCoupon,
         toggleCoupon,

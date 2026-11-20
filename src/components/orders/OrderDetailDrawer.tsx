@@ -31,7 +31,7 @@ interface OrderDetailDrawerProps {
   onUpdateStatus: (orderId: string, status: OrderStatus, note?: string) => void;
   onUpdateTracking: (
     orderId: string,
-    carrier: 'Delhivery' | 'BlueDart' | 'DTDC',
+    carrier: 'DTDC Express' | 'Speed Post' | 'Delhivery' | 'BlueDart' | 'DTDC' | string,
     trackingNumber: string
   ) => void;
   onCancelOrder: (orderId: string) => void;
@@ -51,8 +51,8 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   onOpenInvoice
 }) => {
   const { updatePreservationStage, updateCustomArtisanNotes, addToast } = useStore();
-  const [carrier, setCarrier] = useState<'Delhivery' | 'BlueDart' | 'DTDC'>(
-    order?.carrier || 'Delhivery'
+  const [carrier, setCarrier] = useState<string>(
+    order?.carrier || 'DTDC Express'
   );
   const [trackingNumber, setTrackingNumber] = useState(order?.trackingNumber || '');
   const [isUpdatingTracking, setIsUpdatingTracking] = useState(false);
@@ -210,19 +210,20 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                     <div className="flex gap-2">
                       <select
                         value={carrier}
-                        onChange={(e) => setCarrier(e.target.value as any)}
-                        className="h-9 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white"
+                        onChange={(e) => setCarrier(e.target.value)}
+                        className="h-9 px-2 rounded-lg border border-[#e6e2d8] text-xs bg-white font-medium text-gray-800"
                       >
+                        <option value="DTDC Express">DTDC Express</option>
+                        <option value="Speed Post">Speed Post (India Post)</option>
                         <option value="Delhivery">Delhivery Express</option>
-                        <option value="BlueDart">BlueDart Air</option>
-                        <option value="DTDC">DTDC Priority</option>
+                        <option value="BlueDart">BlueDart Express</option>
                       </select>
                       <input
                         type="text"
                         required
                         value={trackingNumber}
                         onChange={(e) => setTrackingNumber(e.target.value)}
-                        placeholder="e.g. DEL98213812 or BD771829"
+                        placeholder="e.g. DTDC-AWB-9812 or SP-IN88219"
                         className="flex-1 h-9 px-3 rounded-lg border border-[#e6e2d8] text-xs font-mono"
                       />
                       <button

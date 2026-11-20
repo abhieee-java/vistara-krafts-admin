@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { Customer } from '../types';
+import { Customer, DpdpTicket } from '../types';
 import { Modal } from '../components/common/Modal';
 import { ConfirmationDialog } from '../components/common/ConfirmationDialog';
 import { StatusBadge } from '../components/common/Badge';
@@ -23,15 +23,33 @@ import {
   TrendingUp,
   ShieldCheck,
   CheckCircle2,
-  Copy
+  Copy,
+  AlertCircle,
+  FileText,
+  Calendar,
+  Check
 } from 'lucide-react';
 
 export const Customers: React.FC = () => {
-  const { customers, orders, toggleCustomerStatus, refreshFromDb, isLoadingDb, addToast } = useStore();
+  const {
+    customers,
+    orders,
+    toggleCustomerStatus,
+    refreshFromDb,
+    isLoadingDb,
+    addToast,
+    dpdpTickets,
+    updateDpdpTicketStatus,
+    refreshDpdpTickets
+  } = useStore();
   const [search, setSearch] = useState('');
-  const [filterTab, setFilterTab] = useState<'all' | 'recent' | 'ordered'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'recent' | 'ordered' | 'dpdp'>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [togglingCustomer, setTogglingCustomer] = useState<Customer | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<DpdpTicket | null>(null);
+  const [ticketStatusInput, setTicketStatusInput] = useState<string>('open');
+  const [ticketNotesInput, setTicketNotesInput] = useState<string>('');
+  const [isSavingTicket, setIsSavingTicket] = useState<boolean>(false);
 
   // Analytical calculations
   const totalPatrons = customers.length;
@@ -68,12 +86,96 @@ export const Customers: React.FC = () => {
       )
     : [];
 
+  // DPDP Grievance metrics & filtering
+  const openDpdpCount = dpdpTickets.filter(
+    (t) => t.status === 'open' || t.status === 'In Review (SLA <= 7 Days)'
+  ).length;
+
+  const filteredTickets = dpdpTickets.filter((t) => {
+    const q = search.toLowerCase();
+    return (
+      t.ticketId.toLowerCase().includes(q) ||
+      t.fullName.toLowerCase().includes(q) ||
+      t.email.toLowerCase().includes(q) ||
+      (t.mobile && t.mobile.includes(q)) ||
+      (t.orderId && t.orderId.toLowerCase().includes(q)) ||
+      t.requestType.toLowerCase().includes(q) ||
+      t.details.toLowerCase().includes(q) ||
+      (t.status && t.status.toLowerCase().includes(q))
+    );
+  });
+
+  const getSlaBadge = (createdAtStr?: string, status?: string) => {
+    const isResolved = status === 'resolved' || String(status).toLowerCase().includes('resolved');
+    if (isResolved) {
+      return {
+        label: 'Resolved (SLA Met)',
+        classes: 'bg-emerald-50 text-emerald-800 border-emerald-200'
+      };
+    }
+
+    if (!createdAtStr) {
+      return {
+        label: '7-Day SLA Active',
+        classes: 'bg-blue-50 text-blue-800 border-blue-200'
+      };
+    }
+
+    try {
+      const createdTime = new Date(createdAtStr).getTime();
+      const elapsedDays = (Date.now() - createdTime) / (1000 * 60 * 60 * 24);
+      const remainingDays = Math.max(0, Math.ceil(7 - elapsedDays));
+
+      if (elapsedDays > 7) {
+        const overdueDays = Math.floor(elapsedDays - 7);
+        return {
+          label: `SLA Overdue (+${overdueDays}d past 7d)`,
+          classes: 'bg-red-50 text-red-800 border-red-300 font-bold animate-pulse'
+        };
+      }
+      if (remainingDays <= 2) {
+        return {
+          label: `Urgent: ${remainingDays}d left of 7d SLA`,
+          classes: 'bg-amber-50 text-amber-900 border-amber-300 font-bold'
+        };
+      }
+      return {
+        label: `${remainingDays}d left (7-day SLA)`,
+        classes: 'bg-blue-50 text-blue-800 border-blue-200'
+      };
+    } catch {
+      return {
+        label: '7-Day SLA Active',
+        classes: 'bg-blue-50 text-blue-800 border-blue-200'
+      };
+    }
+  };
+
+  const handleOpenTicketModal = (ticket: DpdpTicket) => {
+    setSelectedTicket(ticket);
+    setTicketStatusInput(ticket.status === 'In Review (SLA <= 7 Days)' ? 'open' : (ticket.status || 'open'));
+    setTicketNotesInput(ticket.resolutionNotes || '');
+  };
+
+  const handleSaveTicketStatus = async () => {
+    if (!selectedTicket) return;
+    setIsSavingTicket(true);
+    try {
+      await updateDpdpTicketStatus(selectedTicket.ticketId, ticketStatusInput, ticketNotesInput);
+      setSelectedTicket(null);
+    } catch {
+      addToast('Failed to update ticket. Please try again.', 'error');
+    } finally {
+      setIsSavingTicket(false);
+    }
+  };
+
   const handleManualRefresh = async () => {
     try {
-      await refreshFromDb();
-      addToast('Customer directory synced with live authentication records.', 'success');
+      await Promise.all([refreshFromDb(), refreshDpdpTickets()]);
+      addToast('Customer directory & DPDP tickets synced with live records.', 'success');
     } catch {
-      addToast('Unable to refresh live patrons. Please try again.', 'error');
+      addToast('Unable to refresh live records. Please try again.', 'error');
     }
   };
 
@@ -221,6 +323,22 @@ export const Customers: React.FC = () => {
             >
               With Orders ({patronsWithOrders})
             </button>
+            <button
+              onClick={() => setFilterTab('dpdp')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                filterTab === 'dpdp'
+                  ? 'bg-[#1c1b18] text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              <ShieldCheck className={`w-3.5 h-3.5 ${openDpdpCount > 0 ? 'text-amber-400' : ''}`} />
+              <span>DPDP Grievances ({dpdpTickets.length})</span>
+              {openDpdpCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500 text-white">
+                  {openDpdpCount}
+                </span>
+              )}
+            </button>
           </div>
 
           {/* Live Refresh Button */}
@@ -236,7 +354,268 @@ export const Customers: React.FC = () => {
         </div>
       </div>
 
-      {/* Loading Skeletons during live database sync */}
+      {/* ========================================================================= */}
+      {/* 2B. DPDP STATUTORY GRIEVANCES TAB VIEW */}
+      {/* ========================================================================= */}
+      {filterTab === 'dpdp' ? (
+        <div className="space-y-4">
+          {/* Statutory Alert & Compliance Banner */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/80 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500 text-white shadow-xs shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-[#1c1b18] flex items-center gap-2">
+                  <span>DPDP Act 2023 Statutory Rights &amp; Grievance Portal</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                    Section 13 Compliance
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-600 mt-0.5 max-w-2xl">
+                  Digital Personal Data Protection Act, 2023 mandates statutory redressal within <strong>7 calendar days</strong>. Patrons can submit grievances, exercise rights to access/correction, and request full erasure of session and patron records.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs shrink-0 self-end md:self-center font-semibold">
+              <span className="px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-gray-800">
+                Total: <strong>{dpdpTickets.length}</strong>
+              </span>
+              <span className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
+                Open: <strong>{openDpdpCount}</strong>
+              </span>
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+                Resolved: <strong>{dpdpTickets.filter(t => t.status === 'resolved').length}</strong>
+              </span>
+            </div>
+          </div>
+
+          {/* Empty Tickets State */}
+          {dpdpTickets.length === 0 ? (
+            <div className="my-6">
+              <EmptyState
+                icon={ShieldCheck}
+                title="No DPDP Grievance Tickets Recorded"
+                description="When patrons submit a statutory grievance, data correction, or erasure request via the storefront DPDP Portal, tickets will appear here with live 7-day SLA countdowns."
+                compact
+              />
+            </div>
+          ) : filteredTickets.length === 0 ? (
+            <div className="py-4">
+              <EmptyState
+                icon={Search}
+                title="No Matching DPDP Tickets"
+                description="No grievance tickets match your current search criteria."
+                compact
+                secondaryAction={{
+                  label: 'Clear Search',
+                  onClick: () => setSearch('')
+                }}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Mobile Ticket Cards */}
+              <div className="md:hidden space-y-3">
+                {filteredTickets.map((t) => {
+                  const sla = getSlaBadge(t.createdAt, t.status);
+                  const isResolved = t.status === 'resolved';
+                  return (
+                    <div
+                      key={t.ticketId}
+                      className="bg-white border border-[#e6e2d8] rounded-2xl p-4 shadow-sm space-y-3 text-xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-sm text-[#1c1b18]">{t.ticketId}</span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${sla.classes}`}>
+                              {sla.label}
+                            </span>
+                          </div>
+                          <p className="text-[11px] font-bold text-gray-700 mt-1">{t.requestType}</p>
+                        </div>
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                            isResolved
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : (t.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-900')
+                          }`}
+                        >
+                          {t.status === 'In Review (SLA <= 7 Days)' ? 'Open' : t.status}
+                        </span>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-gray-50/80 border border-gray-100 space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-gray-500">Principal:</span>
+                          <span className="font-semibold text-gray-900">{t.fullName}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-gray-500">Email:</span>
+                          <span className="font-mono text-gray-800">{t.email}</span>
+                        </div>
+                        {t.mobile && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-gray-500">Mobile:</span>
+                            <span className="font-mono text-gray-800">{t.mobile}</span>
+                          </div>
+                        )}
+                        {t.orderId && (
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-gray-500">Order Ref:</span>
+                            <span className="font-mono font-bold text-[#1c1b18]">{t.orderId}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-gray-700 text-xs line-clamp-2 bg-[#faf8f5] p-2.5 rounded-xl border border-[#e6e2d8]/60">
+                        "{t.details}"
+                      </p>
+
+                      {t.resolutionNotes && (
+                        <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/70 text-[11px] text-emerald-900">
+                          <strong>Resolution:</strong> {t.resolutionNotes}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <span className="text-[10px] text-gray-400">
+                          Raised: {formatDateTime(t.createdAt)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenTicketModal(t)}
+                          className="px-3 py-1.5 rounded-xl bg-[#1c1b18] hover:bg-black text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                        >
+                          Review &amp; Respond
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Tickets Table */}
+              <div className="hidden md:block bg-white border border-[#e6e2d8] rounded-2xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-[#faf8f5] border-b border-[#e6e2d8] text-gray-400 font-bold uppercase text-[10px]">
+                        <th className="py-3 px-4 text-left">Ticket ID &amp; SLA</th>
+                        <th className="py-3 px-3 text-left">Data Principal</th>
+                        <th className="py-3 px-3 text-left">Request Type &amp; Order</th>
+                        <th className="py-3 px-3 text-left">Grievance Summary</th>
+                        <th className="py-3 px-3 text-center">Status</th>
+                        <th className="py-3 px-3 text-left">Submitted Date</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredTickets.map((t) => {
+                        const sla = getSlaBadge(t.createdAt, t.status);
+                        const isResolved = t.status === 'resolved';
+                        return (
+                          <tr key={t.ticketId} className="hover:bg-[#faf8f5]/80 transition-colors">
+                            {/* Ticket ID & SLA */}
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-[#1c1b18]">{t.ticketId}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(t.ticketId);
+                                    addToast(`Copied Ticket ID: ${t.ticketId}`, 'success');
+                                  }}
+                                  className="text-gray-400 hover:text-[#cda851]"
+                                  title="Copy Ticket ID"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <div className="mt-1">
+                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${sla.classes}`}>
+                                  {sla.label}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Data Principal */}
+                            <td className="py-3.5 px-3">
+                              <div className="font-bold text-[#1c1b18]">{t.fullName}</div>
+                              <div className="text-[11px] text-gray-500 font-mono">{t.email}</div>
+                              {t.mobile && (
+                                <div className="text-[10px] text-gray-400 font-mono">{t.mobile}</div>
+                              )}
+                            </td>
+
+                            {/* Request Type & Order */}
+                            <td className="py-3.5 px-3">
+                              <span className="inline-block px-2 py-0.5 rounded bg-gray-100 text-gray-800 font-semibold text-[11px]">
+                                {t.requestType}
+                              </span>
+                              {t.orderId ? (
+                                <div className="font-mono text-[10.5px] text-[#cda851] font-bold mt-1">
+                                  Order: {t.orderId}
+                                </div>
+                              ) : (
+                                <div className="text-[10px] text-gray-400 mt-0.5">No order specified</div>
+                              )}
+                            </td>
+
+                            {/* Grievance Summary */}
+                            <td className="py-3.5 px-3 max-w-xs">
+                              <p className="text-gray-700 truncate" title={t.details}>
+                                {t.details}
+                              </p>
+                              {t.resolutionNotes && (
+                                <p className="text-[10px] text-emerald-700 truncate mt-0.5">
+                                  <strong>Resolution:</strong> {t.resolutionNotes}
+                                </p>
+                              )}
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-3.5 px-3 text-center">
+                              <span
+                                className={`inline-block px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                                  isResolved
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : (t.status === 'in_progress' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-amber-100 text-amber-900 border border-amber-200')
+                                }`}
+                              >
+                                {t.status === 'In Review (SLA <= 7 Days)' ? 'Open' : t.status}
+                              </span>
+                            </td>
+
+                            {/* Submitted Date */}
+                            <td className="py-3.5 px-3 text-gray-500 text-[11px]">
+                              {formatDateTime(t.createdAt)}
+                            </td>
+
+                            {/* Action */}
+                            <td className="py-3.5 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenTicketModal(t)}
+                                className="px-3 py-1.5 rounded-xl bg-[#1c1b18] hover:bg-black text-white font-bold text-xs transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                              >
+                                <span>Review</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Loading Skeletons during live database sync */}
       {isLoadingDb && customers.length === 0 && (
         <div className="space-y-4">
           <div className="md:hidden">
@@ -541,6 +920,8 @@ export const Customers: React.FC = () => {
           </div>
         </div>
       )}
+        </>
+      )}
 
       {/* ========================================================================= */}
       {/* 5. CUSTOMER DETAILED PROFILE & ORDERS MODAL */}
@@ -698,6 +1079,151 @@ export const Customers: React.FC = () => {
                   No orders recorded for this patron yet.
                 </div>
               )}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5B. DPDP GRIEVANCE REVIEW & STATUTORY RESOLUTION MODAL */}
+      {/* ========================================================================= */}
+      {selectedTicket && (
+        <Modal
+          isOpen={true}
+          onClose={() => setSelectedTicket(null)}
+          title={`DPDP Statutory Grievance: ${selectedTicket.ticketId}`}
+          subtitle={`Type: ${selectedTicket.requestType} • Principal: ${selectedTicket.fullName}`}
+          maxWidth="lg"
+        >
+          <div className="space-y-4">
+            {/* SLA Alert banner */}
+            <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-600" />
+                  DPDP Act 2023 Statutory SLA Tracking
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getSlaBadge(selectedTicket.createdAt, selectedTicket.status).classes}`}>
+                  {getSlaBadge(selectedTicket.createdAt, selectedTicket.status).label}
+                </span>
+              </div>
+              <p className="text-amber-800/90 text-[11px]">
+                Under Section 13 of the Digital Personal Data Protection Act 2023, data principals must receive a formal grievance response within a statutory timeline of 7 calendar days.
+              </p>
+            </div>
+
+            {/* Principal Information */}
+            <div className="p-4 rounded-xl bg-[#faf8f5] border border-[#e6e2d8] space-y-3 text-xs">
+              <div className="font-bold text-[#1c1b18] border-b border-[#e6e2d8] pb-1.5">
+                Data Principal Information
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-semibold uppercase">Full Name</span>
+                  <span className="font-bold text-gray-900">{selectedTicket.fullName}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-semibold uppercase">Email Address</span>
+                  <a href={`mailto:${selectedTicket.email}`} className="font-semibold text-gray-800 hover:text-[#cda851]">
+                    {selectedTicket.email}
+                  </a>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-semibold uppercase">Mobile Number</span>
+                  <span className="font-semibold text-gray-800 font-mono">
+                    {selectedTicket.mobile || 'Not provided'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-semibold uppercase">Associated Order</span>
+                  <span className="font-mono font-bold text-[#1c1b18]">
+                    {selectedTicket.orderId || 'General Inquiry'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-semibold uppercase">Submitted Date</span>
+                  <span className="font-medium text-gray-700">
+                    {formatDateTime(selectedTicket.createdAt)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 block font-semibold uppercase">Current Status</span>
+                  <span className="font-bold uppercase text-xs">
+                    {selectedTicket.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Full Grievance Request Description */}
+            <div className="p-4 rounded-xl bg-white border border-[#e6e2d8] space-y-1.5 text-xs">
+              <span className="text-[10px] text-gray-400 font-semibold uppercase block">
+                Statutory Grievance &amp; Request Details
+              </span>
+              <div className="p-3 rounded-lg bg-gray-50 border border-gray-100 text-gray-800 whitespace-pre-wrap leading-relaxed font-sans">
+                {selectedTicket.details}
+              </div>
+            </div>
+
+            {/* Resolution Form */}
+            <div className="p-4 rounded-xl bg-white border border-[#e6e2d8] space-y-3 text-xs">
+              <div className="font-bold text-[#1c1b18]">
+                Official Atelier Grievance Resolution
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                  Update Ticket Status:
+                </label>
+                <div className="flex items-center gap-2">
+                  {(['open', 'in_progress', 'resolved'] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setTicketStatusInput(st)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        ticketStatusInput === st
+                          ? (st === 'resolved' ? 'bg-emerald-600 text-white' : (st === 'in_progress' ? 'bg-blue-600 text-white' : 'bg-amber-600 text-white'))
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {st === 'open' ? 'Open' : (st === 'in_progress' ? 'In Progress' : 'Resolved')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-gray-700 block mb-1">
+                  Resolution Notes / Formal Communication:
+                </label>
+                <textarea
+                  value={ticketNotesInput}
+                  onChange={(e) => setTicketNotesInput(e.target.value)}
+                  placeholder="Record resolution notes, statutory data erasure actions taken, or patron communication notes..."
+                  rows={3}
+                  className="w-full p-2.5 rounded-xl border border-[#e6e2d8] bg-gray-50/60 text-xs focus:ring-2 focus:ring-[#cda851] focus:bg-white outline-none transition-all"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(null)}
+                  className="px-4 py-2 rounded-xl text-gray-600 hover:bg-gray-100 text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSavingTicket}
+                  onClick={handleSaveTicketStatus}
+                  className="px-4 py-2 rounded-xl bg-[#1c1b18] hover:bg-black text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingTicket ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                  <span>Save &amp; Sync Resolution</span>
+                </button>
+              </div>
             </div>
           </div>
         </Modal>

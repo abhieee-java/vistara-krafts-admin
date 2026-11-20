@@ -206,12 +206,13 @@ export const Settings: React.FC = () => {
               <label className="block text-gray-700 font-semibold mb-1">Default Courier</label>
               <select
                 value={defaultCourier}
-                onChange={(e) => setDefaultCourier(e.target.value as any)}
-                className="w-full px-3 py-2 border border-[#e6e2d8] rounded-xl focus:outline-none focus:border-[#cda851] bg-white"
+                onChange={(e) => setDefaultCourier(e.target.value)}
+                className="w-full px-3 py-2 border border-[#e6e2d8] rounded-xl focus:outline-none focus:border-[#cda851] bg-white text-xs"
               >
-                <option value="Delhivery">Delhivery Surface/Air</option>
-                <option value="BlueDart">Blue Dart Apex</option>
-                <option value="DTDC">DTDC Express</option>
+                <option value="DTDC Express">DTDC Express</option>
+                <option value="Speed Post">Speed Post (India Post)</option>
+                <option value="Delhivery">Delhivery Express</option>
+                <option value="BlueDart">Blue Dart Express</option>
               </select>
             </div>
             <div>

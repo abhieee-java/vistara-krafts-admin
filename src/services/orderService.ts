@@ -322,7 +322,7 @@ export const orderService = {
     return updated;
   },
 
-  updateTracking(orderId: string, carrier: 'Delhivery' | 'BlueDart' | 'DTDC', trackingNumber: string): Order {
+  updateTracking(orderId: string, carrier: string, trackingNumber: string): Order {
     const orders = this.getOrders();
     const idx = orders.findIndex((o) => o.id === orderId || o.orderNumber === orderId);
     if (idx === -1) throw new Error('Order not found');

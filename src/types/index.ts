@@ -148,7 +148,7 @@ export interface Order {
   paymentStatus: PaymentStatus;
   paymentMethod: 'razorpay' | 'cod' | 'upi';
   shippingAddress: ShippingAddress;
-  carrier?: 'Delhivery' | 'BlueDart' | 'DTDC';
+  carrier?: 'DTDC Express' | 'Speed Post' | 'Delhivery' | 'BlueDart' | 'DTDC' | string;
   trackingNumber?: string;
   notes?: string;
   isCustomPreservation?: boolean;
@@ -245,4 +245,23 @@ export interface StoreSettings {
   supportEmail?: string;
   supportPhone?: string;
   updated_at?: string;
+}
+
+export type DpdpTicketStatus = 'open' | 'in_progress' | 'resolved';
+
+export interface DpdpTicket {
+  id?: string;
+  ticketId: string;
+  requestType: string;
+  fullName: string;
+  email: string;
+  mobile?: string;
+  orderId?: string;
+  details: string;
+  status: DpdpTicketStatus | string;
+  slaDeadline?: string;
+  resolutionNotes?: string;
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
 }
