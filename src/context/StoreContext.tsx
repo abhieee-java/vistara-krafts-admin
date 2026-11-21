@@ -761,7 +761,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         contactPhone: updated.contactPhone,
         supportPhone: updated.contactPhone,
         freeShippingThreshold: (updated.freeShippingThreshold !== undefined && !isNaN(Number(updated.freeShippingThreshold))) ? Number(updated.freeShippingThreshold) : 999,
-        defaultCourier: updated.defaultCourier || 'Delhivery Express',
+        defaultCourier: updated.defaultCourier || 'DTDC Express',
         announcementBarText: updated.announcementBarText,
         announcementBarActive: updated.announcementBarActive,
         updated_at: updated.updated_at
@@ -802,7 +802,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             key: 'shipping',
             value: {
               free_shipping_threshold: Number(updated.freeShippingThreshold),
-              default_courier: updated.defaultCourier || 'Delhivery',
+              default_courier: updated.defaultCourier || 'DTDC Express',
               standard_shipping_fee: 99,
               express_shipping_fee: 299
             },
@@ -864,6 +864,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         channel.postMessage({ type: 'SETTINGS_UPDATED', settings: updated });
         channel.close();
       }
+      if (typeof window !== 'undefined') {
+        window.postMessage({ type: 'RAM_STUDIO_PUSH', payload: { type: 'SETTINGS_UPDATED', settings: updated } }, '*');
+      }
     } catch (e) {}
 
     logAudit('Settings Updated', 'Store Settings', `Updated: ${Object.keys(newSettings).join(', ')}`);
@@ -885,6 +888,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       total_products: products.length,
       total_coupons: coupons.length,
       freeShippingThreshold: activeThreshold,
+      defaultCourier: settings.defaultCourier || 'DTDC Express',
       announcementBarText: syncedAnnouncementText
     };
 
@@ -952,6 +956,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             productsCount: products.length,
             settings: {
               freeShippingThreshold: activeThreshold,
+              defaultCourier: settings.defaultCourier || 'DTDC Express',
               announcementBarText: syncedAnnouncementText
             }
           });

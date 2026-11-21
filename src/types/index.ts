@@ -148,7 +148,7 @@ export interface Order {
   paymentStatus: PaymentStatus;
   paymentMethod: 'razorpay' | 'cod' | 'upi';
   shippingAddress: ShippingAddress;
-  carrier?: 'DTDC Express' | 'Speed Post' | 'Delhivery' | 'BlueDart' | 'DTDC' | string;
+  carrier?: 'DTDC Express' | 'Speed Post' | 'Delhivery' | string;
   trackingNumber?: string;
   notes?: string;
   isCustomPreservation?: boolean;

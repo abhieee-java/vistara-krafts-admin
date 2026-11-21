@@ -80,7 +80,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   contactPhone: '+91 98765 43210',
   currency: 'INR',
   freeShippingThreshold: 999,
-  defaultCourier: 'Delhivery Express',
+  defaultCourier: 'DTDC Express',
   announcementBarText: '✨ Festive Atelier Drop: Free Pan-India Express Delivery on Orders Over ₹999',
   announcementBarActive: true,
   lowStockAlertThreshold: 5,

@@ -31,7 +31,7 @@ interface OrderDetailDrawerProps {
   onUpdateStatus: (orderId: string, status: OrderStatus, note?: string) => void;
   onUpdateTracking: (
     orderId: string,
-    carrier: 'DTDC Express' | 'Speed Post' | 'Delhivery' | 'BlueDart' | 'DTDC' | string,
+    carrier: 'DTDC Express' | 'Speed Post' | 'Delhivery' | string,
     trackingNumber: string
   ) => void;
   onCancelOrder: (orderId: string) => void;
@@ -50,9 +50,9 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
   onDeleteOrder,
   onOpenInvoice
 }) => {
-  const { updatePreservationStage, updateCustomArtisanNotes, addToast } = useStore();
+  const { settings, updatePreservationStage, updateCustomArtisanNotes, addToast } = useStore();
   const [carrier, setCarrier] = useState<string>(
-    order?.carrier || 'DTDC Express'
+    order?.carrier || settings.defaultCourier || 'DTDC Express'
   );
   const [trackingNumber, setTrackingNumber] = useState(order?.trackingNumber || '');
   const [isUpdatingTracking, setIsUpdatingTracking] = useState(false);
@@ -216,7 +216,6 @@ export const OrderDetailDrawer: React.FC<OrderDetailDrawerProps> = ({
                         <option value="DTDC Express">DTDC Express</option>
                         <option value="Speed Post">Speed Post (India Post)</option>
                         <option value="Delhivery">Delhivery Express</option>
-                        <option value="BlueDart">BlueDart Express</option>
                       </select>
                       <input
                         type="text"

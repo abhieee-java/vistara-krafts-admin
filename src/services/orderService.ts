@@ -189,7 +189,7 @@ export const orderService = {
                 state: row.state || '',
                 pincode: row.pincode || ''
               },
-              carrier: (row.courier || row.carrier || 'Delhivery') as any,
+              carrier: (row.courier || row.carrier || 'DTDC Express') as any,
               trackingNumber: row.tracking_number || '',
               notes: row.notes || '',
               isCustomPreservation: isCustom,
