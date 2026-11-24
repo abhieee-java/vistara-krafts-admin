@@ -6,11 +6,18 @@ export const Analytics: React.FC = () => {
   const { orders, products } = useStore();
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
 
-  const totalRevenue = orders
-    .filter((o) => o.paymentStatus === 'paid' && o.orderStatus !== 'refunded')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
+  const paidOrders = orders.filter((o) => o.paymentStatus === 'paid' && o.orderStatus !== 'refunded');
+  const totalRevenue = paidOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const avgOrderValue = paidOrders.length > 0 ? Math.round(totalRevenue / paidOrders.length) : (orders.length > 0 ? Math.round(orders.reduce((sum, o) => sum + o.totalAmount, 0) / orders.length) : 0);
 
-  const avgOrderValue = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
+  const settlementRate = orders.length > 0
+    ? ((paidOrders.length / orders.length) * 100).toFixed(1)
+    : '100.0';
+
+  const fulfilledOrders = orders.filter((o) => o.orderStatus === 'delivered' || o.orderStatus === 'shipped');
+  const fulfillmentRate = orders.length > 0
+    ? ((fulfilledOrders.length / orders.length) * 100).toFixed(1)
+    : '100.0';
 
   // Breakdown by location
   const locationMap: Record<string, { orders: number; revenue: number }> = {};
@@ -75,7 +82,7 @@ export const Analytics: React.FC = () => {
           </div>
           <div className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>98.2% settlement rate</span>
+            <span>{settlementRate}% verified settlement rate</span>
           </div>
         </div>
 
@@ -84,13 +91,13 @@ export const Analytics: React.FC = () => {
           <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#b08d57] transition-colors">
             ₹{avgOrderValue.toLocaleString()}
           </div>
-          <div className="text-[11px] text-[#b08d57] font-medium">High-ticket bridal keepsakes</div>
+          <div className="text-[11px] text-[#b08d57] font-medium">Computed across {paidOrders.length} paid orders</div>
         </div>
 
         <div className="p-5 luxury-card space-y-2 cursor-default group">
-          <div className="text-xs font-semibold text-gray-500 group-hover:text-[#1c1b18] transition-colors">Conversion Rate</div>
-          <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#9e3322] transition-colors">4.6%</div>
-          <div className="text-[11px] text-[#9e3322] font-medium">Instagram traffic benchmark</div>
+          <div className="text-xs font-semibold text-gray-500 group-hover:text-[#1c1b18] transition-colors">Fulfillment &amp; Dispatch Rate</div>
+          <div className="font-serif font-bold text-2xl text-[#1c1b18] group-hover:text-[#9e3322] transition-colors">{fulfillmentRate}%</div>
+          <div className="text-[11px] text-[#9e3322] font-medium">{fulfilledOrders.length} of {orders.length} orders dispatched</div>
         </div>
       </div>
 

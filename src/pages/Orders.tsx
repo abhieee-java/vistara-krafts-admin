@@ -119,21 +119,6 @@ export const Orders: React.FC<OrdersProps> = ({ selectedOrder, setSelectedOrder 
               {s.label}
             </button>
           ))}
-
-          {orders.length > 0 && (
-            <button
-              onClick={() => {
-                if (window.confirm('Purge all mock/test orders from this device?')) {
-                  clearAllOrders();
-                }
-              }}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-all cursor-pointer flex items-center gap-1 shrink-0 ml-1"
-              title="Delete all mock orders"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Purge Mock Orders</span>
-            </button>
-          )}
         </div>
       </div>
 

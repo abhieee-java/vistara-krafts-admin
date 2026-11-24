@@ -179,18 +179,17 @@ async function runAudit() {
 
   // 9. Orders RPC
   await testStep('Orders - Admin secure directory RPC verification', async () => {
-    // Test parameterless version (SECURITY DEFINER)
-    const resNoArg = await client.rpc('get_admin_orders');
-    if (resNoArg.error) {
-      // Test with active admin session token
-      const resToken = await client.rpc('get_admin_orders', {
-        p_token: '51c71ae373cc5ccd205c4e0d2d6e7cb5416a1c15b775cb37cc4a1aa0fada705e'
-      });
-      if (resToken.error) throw resToken.error;
-      console.log(`         -> Found ${resToken.data.length} live orders via SECURITY DEFINER session token RPC`);
-    } else {
-      console.log(`         -> Found ${resNoArg.data.length} live orders via parameterless RPC`);
-    }
+    // Authenticate with admin master password to obtain fresh valid session token
+    const loginRes = await client.rpc('verify_admin_login', { p_password: '2008' });
+    if (loginRes.error) throw loginRes.error;
+    const sessionToken = loginRes.data?.session_token;
+    if (!sessionToken) throw new Error('verify_admin_login did not return a session_token');
+
+    const resToken = await client.rpc('get_admin_orders', {
+      p_token: sessionToken
+    });
+    if (resToken.error) throw resToken.error;
+    console.log(`         -> Found ${resToken.data.length} live orders via authenticated SECURITY DEFINER session token RPC`);
   });
 
   console.log(`\n========================================================================`);

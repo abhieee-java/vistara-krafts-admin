@@ -62,6 +62,9 @@ export const customerService = {
 
       if (rpcError) {
         console.warn('[customerService] RPC notice:', rpcError.message);
+        if (rpcError.message?.includes('Access Denied') || (rpcError as any)?.code === 'P0001') {
+          authService.handleSessionExpired();
+        }
       }
 
       // 2. Fallback: Standard profiles query

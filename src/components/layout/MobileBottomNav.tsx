@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Package, Boxes, ShoppingBag, Menu } from 'lucide-react';
+import { LayoutDashboard, Package, Boxes, ShoppingBag, LayoutGrid } from 'lucide-react';
 import { AdminTab, useRouter } from '../../context/RouterContext';
 import { useStore } from '../../context/StoreContext';
 
@@ -62,14 +62,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenSidebar 
           );
         })}
 
-        {/* Menu Toggle for Other Sections (Customers, Coupons, Analytics, Security, System, Settings) */}
+        {/* Drawer Toggle for Other Sections (Customers, Coupons, Analytics, Security, System, Settings) */}
         <button
           onClick={onOpenSidebar}
           className="relative flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[#9c9589] hover:text-[#f9f8f5] active:scale-95 transition-all duration-200"
-          aria-label="Open More Menu"
+          aria-label="Open All Modules"
         >
-          <Menu className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5 tracking-tight font-medium">More</span>
+          <LayoutGrid className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5 tracking-tight font-medium">Modules</span>
         </button>
       </div>
     </nav>

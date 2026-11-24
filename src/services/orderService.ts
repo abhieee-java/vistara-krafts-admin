@@ -120,6 +120,9 @@ export const orderService = {
       } else {
         if (rpcError) {
           console.warn('[orderService] get_admin_orders RPC notice:', rpcError.message);
+          if (rpcError.message?.includes('Access Denied') || (rpcError as any)?.code === 'P0001') {
+            authService.handleSessionExpired();
+          }
         }
         // 2. Fallback: Direct table query (works when authenticated admin session exists)
         const { data, error } = await supabase

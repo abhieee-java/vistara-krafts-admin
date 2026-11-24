@@ -18,13 +18,21 @@ import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { ToastContainer } from './components/common/Toast';
 import { Order } from './types';
+import { useStore } from './context/StoreContext';
 
 const AdminPortalApp: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const { refreshFromDb } = useStore();
   const { currentTab, navigate } = useRouter();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isNewProductModalOpen, setIsNewProductModalOpen] = useState(false);
   const [activeOrderForDrawer, setActiveOrderForDrawer] = useState<Order | null>(null);
+
+  React.useEffect(() => {
+    if (isAuthenticated && user?.token) {
+      refreshFromDb();
+    }
+  }, [isAuthenticated, user?.token, refreshFromDb]);
 
   if (isLoading) {
     return (

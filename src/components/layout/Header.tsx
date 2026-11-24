@@ -11,7 +11,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) => {
   const { user, logout } = useAuth();
-  const { publishToStorefront, isPublishing, lastPublishedVersion, lastPublishedAt } = useStore();
+  const { publishToStorefront, isPublishing, lastPublishedVersion, lastPublishedAt, dbConnectionState } = useStore();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
   const getTabTitle = (tab: string) => {
@@ -119,10 +119,28 @@ export const Header: React.FC<HeaderProps> = ({ currentTab, onOpenMobileMenu }) 
 
       {/* Right section: System state & Owner Profile */}
       <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-        {/* Service Readiness Pill */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-[10px] font-semibold shadow-2xs">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-          <span>Live Supabase Connected</span>
+        {/* Service Readiness Pill (Live Telemetry) */}
+        <div className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-semibold shadow-2xs transition-all ${
+          dbConnectionState === 'connected'
+            ? 'bg-emerald-50 border-emerald-200/80 text-emerald-800'
+            : dbConnectionState === 'syncing'
+            ? 'bg-amber-50 border-amber-200/80 text-amber-800'
+            : 'bg-red-50 border-red-200/80 text-red-800'
+        }`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${
+            dbConnectionState === 'connected'
+              ? 'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]'
+              : dbConnectionState === 'syncing'
+              ? 'bg-amber-500 animate-spin'
+              : 'bg-red-500'
+          }`} />
+          <span>
+            {dbConnectionState === 'connected'
+              ? 'Live Supabase Connected'
+              : dbConnectionState === 'syncing'
+              ? 'Syncing Database...'
+              : 'Supabase Offline'}
+          </span>
         </div>
 
         {/* Publish to Live Storefront Button */}

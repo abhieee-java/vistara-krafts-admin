@@ -34,10 +34,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const existing = authService.getStoredSession();
     if (existing) {
       setUser(existing);
+    } else {
+      setUser(null);
     }
+
+    const handleLogoutEvent = () => {
+      setUser(null);
+    };
+
+    window.addEventListener('vk_admin_logout', handleLogoutEvent);
+
     refreshStatus().finally(() => {
       setIsLoading(false);
     });
+
+    return () => {
+      window.removeEventListener('vk_admin_logout', handleLogoutEvent);
+    };
   }, []);
 
   const login = async (passwordOrEmail: string, pass?: string) => {

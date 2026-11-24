@@ -25,37 +25,21 @@ export interface AdminAuthStatus {
 export const authService = {
   getToken(): string {
     const s = this.getStoredSession();
-    return s?.token || ADMIN_MASTER_TOKEN;
+    return s?.token || '';
   },
 
   getStoredSession(): OwnerAuthUser | null {
     try {
       const data = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (!data) {
-        const defaultOwner: OwnerAuthUser = {
-          email: 'owner@vistarakrafts.com',
-          name: 'Kakoli Borah (Owner)',
-          role: 'Owner',
-          lastLogin: new Date().toISOString(),
-          token: ADMIN_MASTER_TOKEN
-        };
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(defaultOwner));
-        return defaultOwner;
-      }
+      if (!data) return null;
       const parsed = JSON.parse(data);
-      if (!parsed.token || typeof parsed.token !== 'string' || !parsed.token.trim()) {
-        parsed.token = ADMIN_MASTER_TOKEN;
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+      // Strictly require a valid non-empty token that is not the dummy fallback
+      if (!parsed || !parsed.token || typeof parsed.token !== 'string' || !parsed.token.trim() || parsed.token === ADMIN_MASTER_TOKEN) {
+        return null;
       }
       return parsed;
     } catch {
-      return {
-        email: 'owner@vistarakrafts.com',
-        name: 'Kakoli Borah (Owner)',
-        role: 'Owner',
-        lastLogin: new Date().toISOString(),
-        token: ADMIN_MASTER_TOKEN
-      };
+      return null;
     }
   },
 
@@ -120,6 +104,9 @@ export const authService = {
     };
 
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('vk_admin_login', { detail: user }));
+    }
     return user;
   },
 
@@ -181,6 +168,9 @@ export const authService = {
       token: ADMIN_MASTER_TOKEN
     };
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('vk_admin_login', { detail: user }));
+    }
     return user;
   },
 
@@ -191,23 +181,28 @@ export const authService = {
     } catch {
       // Ignore
     }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('vk_admin_logout'));
+    }
+  },
+
+  handleSessionExpired(): void {
+    try {
+      localStorage.setItem('vk_session_expired_notice', 'Security Protection: Session ended. Enter your master password to access real-time store records.');
+    } catch {}
+    this.logout();
   },
 
   getSessions(): OwnerSession[] {
+    const s = this.getStoredSession();
+    if (!s) return [];
     return [
       {
         id: 'sess-active',
-        loginTime: new Date().toLocaleString(),
-        ipAddress: 'Supabase Auth (Admin Portal Protected)',
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Chrome',
+        loginTime: s.lastLogin ? new Date(s.lastLogin).toLocaleString() : new Date().toLocaleString(),
+        ipAddress: 'Supabase PostgreSQL Authenticated Session',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Owner Browser Client',
         status: 'active'
-      },
-      {
-        id: 'sess-prev-01',
-        loginTime: '2026-10-23 10:30:00',
-        ipAddress: 'Authorized Owner Console (Bengaluru, IN)',
-        userAgent: 'Owner Workspace Secure Session',
-        status: 'expired'
       }
     ];
   }

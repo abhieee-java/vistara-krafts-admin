@@ -75,6 +75,7 @@ interface StoreContextType {
   addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   isLoadingDb: boolean;
+  dbConnectionState: 'connected' | 'syncing' | 'error' | 'disconnected';
   refreshFromDb: () => Promise<void>;
   // Products
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>) => void;
@@ -151,6 +152,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [dpdpTickets, setDpdpTickets] = useState<DpdpTicket[]>(() => dpdpService.getTickets());
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
+  const [dbConnectionState, setDbConnectionState] = useState<'connected' | 'syncing' | 'error' | 'disconnected'>(
+    isSupabaseConfigured ? 'syncing' : 'disconnected'
+  );
   const [isPublishing, setIsPublishing] = useState<boolean>(false);
   const [lastPublishedVersion, setLastPublishedVersion] = useState<number | null>(() => {
     try {
@@ -197,6 +201,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const refreshFromDb = useCallback(async () => {
     setIsLoadingDb(true);
+    setDbConnectionState('syncing');
     try {
       const [liveProds, liveOrders, liveCust, liveMovements, liveDpdp, supaCouponsRes, supaSettingsRes, supaCatSettingsRes] = await Promise.allSettled([
         productService.fetchFromSupabase(),
@@ -208,6 +213,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isSupabaseConfigured ? supabase.from('settings').select('*') : Promise.resolve({ data: null, error: null }),
         isSupabaseConfigured ? supabase.from('categories').select('*').eq('id', 'store_settings_payload').maybeSingle() : Promise.resolve({ data: null, error: null })
       ]);
+
+      const anySuccess = liveProds.status === 'fulfilled' || liveOrders.status === 'fulfilled' || liveCust.status === 'fulfilled';
+      setDbConnectionState(anySuccess ? 'connected' : 'error');
 
       if (liveProds.status === 'fulfilled') setProducts(liveProds.value);
       if (liveOrders.status === 'fulfilled') setOrders(liveOrders.value);
@@ -406,10 +414,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
-    return () => {
-      if (channel) channel.close();
-      if (dpdpSub && supabase) supabase.removeChannel(dpdpSub);
-    };
+      const handleAdminLogin = () => {
+        refreshFromDb();
+      };
+      if (typeof window !== 'undefined') {
+        window.addEventListener('vk_admin_login', handleAdminLogin);
+      }
+
+      return () => {
+        if (channel) channel.close();
+        if (dpdpSub && supabase) supabase.removeChannel(dpdpSub);
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('vk_admin_login', handleAdminLogin);
+        }
+      };
   }, [refreshFromDb, addToast]);
 
   // Product Actions
@@ -1018,6 +1036,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         deleteCoupon,
         updateSettings,
         isLoadingDb,
+        dbConnectionState,
         refreshFromDb,
         isPublishing,
         lastPublishedVersion,
