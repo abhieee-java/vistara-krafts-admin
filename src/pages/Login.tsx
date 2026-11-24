@@ -7,8 +7,7 @@ import {
   Eye,
   EyeOff,
   Clock,
-  KeyRound,
-  ShieldCheck
+  KeyRound
 } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -17,16 +16,6 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lockoutCountdown, setLockoutCountdown] = useState<string | null>(null);
-  const [sessionNotice, setSessionNotice] = useState<string | null>(() => {
-    try {
-      const notice = localStorage.getItem('vk_session_expired_notice');
-      if (notice) {
-        localStorage.removeItem('vk_session_expired_notice');
-        return notice;
-      }
-    } catch {}
-    return null;
-  });
 
   useEffect(() => {
     refreshStatus();
@@ -125,14 +114,6 @@ export const Login: React.FC = () => {
             <p className="text-[11px] text-[#d4cebe] leading-relaxed">
               Access is temporarily paused for security. Please try again when the timer completes.
             </p>
-          </div>
-        )}
-
-        {/* Session Security Re-Authentication Notice */}
-        {sessionNotice && !error && !isLocked && (
-          <div className="mb-5 p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs font-medium flex items-center gap-2.5 animate-fadeIn">
-            <ShieldCheck className="w-4 h-4 text-[#cda851] shrink-0" />
-            <span className="leading-snug">{sessionNotice}</span>
           </div>
         )}
 

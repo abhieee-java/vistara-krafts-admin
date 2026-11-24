@@ -187,9 +187,6 @@ export const authService = {
   },
 
   handleSessionExpired(): void {
-    try {
-      localStorage.setItem('vk_session_expired_notice', 'Security Protection: Session ended. Enter your master password to access real-time store records.');
-    } catch {}
     this.logout();
   },
 

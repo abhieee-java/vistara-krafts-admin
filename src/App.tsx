@@ -116,7 +116,7 @@ const AdminPortalApp: React.FC = () => {
       </div>
 
       {/* Mobile Bottom Navigation Dock for Phone Screens */}
-      <MobileBottomNav onOpenSidebar={() => setIsMobileSidebarOpen(true)} />
+      <MobileBottomNav />
 
       {/* Global Toast Container */}
       <ToastContainer />
